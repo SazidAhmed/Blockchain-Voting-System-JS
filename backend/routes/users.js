@@ -3,13 +3,14 @@ const router = express.Router();
 const jwt = require('jsonwebtoken');
 const { pool } = require('../config/db');
 const { auth } = require('../middleware/auth');
+const { registerLimiter, loginLimiter } = require('../middleware/rateLimiter');
 const { hashPassword, comparePassword, generateKeypair } = require('../utils/crypto');
 require('dotenv').config();
 
 // @route   POST /api/users/register
 // @desc    Register a new user
 // @access  Public
-router.post('/register', async (req, res) => {
+router.post('/register', registerLimiter, async (req, res) => {
   try {
     const { institutionId, username, password, role, email, publicKey, encryptionPublicKey } = req.body;
 
@@ -86,7 +87,7 @@ router.post('/register', async (req, res) => {
 // @route   POST /api/users/login
 // @desc    Authenticate user & get token
 // @access  Public
-router.post('/login', async (req, res) => {
+router.post('/login', loginLimiter, async (req, res) => {
   try {
     const { institutionId, password } = req.body;
 

@@ -3,7 +3,8 @@ const router = express.Router();
 const crypto = require('crypto');
 const { pool } = require('../config/db');
 const { auth, adminAuth } = require('../middleware/auth');
-const { generateToken, generateNullifier, encryptBallot, signData, verifyECDSASignatureSimple } = require('../utils/crypto');
+const { voteLimiter } = require('../middleware/rateLimiter');
+const { generateToken, generateNullifier, encryptBallot, signData, verifyECDSASignature } = require('../utils/crypto');
 const axios = require('axios');
 require('dotenv').config();
 
@@ -203,7 +204,7 @@ router.post('/:id/register', auth, async (req, res) => {
 // @route   POST /api/elections/:id/vote
 // @desc    Cast a vote in an election
 // @access  Private
-router.post('/:id/vote', auth, async (req, res) => {
+router.post('/:id/vote', voteLimiter, auth, async (req, res) => {
   try {
     const electionId = req.params.id;
     const userId = req.user.id;
@@ -288,7 +289,7 @@ router.post('/:id/vote', auth, async (req, res) => {
         timestamp
       };
       
-      const isValidSignature = verifyECDSASignatureSimple(publicKey, signature, voteData);
+      const isValidSignature = verifyECDSASignature(publicKey, signature, voteData);
       
       if (!isValidSignature) {
         console.error('Invalid signature for vote');

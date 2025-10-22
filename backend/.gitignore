@@ -24,6 +24,11 @@ data/voter_registrations.json
 # Keep directory structure
 !data/.gitkeep
 
+# Private keys (NEVER commit these!)
+keys/
+*.pem
+*.key
+
 # Database
 *.sqlite
 *.db

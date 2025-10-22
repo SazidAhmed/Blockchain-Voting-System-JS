@@ -305,17 +305,17 @@ MIT License - see LICENSE file for details
 
 ## 👥 Team
 
-**Developer:** [Your Name]  
-**Institution:** [Your University]  
-**Course:** [Course Name/Number]  
-**Academic Year:** 2024-2025
+**Developer:** [Sazid Ahmed/ Nahid Noyon]  
+**Institution:** [Bangladesh University of Professionals]  
+**Course:** [Masters in Information System Security]  
+**Academic Year:** 2023-2024
 
 ---
 
 ## 📧 Contact
 
 For questions or issues:
-- Email: [your-email@university.edu]
+- Email: [sazidahmed.official@gmail.com]
 - GitHub Issues: [Repository Issues Page]
 
 ---

@@ -1,5 +1,6 @@
 const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
+const EC = require('elliptic').ec;
 
 // Generate a random token for voter registration
 function generateToken(length = 32) {
@@ -63,6 +64,7 @@ function verifySignature(data, signature, publicKey) {
 
 /**
  * Verify ECDSA signature from Web Crypto API (P-256 curve)
+ * Uses elliptic library for full cryptographic verification
  * @param {string} publicKeyBase64 - Base64-encoded public key in JWK format
  * @param {string} signatureBase64 - Base64-encoded signature
  * @param {Object} data - Data that was signed
@@ -70,44 +72,76 @@ function verifySignature(data, signature, publicKey) {
  */
 function verifyECDSASignature(publicKeyBase64, signatureBase64, data) {
   try {
+    // Initialize elliptic curve with P-256 (same as secp256r1)
+    const ec = new EC('p256');
+    
     // Parse the JWK public key
-    const publicKeyJWK = JSON.parse(Buffer.from(publicKeyBase64, 'base64').toString('utf8'));
+    let publicKeyJWK;
+    try {
+      const publicKeyStr = Buffer.from(publicKeyBase64, 'base64').toString('utf8');
+      publicKeyJWK = JSON.parse(publicKeyStr);
+    } catch (parseError) {
+      console.error('Failed to parse public key JWK:', parseError.message);
+      return false;
+    }
     
-    // Convert JWK to raw format (x and y coordinates)
-    // P-256 uses 32-byte coordinates
-    const xBuffer = Buffer.from(publicKeyJWK.x, 'base64');
-    const yBuffer = Buffer.from(publicKeyJWK.y, 'base64');
+    // Validate JWK format
+    if (!publicKeyJWK.x || !publicKeyJWK.y || !publicKeyJWK.kty || publicKeyJWK.kty !== 'EC') {
+      console.error('Invalid JWK format - missing required fields or wrong key type');
+      return false;
+    }
     
-    // Construct the uncompressed public key format for Node.js crypto
-    // Format: 0x04 || x || y (65 bytes total for P-256)
-    const publicKeyBuffer = Buffer.concat([
-      Buffer.from([0x04]), // Uncompressed point indicator
-      xBuffer,
-      yBuffer
-    ]);
+    if (!publicKeyJWK.crv || publicKeyJWK.crv !== 'P-256') {
+      console.error('Invalid curve - expected P-256, got:', publicKeyJWK.crv);
+      return false;
+    }
     
-    // Create a public key object
-    const publicKey = crypto.createPublicKey({
-      key: publicKeyBuffer,
-      format: 'der',
-      type: 'spki'
-    });
+    // Convert JWK coordinates to hex
+    // Web Crypto uses base64url, but for compatibility we accept base64
+    const xHex = Buffer.from(publicKeyJWK.x, 'base64').toString('hex');
+    const yHex = Buffer.from(publicKeyJWK.y, 'base64').toString('hex');
     
-    // Prepare the data for verification
+    // Create public key from coordinates
+    const publicKey = ec.keyFromPublic({
+      x: xHex,
+      y: yHex
+    }, 'hex');
+    
+    // Prepare the data for verification (same as was signed)
     const dataStr = typeof data === 'object' ? JSON.stringify(data) : String(data);
-    const dataBuffer = Buffer.from(dataStr, 'utf8');
+    
+    // Hash the data with SHA-256 (matching Web Crypto API)
+    const msgHash = crypto.createHash('sha256').update(dataStr, 'utf8').digest();
     
     // Decode the signature
     const signatureBuffer = Buffer.from(signatureBase64, 'base64');
     
-    // Verify the signature
-    const verify = crypto.createVerify('SHA256');
-    verify.update(dataBuffer);
-    verify.end();
+    // Web Crypto API produces signatures in IEEE P1363 format (r || s)
+    // Each component is 32 bytes for P-256
+    if (signatureBuffer.length !== 64) {
+      console.error('Invalid signature length - expected 64 bytes, got:', signatureBuffer.length);
+      return false;
+    }
     
-    return verify.verify(publicKey, signatureBuffer);
+    const r = signatureBuffer.slice(0, 32).toString('hex');
+    const s = signatureBuffer.slice(32, 64).toString('hex');
+    
+    const signature = { r, s };
+    
+    // Verify the signature
+    const isValid = publicKey.verify(msgHash, signature);
+    
+    if (isValid) {
+      console.log('✅ ECDSA signature verified successfully');
+    } else {
+      console.warn('❌ ECDSA signature verification failed');
+    }
+    
+    return isValid;
+    
   } catch (error) {
-    console.error('Error verifying ECDSA signature:', error);
+    console.error('Error verifying ECDSA signature:', error.message);
+    console.error('Stack:', error.stack);
     return false;
   }
 }
