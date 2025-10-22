@@ -1,0 +1,45 @@
+MIT License
+
+Copyright (c) 2025 [Your Name/University Name]
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+---
+
+SECURITY NOTICE:
+
+This software is currently in development (60% complete) and is NOT ready for
+production use in real elections. The following security measures are incomplete:
+
+- Simplified signature verification (development mode)
+- localStorage key storage without PBKDF2/AES-GCM encryption
+- Placeholder election keys (not production RSA keys)
+- No comprehensive security audit
+- No penetration testing
+- No formal cryptographic review
+
+DO NOT use this software for actual elections without:
+1. Complete security audit by qualified cryptography experts
+2. Full implementation of all security features
+3. Comprehensive penetration testing
+4. Legal review and compliance verification
+5. Proper key management infrastructure
+
+The authors and contributors assume NO LIABILITY for any misuse, security
+breaches, or election integrity issues arising from premature deployment.

@@ -1,0 +1,31 @@
+# Blockchain Node .gitignore
+
+# Dependencies
+node_modules/
+npm-debug.log*
+
+# Environment variables
+.env
+.env.local
+
+# Blockchain data (can be regenerated)
+data/node1/
+data/node2/
+data/node3/
+data/*/CURRENT
+data/*/LOCK
+data/*/LOG*
+data/*/MANIFEST-*
+data/*.ldb
+data/*.log
+
+# Keep directory structure
+!data/.gitkeep
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+tmp/
+*.tmp
