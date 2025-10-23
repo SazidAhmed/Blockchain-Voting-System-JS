@@ -5,6 +5,7 @@ const { pool } = require('../config/db');
 const { auth } = require('../middleware/auth');
 const { registerLimiter, loginLimiter } = require('../middleware/rateLimiter');
 const { hashPassword, comparePassword, generateKeypair } = require('../utils/crypto');
+const auditLogger = require('../utils/auditLogger');
 require('dotenv').config();
 
 // @route   POST /api/users/register
@@ -77,9 +78,36 @@ router.post('/register', registerLimiter, async (req, res) => {
       response.privateKey = privateKeyToReturn;
     }
 
+    // Log successful registration
+    await auditLogger.logUserRegistration(
+      result.insertId,
+      institutionId,
+      true,
+      {
+        username,
+        role,
+        email,
+        keysGeneratedBy: privateKeyToReturn ? 'server' : 'client'
+      },
+      req
+    );
+
     res.status(201).json(response);
   } catch (err) {
     console.error(err);
+    
+    // Log failed registration
+    await auditLogger.logUserRegistration(
+      null,
+      req.body.institutionId,
+      false,
+      {
+        error: err.message,
+        errorType: err.code || 'UNKNOWN'
+      },
+      req
+    );
+    
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -103,6 +131,14 @@ router.post('/login', loginLimiter, async (req, res) => {
     );
 
     if (users.length === 0) {
+      // Log failed login attempt
+      await auditLogger.logUserLogin(
+        null,
+        institutionId,
+        false,
+        { reason: 'User not found' },
+        req
+      );
       return res.status(400).json({ message: 'Invalid credentials' });
     }
 
@@ -111,6 +147,14 @@ router.post('/login', loginLimiter, async (req, res) => {
     // Validate password
     const isMatch = await comparePassword(password, user.password);
     if (!isMatch) {
+      // Log failed login attempt
+      await auditLogger.logUserLogin(
+        user.id,
+        institutionId,
+        false,
+        { reason: 'Invalid password' },
+        req
+      );
       return res.status(400).json({ message: 'Invalid credentials' });
     }
 
@@ -119,6 +163,15 @@ router.post('/login', loginLimiter, async (req, res) => {
       { id: user.id, role: user.role, institutionId: user.institution_id },
       process.env.JWT_SECRET,
       { expiresIn: '1h' }
+    );
+
+    // Log successful login
+    await auditLogger.logUserLogin(
+      user.id,
+      institutionId,
+      true,
+      { username: user.username, role: user.role },
+      req
     );
 
     res.json({
@@ -135,6 +188,19 @@ router.post('/login', loginLimiter, async (req, res) => {
     });
   } catch (err) {
     console.error(err);
+    
+    // Log failed login
+    await auditLogger.logUserLogin(
+      null,
+      req.body.institutionId,
+      false,
+      {
+        error: err.message,
+        errorType: err.code || 'UNKNOWN'
+      },
+      req
+    );
+    
     res.status(500).json({ message: 'Server error' });
   }
 });

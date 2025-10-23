@@ -5,6 +5,7 @@ const { pool } = require('../config/db');
 const { auth, adminAuth } = require('../middleware/auth');
 const { voteLimiter } = require('../middleware/rateLimiter');
 const { generateToken, generateNullifier, encryptBallot, signData, verifyECDSASignature } = require('../utils/crypto');
+const auditLogger = require('../utils/auditLogger');
 const axios = require('axios');
 require('dotenv').config();
 
@@ -268,6 +269,13 @@ router.post('/:id/vote', voteLimiter, auth, async (req, res) => {
     const registration = registrations[0];
 
     if (registration.status === 'voted') {
+      // Log double-vote attempt
+      await auditLogger.logDoubleVoteAttempt(
+        userId, 
+        electionId, 
+        { reason: 'User already voted', registrationStatus: 'voted' },
+        req
+      );
       return res.status(400).json({ message: 'You have already voted in this election' });
     }
 
@@ -291,6 +299,19 @@ router.post('/:id/vote', voteLimiter, auth, async (req, res) => {
       
       const isValidSignature = verifyECDSASignature(publicKey, signature, voteData);
       
+      // Log signature verification
+      await auditLogger.logSignatureVerification(
+        userId,
+        electionId,
+        isValidSignature,
+        { 
+          signatureLength: signature?.length,
+          publicKeyLength: publicKey?.length,
+          nullifierPreview: nullifier?.substring(0, 16)
+        },
+        req
+      );
+      
       if (!isValidSignature) {
         console.error('Invalid signature for vote');
         return res.status(400).json({ message: 'Invalid vote signature' });
@@ -303,6 +324,13 @@ router.post('/:id/vote', voteLimiter, auth, async (req, res) => {
       );
 
       if (existingVotes.length > 0) {
+        // Log duplicate nullifier attempt
+        await auditLogger.logDoubleVoteAttempt(
+          userId,
+          electionId,
+          { reason: 'Duplicate nullifier detected', nullifier: nullifier.substring(0, 16) + '...' },
+          req
+        );
         return res.status(400).json({ message: 'This nullifier has already been used (possible double-vote attempt)' });
       }
 
@@ -384,6 +412,20 @@ router.post('/:id/vote', voteLimiter, auth, async (req, res) => {
       [transactionHash, blockIndex, electionId, finalNullifier, finalEncryptedBallot, finalSignature, finalPublicKey]
     );
 
+    // Log successful vote
+    await auditLogger.logVote(
+      userId,
+      electionId,
+      true,
+      {
+        transactionHash: transactionHash.substring(0, 16) + '...',
+        blockIndex,
+        nullifier: finalNullifier.substring(0, 16) + '...',
+        encryptionUsed: isNewCryptoFlow ? 'client-side' : 'server-side'
+      },
+      req
+    );
+
     // Store receipt (commented out - table structure mismatch)
     // await pool.query(
     //   'INSERT INTO vote_receipts (election_id, nullifier_hash, transaction_hash) VALUES (?, ?, ?)',
@@ -402,6 +444,19 @@ router.post('/:id/vote', voteLimiter, auth, async (req, res) => {
     });
   } catch (err) {
     console.error(err);
+    
+    // Log failed vote attempt
+    await auditLogger.logVote(
+      req.user?.id,
+      req.params.id,
+      false,
+      {
+        error: err.message,
+        errorType: err.code || 'UNKNOWN'
+      },
+      req
+    );
+    
     res.status(500).json({ message: 'Server error' });
   }
 });
