@@ -19,8 +19,10 @@ class Blockchain {
         // Initialize database for persistence
         this.db = level(leveldown(`./data/${nodeId}`));
         
-        // Load chain from database if exists
-        this.loadChain();
+        // Load chain from database if exists (don't await in constructor)
+        this.loadChain().catch(err => {
+            console.log('Error loading chain, using genesis block:', err.message);
+        });
     }
 
     async loadChain() {
@@ -29,7 +31,12 @@ class Blockchain {
             this.chain = JSON.parse(chainData);
             console.log('Blockchain loaded from database');
         } catch (error) {
-            console.log('No existing blockchain found, using genesis block');
+            // Key not found is expected for first run
+            if (error.notFound) {
+                console.log('No existing blockchain found, using genesis block');
+            } else {
+                console.log('Error loading blockchain:', error.message);
+            }
         }
     }
 
