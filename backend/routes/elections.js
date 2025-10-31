@@ -4,6 +4,7 @@ const crypto = require('crypto');
 const { pool } = require('../config/db');
 const { auth, adminAuth } = require('../middleware/auth');
 const { voteLimiter } = require('../middleware/rateLimiter');
+const { validateVote, validateElectionId, validateCreateElection } = require('../middleware/validation');
 const { generateToken, generateNullifier, encryptBallot, signData, verifyECDSASignature } = require('../utils/crypto');
 const auditLogger = require('../utils/auditLogger');
 const axios = require('axios');
@@ -78,7 +79,7 @@ router.get('/', async (req, res) => {
 // @route   GET /api/elections/:id
 // @desc    Get election by ID with candidates
 // @access  Public
-router.get('/:id', async (req, res) => {
+router.get('/:id', validateElectionId, async (req, res) => {
   try {
     const [elections] = await pool.query(
       'SELECT id, title, description, start_date, end_date, status, public_key, created_at FROM elections WHERE id = ?',
@@ -205,7 +206,7 @@ router.post('/:id/register', auth, async (req, res) => {
 // @route   POST /api/elections/:id/vote
 // @desc    Cast a vote in an election
 // @access  Private
-router.post('/:id/vote', voteLimiter, auth, async (req, res) => {
+router.post('/:id/vote', voteLimiter, auth, validateVote, async (req, res) => {
   try {
     const electionId = req.params.id;
     const userId = req.user.id;

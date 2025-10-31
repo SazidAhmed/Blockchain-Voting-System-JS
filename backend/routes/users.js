@@ -4,6 +4,7 @@ const jwt = require('jsonwebtoken');
 const { pool } = require('../config/db');
 const { auth } = require('../middleware/auth');
 const { registerLimiter, loginLimiter } = require('../middleware/rateLimiter');
+const { validateRegistration, validateLogin } = require('../middleware/validation');
 const { hashPassword, comparePassword, generateKeypair } = require('../utils/crypto');
 const auditLogger = require('../utils/auditLogger');
 require('dotenv').config();
@@ -11,14 +12,11 @@ require('dotenv').config();
 // @route   POST /api/users/register
 // @desc    Register a new user
 // @access  Public
-router.post('/register', registerLimiter, async (req, res) => {
+router.post('/register', registerLimiter, validateRegistration, async (req, res) => {
   try {
     const { institutionId, username, password, role, email, publicKey, encryptionPublicKey } = req.body;
 
-    // Validate input
-    if (!institutionId || !username || !password || !role || !email) {
-      return res.status(400).json({ message: 'Please enter all fields' });
-    }
+    // Input is already validated by middleware
 
     // Check if user already exists
     const [existingUsers] = await pool.query(
@@ -115,14 +113,11 @@ router.post('/register', registerLimiter, async (req, res) => {
 // @route   POST /api/users/login
 // @desc    Authenticate user & get token
 // @access  Public
-router.post('/login', loginLimiter, async (req, res) => {
+router.post('/login', loginLimiter, validateLogin, async (req, res) => {
   try {
     const { institutionId, password } = req.body;
 
-    // Validate input
-    if (!institutionId || !password) {
-      return res.status(400).json({ message: 'Please enter all fields' });
-    }
+    // Input is already validated by middleware
 
     // Check if user exists
     const [users] = await pool.query(
