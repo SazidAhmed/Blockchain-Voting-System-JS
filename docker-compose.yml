@@ -1,0 +1,139 @@
+version: '3.8'
+
+services:
+  # MySQL Database
+  mysql:
+    image: mysql:8.0
+    container_name: voting-mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-voting_root_pass}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-voting_db}
+      MYSQL_USER: ${MYSQL_USER:-voting_user}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-voting_pass}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./backend/migrations:/docker-entrypoint-initdb.d
+    networks:
+      - voting-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-voting_root_pass}"]
+      timeout: 20s
+      retries: 10
+      interval: 10s
+
+  # phpMyAdmin
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: voting-phpmyadmin
+    restart: always
+    environment:
+      PMA_HOST: mysql
+      PMA_PORT: 3306
+      PMA_USER: ${MYSQL_USER:-voting_user}
+      PMA_PASSWORD: ${MYSQL_PASSWORD:-voting_pass}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-voting_root_pass}
+    ports:
+      - "8080:80"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - voting-network
+
+  # Blockchain Node
+  blockchain-node:
+    build:
+      context: ./blockchain-node
+      dockerfile: Dockerfile
+    container_name: voting-blockchain
+    restart: always
+    environment:
+      NODE_ID: node1
+      PORT: 3001
+      NODE_ENV: ${NODE_ENV:-development}
+    ports:
+      - "3001:3001"
+    volumes:
+      - blockchain_data:/app/data
+      - ./blockchain-node:/app
+      - /app/node_modules
+    networks:
+      - voting-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3001/node"]
+      timeout: 10s
+      retries: 5
+      interval: 15s
+    command: npm start
+
+  # Backend API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: voting-backend
+    restart: always
+    environment:
+      NODE_ENV: ${NODE_ENV:-development}
+      PORT: 3000
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USER: ${MYSQL_USER:-voting_user}
+      DB_PASSWORD: ${MYSQL_PASSWORD:-voting_pass}
+      DB_NAME: ${MYSQL_DATABASE:-voting_db}
+      JWT_SECRET: ${JWT_SECRET:-your-super-secret-jwt-key-change-in-production}
+      BLOCKCHAIN_NODE_URL: http://blockchain-node:3001
+      FRONTEND_URL: http://localhost:5173
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+      - ./backend/keys:/app/keys
+    depends_on:
+      mysql:
+        condition: service_healthy
+      blockchain-node:
+        condition: service_healthy
+    networks:
+      - voting-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/api/elections"]
+      timeout: 10s
+      retries: 5
+      interval: 15s
+    command: sh -c "npm run migrate && npm start"
+
+  # Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: voting-frontend
+    restart: always
+    environment:
+      VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:3000/api}
+      VITE_BLOCKCHAIN_URL: ${VITE_BLOCKCHAIN_URL:-http://localhost:3001}
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+    networks:
+      - voting-network
+    command: npm run dev -- --host 0.0.0.0
+
+networks:
+  voting-network:
+    driver: bridge
+
+volumes:
+  mysql_data:
+    driver: local
+  blockchain_data:
+    driver: local

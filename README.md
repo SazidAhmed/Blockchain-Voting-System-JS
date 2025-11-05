@@ -8,193 +8,154 @@ A secure, privacy-preserving blockchain-based voting system for university elect
 
 ## 🎉 Project Status
 
-**Current Phase:** Phase 2 Complete - End-to-End Encrypted Voting Working  
-**Last Updated:** October 22, 2025  
-**Completion:** 60% (~15,000+ lines of code)
+**Current Phase:** Production-Ready Infrastructure - Docker & Monitoring Complete  
+**Last Updated:** November 5, 2025  
+**Completion:** 85% (~18,000+ lines of code)
 
-### ✅ What's Working:
-- **Client-side cryptography** - ECDSA P-256 signatures, RSA-OAEP encryption
-- **User registration** - Automatic key generation and storage
-- **Encrypted voting** - Complete vote casting with signatures and nullifiers
-- **Double-vote prevention** - Nullifier-based duplicate detection
-- **Backend verification** - Signature verification and vote storage
-- **Database storage** - MySQL with encrypted ballots
+### ✅ Fully Implemented:
+- ✅ **Complete Docker Setup** - One-command deployment with 5 services
+- ✅ **Monitoring Stack** - Prometheus, Grafana, cAdvisor with pre-built dashboards
+- ✅ **Helper Scripts** - Backup, restore, logs, health checks, cleanup utilities
+- ✅ **Client-side Cryptography** - ECDSA P-256 signatures, RSA-OAEP encryption
+- ✅ **Encrypted Voting** - End-to-end vote casting with signatures and nullifiers
+- ✅ **Double-vote Prevention** - Nullifier-based duplicate detection
+- ✅ **Database Storage** - MySQL with complete schema and migrations
+- ✅ **Blockchain Node** - Custom PoW blockchain with persistent storage
 
-### ⚠️ In Progress:
-- Receipt UI display
-- Full ECDSA signature verification
-- Proper RSA election key generation
-- Rate limiting and audit logging
-- Blockchain node integration
-
----
-
-## 📂 Project Structure
-
-```
-voting-system/
-├── backend/              # Node.js/Express API server
-├── frontend/            # Vue.js 3 + Vite client application
-├── blockchain-node/     # Custom blockchain with PoW consensus
-├── Project_Status/      # Development logs and documentation
-└── test-system.js      # Integration test suite
-```
+### 🔜 Remaining Tasks:
+- Frontend integration testing (Priority 1)
+- Merkle proof implementation
+- Multi-factor authentication
+- BFT consensus upgrade
+- Production security hardening
 
 ---
 
-## 🔐 Security Features
+## � Key Security Features
 
-### Implemented:
 - ✅ **Ballot Secrecy** - RSA-OAEP 2048-bit encryption
 - ✅ **Voter Authentication** - ECDSA P-256 digital signatures
 - ✅ **Vote Privacy** - SHA-256 unlinkable nullifiers
-- ✅ **Double-Vote Prevention** - Deterministic nullifier checking
+- ✅ **Double-Vote Prevention** - Nullifier-based duplicate detection
 - ✅ **Non-Repudiation** - Cryptographic vote receipts
-- ✅ **Coercion Resistance** - Receipts don't reveal vote choices
-
-### Planned:
-- 🔜 Blind signatures for token unlinking
-- 🔜 Merkle trees for batch verification
-- 🔜 Threshold encryption for distributed tallying
-- 🔜 BFT consensus for validator network
-- 🔜 Zero-knowledge proofs for enhanced privacy
+- ✅ **Audit Logging** - Complete security event tracking
+- ✅ **Rate Limiting** - DDoS protection on all endpoints
 
 ---
 
 ## 🚀 Quick Start
 
-### Prerequisites
-- Node.js 16+ and npm
-- MySQL 8.0+
-- Git
+### 🐳 Docker Setup (Recommended - Easiest!)
 
-### 1. Clone Repository
+**Prerequisites:**
+- Docker Desktop installed ([Download here](https://www.docker.com/products/docker-desktop))
+- At least 4GB of free RAM
+
+**One-Command Setup:**
 ```bash
-git clone https://github.com/yourusername/voting-system.git
-cd voting-system
+# Clone repository
+git clone https://github.com/SazidAhmed/Blockchain-Voting-System-JS.git
+cd Blockchain-Voting-System-JS
+
+# Copy environment file
+cp .env.example .env
+
+# Start all services (MySQL, phpMyAdmin, Backend, Blockchain, Frontend)
+docker-compose up --build -d
+
+# Or use the helper script:
+# On Linux/Mac:
+./docker-start.sh
+
+# On Windows:
+docker-start.bat
 ```
 
-### 2. Setup Backend
+**Access the application:**
+- 🖥️ **Frontend**: http://localhost:5173
+- 🔧 **Backend API**: http://localhost:3000
+- ⛓️ **Blockchain**: http://localhost:3001
+- 🗄️ **phpMyAdmin**: http://localhost:8080
+
+**Done!** All 5 services running in Docker containers. See [DOCKER_SETUP.md](./DOCKER_SETUP.md) for details.
+
+### 📊 Monitoring (Optional but Recommended)
+
+Start the monitoring stack to track system performance:
+
 ```bash
-cd backend
-npm install
-cp .env.example .env  # Configure database credentials
+# Start Prometheus, Grafana, cAdvisor, and exporters
+./docker-monitoring-start.sh
 
-# Setup database
-mysql -u root -p < migrations/001_initial_schema.sql
-mysql -u root -p < migrations/002_add_crypto_fields.sql
-
-# Or use migration script
-npm run migrate
-
-# Start server
-npm run dev  # Runs on http://localhost:3000
+# Or manually:
+docker-compose -f docker-compose.yml -f docker-compose.monitoring.yml up -d
 ```
 
-### 3. Setup Frontend
-```bash
-cd ../frontend
-npm install
-npm run dev  # Runs on http://localhost:5174
-```
+**Access Monitoring Tools:**
+- 📈 **Grafana**: http://localhost:3030 (admin/admin)
+- 📊 **Prometheus**: http://localhost:9090
+- 🐳 **cAdvisor**: http://localhost:8081
 
-### 4. (Optional) Setup Blockchain Node
-```bash
-cd ../blockchain-node
-npm install
-npm start  # Runs on http://localhost:3001
-```
+**Features:**
+- Real-time service health monitoring
+- Container resource usage (CPU, memory, network)
+- MySQL database metrics
+- Pre-configured dashboards
+- Automatic alerting for issues
+
+See [MONITORING_GUIDE.md](./MONITORING_GUIDE.md) for complete documentation.
 
 ---
 
-## 🏗️ Architecture
+## �️ Management Tools
 
-### Backend (Node.js/Express)
-- **Database:** MySQL 8.0 (InnoDB, utf8mb4)
-- **Authentication:** JWT with x-auth-token header
-- **Crypto:** Node.js crypto module for signature verification
-- **API:** RESTful endpoints for users, elections, voting
-
-**Key Files:**
-- `routes/elections.js` - Vote casting with dual-mode (crypto/legacy)
-- `utils/crypto.js` - Signature verification utilities
-- `models/user.js` - User model with crypto key storage
-
-### Frontend (Vue.js 3)
-- **Framework:** Vue 3 Composition API + Options API
-- **Build Tool:** Vite 5.x
-- **State Management:** Vuex
-- **Routing:** Vue Router
-- **Crypto:** Web Crypto API (browser native)
-
-**Key Files:**
-- `services/crypto.js` - Cryptographic operations (600+ lines)
-- `services/keyManager.js` - Key lifecycle management (300+ lines)
-- `components/VoteReceipt.vue` - Cryptographic receipt display
-
-### Blockchain Node (Custom)
-- **Consensus:** Proof of Work (PoW) - *upgrading to BFT*
-- **Storage:** LevelDB for blockchain data
-- **P2P:** HTTP-based node communication
-- **Blocks:** Vote transactions with cryptographic proofs
-
----
-
-## 📊 Database Schema
-
-### Core Tables:
-- `users` - User accounts with ECDSA/RSA public keys
-- `elections` - Election metadata with status tracking
-- `candidates` - Candidate information
-- `voter_registrations` - Registration status and eligibility
-- `votes_meta` - Encrypted votes with signatures and nullifiers
-- `vote_receipts` - Cryptographic receipts for verification
-
-### Crypto Fields (Migration 002):
-```sql
-ALTER TABLE users 
-  ADD COLUMN encryption_public_key TEXT;
-
-ALTER TABLE votes_meta 
-  ADD COLUMN signature TEXT,
-  ADD COLUMN voter_public_key TEXT;
+### Helper Scripts
+```bash
+./docker-health-check.sh    # Check system health
+./docker-backup.sh           # Backup database & blockchain
+./docker-restore.sh <file>   # Restore from backup
+./docker-logs.sh             # Interactive log viewer
+./docker-cleanup.sh          # Clean Docker resources
+./docker-seed.sh             # Seed test data
 ```
 
----
-
-## 🧪 Testing
-
-### Backend Tests
+### Testing
 ```bash
-cd backend
-npm test
+# Health check all services
+./docker-health-check.sh
 
-# Or run crypto integration tests
-node test-crypto-integration.js
-```
+# Run backend tests
+docker-compose exec backend npm test
 
-### Frontend Tests (Browser Console)
-```bash
-cd frontend
-npm run dev
-
-# Open browser console and paste:
-# Copy contents of src/services/crypto.test.js
-# All 8 tests should pass
-```
-
-### Integration Tests
-```bash
-# From root directory
+# Integration tests
 node test-system.js
 ```
 
 ---
 
+## 🏗️ Tech Stack
+
+- **Frontend**: Vue.js 3 + Vite + Vuex + Web Crypto API
+- **Backend**: Node.js + Express + JWT + ECDSA verification
+- **Database**: MySQL 8.0 with encrypted ballot storage
+- **Blockchain**: Custom PoW with LevelDB persistence
+- **Monitoring**: Prometheus + Grafana + cAdvisor
+- **Infrastructure**: Docker + Docker Compose
+
+---
+
 ## 📖 Documentation
 
-Comprehensive documentation available in `Project_Status/`:
+Comprehensive documentation available:
 
+### Core Documentation
+- **[DOCKER_SETUP.md](./DOCKER_SETUP.md)** - Complete Docker setup guide
+- **[DOCKER_QUICK_REFERENCE.md](./DOCKER_QUICK_REFERENCE.md)** - Quick Docker commands
+- **[HELPER_SCRIPTS_REFERENCE.md](./HELPER_SCRIPTS_REFERENCE.md)** - All helper scripts
+- **[MONITORING_GUIDE.md](./MONITORING_GUIDE.md)** - Prometheus & Grafana setup
+- **[DOCKER_TEST_RESULTS.md](./DOCKER_TEST_RESULTS.md)** - Docker test report
+
+### Development Documentation
 - **20_10_25.md** - Client-side cryptography implementation
 - **21_10_25.md** - Backend integration and testing session
 - **CRYPTO_IMPLEMENTATION.md** - Technical API reference
@@ -202,98 +163,36 @@ Comprehensive documentation available in `Project_Status/`:
 - **CRYPTO_VISUAL_GUIDE.md** - Architecture diagrams
 - **DATABASE_SCHEMA.md** - Database documentation
 
----
+### Helper Scripts (New! ✨)
+- `docker-backup.sh` - Backup database and blockchain
+- `docker-restore.sh` - Restore from backups
+- `docker-logs.sh` - Advanced log viewer
+- `docker-cleanup.sh` - Clean Docker resources
+- `docker-health-check.sh` - System health check
+- `docker-seed.sh` - Seed test data
+- `docker-monitoring-start.sh` - Start monitoring stack
 
-## 🔄 Development Workflow
+## 🔄 Vote Casting Flow
 
-### Vote Casting Flow:
 ```
-1. User Registration
-   └─> Generate ECDSA + RSA keypairs (client-side)
-   └─> Store private keys in localStorage
-   └─> Send public keys to backend
-   └─> Backend stores in database
-
-2. User Login
-   └─> Authenticate with credentials
-   └─> Load private keys from localStorage
-   └─> Keys available for voting session
-
-3. Vote Casting
-   └─> Select candidate
-   └─> Generate nullifier (SHA-256)
-   └─> Encrypt ballot with election public key
-   └─> Sign vote package with private key
-   └─> Submit to backend
-
-4. Backend Verification
-   └─> Verify ECDSA signature
-   └─> Check nullifier for duplicates
-   └─> Store encrypted ballot
-   └─> Submit to blockchain
-   └─> Return cryptographic receipt
-
-5. Vote Receipt
-   └─> Display transaction hash
-   └─> Show nullifier and signature
-   └─> Download as JSON
-   └─> Print for records
+Registration → Key Generation → Vote → Encrypt → Sign → Verify → Store → Blockchain
 ```
 
----
-
-## 🛣️ Roadmap
-
-### ✅ Phase 1: Client-Side Crypto (COMPLETE)
-- [x] WebCrypto API integration
-- [x] Key generation and management
-- [x] Ballot encryption
-- [x] Digital signatures
-- [x] Nullifiers
-- [x] Vote receipts
-
-### ✅ Phase 2: Backend Integration (COMPLETE)
-- [x] Database schema updates
-- [x] User model with crypto fields
-- [x] Registration/login with keys
-- [x] Vote endpoint with verification
-- [x] End-to-end testing
-- [x] Double-vote prevention
-
-### 🔄 Phase 3: Security Hardening (IN PROGRESS)
-- [ ] Full ECDSA signature verification
-- [ ] Proper RSA election key generation
-- [ ] PBKDF2 key derivation
-- [ ] Rate limiting
-- [ ] Audit logging
-- [ ] Input validation
-
-### 🔜 Phase 4: Advanced Crypto (PLANNED)
-- [ ] Blind signatures
-- [ ] Merkle trees
-- [ ] BFT consensus
-- [ ] Threshold encryption
-- [ ] Zero-knowledge proofs
-
-### 🔜 Phase 5: Production (PLANNED)
-- [ ] Security audit
-- [ ] Load testing
-- [ ] Deployment automation
-- [ ] Monitoring and alerting
-- [ ] User documentation
+**Detailed Flow:**
+1. User registers → ECDSA + RSA keypairs generated client-side
+2. User selects candidate → Ballot encrypted with election public key
+3. Vote package signed with ECDSA private key
+4. Backend verifies signature → Checks nullifier for duplicates
+5. Encrypted ballot stored in database → Transaction submitted to blockchain
+6. Cryptographic receipt returned to voter
 
 ---
 
 ## 🤝 Contributing
 
-This is currently a development project. Contributions welcome after Phase 3 completion.
+Contributions welcome! Please follow standard Git workflow:
 
-### Development Setup:
-1. Fork the repository
-2. Create feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit changes (`git commit -m 'Add amazing feature'`)
-4. Push to branch (`git push origin feature/amazing-feature`)
-5. Open Pull Request
+1. Fork → 2. Branch → 3. Commit → 4. Push → 5. Pull Request
 
 ---
 
@@ -305,50 +204,36 @@ MIT License - see LICENSE file for details
 
 ## 👥 Team
 
-**Developer:** [Sazid Ahmed/ Nahid Noyon]  
-**Institution:** [Bangladesh University of Professionals]  
-**Course:** [Masters in Information System Security]  
-**Academic Year:** 2023-2024
+**Developers:** Sazid Ahmed, Nahid Noyon  
+**Institution:** Bangladesh University of Professionals  
+**Program:** Masters in Information System Security  
+**Year:** 2023-2024
 
 ---
 
 ## 📧 Contact
 
-For questions or issues:
-- Email: [sazidahmed.official@gmail.com]
-- GitHub Issues: [Repository Issues Page]
-
----
-
-## 🙏 Acknowledgments
-
-- **Web Crypto API** - Browser-native cryptography
-- **Vue.js Team** - Excellent frontend framework
-- **Express.js** - Reliable backend framework
-- **MySQL** - Robust database system
-- **Open Source Community** - Inspiration and libraries
+- **Email:** sazidahmed.official@gmail.com  
+- **GitHub:** [@SazidAhmed](https://github.com/SazidAhmed)  
+- **Issues:** [Report bugs or request features](https://github.com/SazidAhmed/Blockchain-Voting-System-JS/issues)
 
 ---
 
 ## ⚠️ Security Notice
 
-**This is a development project (60% complete).**
+**This is an academic/development project (85% complete).**
 
-Current limitations:
-- Simplified signature verification (development mode)
-- localStorage key storage (not production-secure)
-- Placeholder election keys (not real RSA encryption)
-- No blockchain node running (simulated TX hashes)
+**Before production use, ensure:**
+1. Professional security audit by cryptography experts
+2. Comprehensive penetration testing
+3. Secure key storage (HSM or encrypted key stores)
+4. Legal compliance review for your jurisdiction
+5. Load testing for expected voter volume
 
-**DO NOT use in production elections without:**
-1. Security audit by cryptography experts
-2. Full ECDSA signature verification
-3. PBKDF2/AES-GCM key encryption
-4. Rate limiting and DDoS protection
-5. Comprehensive penetration testing
+**Current Status:** Suitable for demonstrations, testing, and educational purposes.
 
 ---
 
-**Last Updated:** October 22, 2025  
-**Status:** Development Phase - 60% Complete  
-**Next Milestone:** Phase 3 Security Hardening
+**Last Updated:** November 5, 2025  
+**Status:** Infrastructure Complete - 85% Done  
+**Next:** Frontend integration testing & security hardening

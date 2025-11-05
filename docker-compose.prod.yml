@@ -1,0 +1,133 @@
+# Production Docker Compose Configuration
+# Use this for production deployments
+
+version: '3.8'
+
+services:
+  # MySQL Database
+  mysql:
+    image: mysql:8.0
+    container_name: voting-mysql-prod
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./backend/migrations:/docker-entrypoint-initdb.d:ro
+    networks:
+      - voting-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
+      timeout: 20s
+      retries: 10
+      interval: 10s
+    # Don't expose port in production - use internal network only
+
+  # Blockchain Node
+  blockchain-node:
+    build:
+      context: ./blockchain-node
+      dockerfile: Dockerfile
+    container_name: voting-blockchain-prod
+    restart: always
+    environment:
+      NODE_ID: node1
+      PORT: 3001
+      NODE_ENV: production
+    volumes:
+      - blockchain_data:/app/data
+    networks:
+      - voting-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3001/node"]
+      timeout: 10s
+      retries: 5
+      interval: 15s
+    # Don't expose port - internal only
+
+  # Backend API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: voting-backend-prod
+    restart: always
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USER: ${MYSQL_USER}
+      DB_PASSWORD: ${MYSQL_PASSWORD}
+      DB_NAME: ${MYSQL_DATABASE}
+      JWT_SECRET: ${JWT_SECRET}
+      BLOCKCHAIN_NODE_URL: http://blockchain-node:3001
+      FRONTEND_URL: ${FRONTEND_URL}
+    volumes:
+      - ./backend/keys:/app/keys:ro
+    depends_on:
+      mysql:
+        condition: service_healthy
+      blockchain-node:
+        condition: service_healthy
+    networks:
+      - voting-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/api/elections"]
+      timeout: 10s
+      retries: 5
+      interval: 15s
+    command: sh -c "npm run migrate && node index.js"
+    # Don't expose port - use reverse proxy
+
+  # Frontend (Production build with Nginx)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.prod
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL}
+        VITE_BLOCKCHAIN_URL: ${VITE_BLOCKCHAIN_URL}
+    container_name: voting-frontend-prod
+    restart: always
+    depends_on:
+      - backend
+    networks:
+      - voting-network
+    # Don't expose port - use reverse proxy
+
+  # Nginx Reverse Proxy (SSL termination, load balancing)
+  nginx:
+    image: nginx:alpine
+    container_name: voting-nginx
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - ./nginx/logs:/var/log/nginx
+    depends_on:
+      - frontend
+      - backend
+    networks:
+      - voting-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+      timeout: 5s
+      retries: 3
+      interval: 30s
+
+networks:
+  voting-network:
+    driver: bridge
+
+volumes:
+  mysql_data:
+    driver: local
+  blockchain_data:
+    driver: local

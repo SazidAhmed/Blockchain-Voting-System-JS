@@ -32,15 +32,12 @@ CREATE TABLE IF NOT EXISTS audit_logs (
   INDEX idx_action (action),
   INDEX idx_resource_type (resource_type),
   INDEX idx_success (success),
-  INDEX idx_created_at (created_at),
   INDEX idx_user_action (user_id, action),
+  INDEX idx_created_at_success (created_at, success),
   
   -- Foreign key
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- Create index for audit log queries by date range
-CREATE INDEX idx_created_at_success ON audit_logs(created_at, success);
 
 -- Add comments for documentation
 ALTER TABLE audit_logs COMMENT = 'Audit log for all security-relevant events in the voting system';

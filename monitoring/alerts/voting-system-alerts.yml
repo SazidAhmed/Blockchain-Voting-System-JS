@@ -1,0 +1,109 @@
+# Prometheus Alert Rules for Voting System
+
+groups:
+  - name: voting_system_alerts
+    interval: 30s
+    rules:
+      # Service availability alerts
+      - alert: ServiceDown
+        expr: up == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Service {{ $labels.job }} is down"
+          description: "{{ $labels.job }} has been down for more than 1 minute."
+
+      - alert: BackendAPIDown
+        expr: up{job="backend-api"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Backend API is down"
+          description: "The voting system backend API is not responding."
+
+      - alert: BlockchainNodeDown
+        expr: up{job="blockchain-node"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Blockchain node is down"
+          description: "The blockchain node is not responding."
+
+      - alert: MySQLDown
+        expr: up{job="mysql"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "MySQL database is down"
+          description: "MySQL database is not responding."
+
+      # Resource usage alerts
+      - alert: HighCPUUsage
+        expr: rate(container_cpu_usage_seconds_total{container_label_com_docker_compose_project="voting"}[5m]) > 0.8
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High CPU usage on {{ $labels.container_label_com_docker_compose_service }}"
+          description: "Container {{ $labels.container_label_com_docker_compose_service }} is using more than 80% CPU for 5 minutes."
+
+      - alert: HighMemoryUsage
+        expr: (container_memory_usage_bytes{container_label_com_docker_compose_project="voting"} / container_spec_memory_limit_bytes) > 0.85
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High memory usage on {{ $labels.container_label_com_docker_compose_service }}"
+          description: "Container {{ $labels.container_label_com_docker_compose_service }} is using more than 85% of its memory limit."
+
+      - alert: DiskSpaceLow
+        expr: (node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"}) < 0.1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Low disk space"
+          description: "Disk space is below 10% on root filesystem."
+
+      # Container health alerts
+      - alert: ContainerRestarting
+        expr: rate(container_last_seen{container_label_com_docker_compose_project="voting"}[5m]) > 2
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Container {{ $labels.container_label_com_docker_compose_service }} is restarting frequently"
+          description: "Container has restarted more than twice in the last 5 minutes."
+
+      # MySQL specific alerts
+      - alert: MySQLConnectionsHigh
+        expr: mysql_global_status_threads_connected > 100
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High number of MySQL connections"
+          description: "MySQL has more than 100 active connections for 5 minutes."
+
+      - alert: MySQLSlowQueries
+        expr: rate(mysql_global_status_slow_queries[5m]) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "MySQL slow queries detected"
+          description: "MySQL is experiencing slow queries."
+
+      # Application specific alerts (examples)
+      - alert: HighErrorRate
+        expr: rate(http_requests_total{status=~"5.."}[5m]) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High error rate detected"
+          description: "More than 5% of requests are returning 5xx errors."
