@@ -58,14 +58,14 @@ const validateRegistration = [
   body('publicKey')
     .optional()
     .trim()
-    .isHexadecimal().withMessage('Public key must be hexadecimal')
-    .isLength({ min: 64, max: 512 }).withMessage('Invalid public key length'),
+    .isBase64().withMessage('Public key must be base64 encoded')
+    .isLength({ min: 64, max: 1024 }).withMessage('Invalid public key length'),
   
   body('encryptionPublicKey')
     .optional()
     .trim()
-    .isHexadecimal().withMessage('Encryption public key must be hexadecimal')
-    .isLength({ min: 64, max: 1024 }).withMessage('Invalid encryption public key length'),
+    .isBase64().withMessage('Encryption public key must be base64 encoded')
+    .isLength({ min: 64, max: 2048 }).withMessage('Invalid encryption public key length'),
   
   validate
 ];
@@ -98,8 +98,8 @@ const validateLogin = [
  */
 const validateVote = [
   param('id')
-    .isInt({ min: 1 }).withMessage('Invalid election ID')
-    .toInt(),
+    .isInt({ min: 1 }).withMessage('Invalid election ID'),
+    // DO NOT convert to int - keep as string for signature verification
   
   body('encryptedBallot')
     .trim()
@@ -120,18 +120,18 @@ const validateVote = [
   body('publicKey')
     .trim()
     .notEmpty().withMessage('Public key is required')
-    .isHexadecimal().withMessage('Public key must be hexadecimal')
-    .isLength({ min: 64, max: 512 }).withMessage('Invalid public key length'),
+    .isBase64().withMessage('Public key must be base64 encoded')
+    .isLength({ min: 64, max: 1024 }).withMessage('Invalid public key length'),
   
   body('electionId')
     .optional()
-    .isInt({ min: 1 }).withMessage('Invalid election ID')
-    .toInt(),
+    // Keep as string to match frontend signature - DO NOT convert to int
+    .isString().withMessage('Election ID must be a string'),
   
   body('timestamp')
     .optional()
-    .isInt({ min: 1000000000000 }).withMessage('Invalid timestamp')
-    .toInt(),
+    .isInt({ min: 1000000000000 }).withMessage('Invalid timestamp'),
+    // Keep timestamp as-is for signature verification
   
   validate
 ];

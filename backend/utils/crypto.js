@@ -75,31 +75,39 @@ function verifyECDSASignature(publicKeyBase64, signatureBase64, data) {
     // Initialize elliptic curve with P-256 (same as secp256r1)
     const ec = new EC('p256');
     
-    // Parse the JWK public key
-    let publicKeyJWK;
-    try {
-      const publicKeyStr = Buffer.from(publicKeyBase64, 'base64').toString('utf8');
-      publicKeyJWK = JSON.parse(publicKeyStr);
-    } catch (parseError) {
-      console.error('Failed to parse public key JWK:', parseError.message);
+    // Decode the SPKI public key (SubjectPublicKeyInfo format)
+    const publicKeyDer = Buffer.from(publicKeyBase64, 'base64');
+    
+    // SPKI format for P-256:
+    // 0x30 (SEQUENCE) + length + algorithm OID + 0x03 (BIT STRING) + length + 0x00 + 0x04 (uncompressed point) + x + y
+    // We need to extract the x and y coordinates from the DER structure
+    
+    // For P-256, the uncompressed public key is 65 bytes: 0x04 + 32-byte x + 32-byte y
+    // In SPKI, this comes after the algorithm identifier
+    
+    // Find the BIT STRING tag (0x03) which contains the actual public key
+    let keyStart = -1;
+    for (let i = 0; i < publicKeyDer.length - 65; i++) {
+      if (publicKeyDer[i] === 0x03 && publicKeyDer[i + 2] === 0x00 && publicKeyDer[i + 3] === 0x04) {
+        keyStart = i + 3; // Points to 0x04
+        break;
+      }
+    }
+    
+    if (keyStart === -1) {
+      console.error('Failed to parse SPKI public key - could not find uncompressed point marker');
       return false;
     }
     
-    // Validate JWK format
-    if (!publicKeyJWK.x || !publicKeyJWK.y || !publicKeyJWK.kty || publicKeyJWK.kty !== 'EC') {
-      console.error('Invalid JWK format - missing required fields or wrong key type');
+    // Verify the uncompressed point marker (0x04)
+    if (publicKeyDer[keyStart] !== 0x04) {
+      console.error('Invalid public key format - expected uncompressed point (0x04)');
       return false;
     }
     
-    if (!publicKeyJWK.crv || publicKeyJWK.crv !== 'P-256') {
-      console.error('Invalid curve - expected P-256, got:', publicKeyJWK.crv);
-      return false;
-    }
-    
-    // Convert JWK coordinates to hex
-    // Web Crypto uses base64url, but for compatibility we accept base64
-    const xHex = Buffer.from(publicKeyJWK.x, 'base64').toString('hex');
-    const yHex = Buffer.from(publicKeyJWK.y, 'base64').toString('hex');
+    // Extract x and y coordinates (each 32 bytes for P-256)
+    const xHex = publicKeyDer.slice(keyStart + 1, keyStart + 33).toString('hex');
+    const yHex = publicKeyDer.slice(keyStart + 33, keyStart + 65).toString('hex');
     
     // Create public key from coordinates
     const publicKey = ec.keyFromPublic({
@@ -109,12 +117,15 @@ function verifyECDSASignature(publicKeyBase64, signatureBase64, data) {
     
     // Prepare the data for verification (same as was signed)
     const dataStr = typeof data === 'object' ? JSON.stringify(data) : String(data);
+    console.log('🔍 Data being verified:', dataStr.substring(0, 200));
     
     // Hash the data with SHA-256 (matching Web Crypto API)
     const msgHash = crypto.createHash('sha256').update(dataStr, 'utf8').digest();
+    console.log('🔍 Message hash:', msgHash.toString('hex').substring(0, 32) + '...');
     
     // Decode the signature
     const signatureBuffer = Buffer.from(signatureBase64, 'base64');
+    console.log('🔍 Signature length:', signatureBuffer.length, 'bytes');
     
     // Web Crypto API produces signatures in IEEE P1363 format (r || s)
     // Each component is 32 bytes for P-256
@@ -125,6 +136,10 @@ function verifyECDSASignature(publicKeyBase64, signatureBase64, data) {
     
     const r = signatureBuffer.slice(0, 32).toString('hex');
     const s = signatureBuffer.slice(32, 64).toString('hex');
+    console.log('🔍 Signature r:', r.substring(0, 16) + '...');
+    console.log('🔍 Signature s:', s.substring(0, 16) + '...');
+    console.log('🔍 Public key x:', xHex.substring(0, 16) + '...');
+    console.log('🔍 Public key y:', yHex.substring(0, 16) + '...');
     
     const signature = { r, s };
     
@@ -135,6 +150,9 @@ function verifyECDSASignature(publicKeyBase64, signatureBase64, data) {
       console.log('✅ ECDSA signature verified successfully');
     } else {
       console.warn('❌ ECDSA signature verification failed');
+      console.warn('  Data:', dataStr.substring(0, 100));
+      console.warn('  Signature valid format: YES');
+      console.warn('  Public key valid format: YES');
     }
     
     return isValid;

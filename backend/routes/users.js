@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 const { pool } = require('../config/db');
 const { auth } = require('../middleware/auth');
 const { registerLimiter, loginLimiter } = require('../middleware/rateLimiter');
@@ -45,10 +46,13 @@ router.post('/register', registerLimiter, validateRegistration, async (req, res)
       console.warn('Warning: Keys generated server-side. Client-side key generation is preferred.');
     }
 
+    // Generate pseudonym ID (deterministic hash of institution ID for privacy)
+    const pseudonymId = crypto.createHash('sha256').update(institutionId).digest('hex');
+
     // Insert user into database
     const [result] = await pool.query(
-      'INSERT INTO users (institution_id, username, password, role, email, public_key, encryption_public_key) VALUES (?, ?, ?, ?, ?, ?, ?)',
-      [institutionId, username, hashedPassword, role, email, userPublicKey, userEncryptionPublicKey]
+      'INSERT INTO users (institution_id, username, password, role, email, public_key, pseudonym_id, encryption_public_key) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+      [institutionId, username, hashedPassword, role, email, userPublicKey, pseudonymId, userEncryptionPublicKey]
     );
 
     // Create JWT token

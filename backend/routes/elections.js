@@ -291,10 +291,12 @@ router.post('/:id/vote', voteLimiter, auth, validateVote, async (req, res) => {
       console.log('Processing vote with client-side cryptography');
       
       // Verify the signature
+      // IMPORTANT: Use the same data structure as was signed on the client
+      // The client signs electionId as a string (from route param), not an integer
       const voteData = {
         encryptedBallot,
         nullifier,
-        electionId: parseInt(electionId),
+        electionId: electionId, // Keep as string to match frontend signature
         timestamp
       };
       

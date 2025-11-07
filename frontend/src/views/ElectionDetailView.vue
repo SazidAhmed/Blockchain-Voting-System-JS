@@ -141,7 +141,7 @@ export default {
       return this.election.status === 'active'
     },
     totalVotes() {
-      if (!this.election || !this.election.results) return 0
+      if (!this.election || !this.election.results || !Array.isArray(this.election.results)) return 0
       return this.election.results.reduce((sum, result) => sum + result.votes, 0)
     }
   },

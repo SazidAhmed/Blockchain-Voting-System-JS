@@ -200,12 +200,25 @@ app.post('/vote', (req, res) => {
     const vote = req.body;
     
     try {
+        // Generate deterministic transaction hash from vote data
+        const txData = JSON.stringify({
+            electionId: vote.electionId,
+            nullifier: vote.nullifier,
+            encryptedBallot: vote.encryptedBallot,
+            timestamp: vote.timestamp || Date.now()
+        });
+        const transactionHash = crypto.SHA256(txData).toString();
+        
+        // Add transaction hash to vote
+        vote.transactionHash = transactionHash;
+        
         const index = blockchain.addVoteTransaction(vote);
         broadcastMessage({ type: 'VOTE', data: vote });
         
         res.json({ 
             message: `Vote will be added to Block ${index}`,
             receipt: {
+                transactionHash: transactionHash,
                 nullifier: vote.nullifier,
                 timestamp: Date.now(),
                 blockIndex: index

@@ -49,8 +49,8 @@ export default {
   name: 'LoginView',
   data() {
     return {
-      studentId: '',
-      password: ''
+      studentId: 'TEST2025001', // Default for testing
+      password: 'TestPass123!'  // Default for testing
     }
   },
   computed: {
