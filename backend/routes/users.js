@@ -55,9 +55,36 @@ router.post('/register', registerLimiter, validateRegistration, async (req, res)
       [institutionId, username, hashedPassword, role, email, userPublicKey, pseudonymId, userEncryptionPublicKey]
     );
 
+    const userId = result.insertId;
+
+    // Auto-register user for all active and pending elections
+    let electionsRegisteredCount = 0;
+    try {
+      const [activeElections] = await pool.query(
+        "SELECT id FROM elections WHERE status IN ('active', 'pending')"
+      );
+
+      if (activeElections.length > 0) {
+        const registrationPromises = activeElections.map(election => {
+          const registrationToken = crypto.randomBytes(32).toString('hex');
+          return pool.query(
+            'INSERT INTO voter_registrations (user_id, election_id, registration_token, status) VALUES (?, ?, ?, ?)',
+            [userId, election.id, registrationToken, 'registered']
+          );
+        });
+
+        await Promise.all(registrationPromises);
+        electionsRegisteredCount = activeElections.length;
+        console.log(`✅ Auto-registered user ${institutionId} for ${electionsRegisteredCount} election(s)`);
+      }
+    } catch (regError) {
+      console.error('Warning: Failed to auto-register user for elections:', regError);
+      // Don't fail the registration if election registration fails
+    }
+
     // Create JWT token
     const token = jwt.sign(
-      { id: result.insertId, role, institutionId },
+      { id: userId, role, institutionId },
       process.env.JWT_SECRET,
       { expiresIn: '1h' }
     );
@@ -65,14 +92,15 @@ router.post('/register', registerLimiter, validateRegistration, async (req, res)
     const response = {
       token,
       user: {
-        id: result.insertId,
+        id: userId,
         institutionId,
         username,
         role,
         email,
         publicKey: userPublicKey,
         encryptionPublicKey: userEncryptionPublicKey
-      }
+      },
+      electionsRegistered: electionsRegisteredCount
     };
 
     // Only return private key if it was generated server-side (legacy mode)
@@ -82,14 +110,15 @@ router.post('/register', registerLimiter, validateRegistration, async (req, res)
 
     // Log successful registration
     await auditLogger.logUserRegistration(
-      result.insertId,
+      userId,
       institutionId,
       true,
       {
         username,
         role,
         email,
-        keysGeneratedBy: privateKeyToReturn ? 'server' : 'client'
+        keysGeneratedBy: privateKeyToReturn ? 'server' : 'client',
+        electionsAutoRegistered: electionsRegisteredCount
       },
       req
     );
