@@ -1,0 +1,3 @@
+cat TEST_SESSION_LOG.md
+docker-compose logs blockchain-node 2>&1 | tail -30
+bash docker-health-check.sh 2>&1 | head -50

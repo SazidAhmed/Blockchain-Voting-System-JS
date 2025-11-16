@@ -230,6 +230,23 @@ app.get('/peers', (req, res) => {
     res.json(peerManager.getStats());
 });
 
+// Get peer discovery status (detailed)
+app.get('/peers/discovery-status', (req, res) => {
+    const stats = peerManager.getStats();
+    const peersEnv = process.env.PEERS ? process.env.PEERS.split(',').filter(p => p.trim()) : [];
+    
+    res.json({
+        discoveryEnabled: !!process.env.PEERS,
+        configuredPeers: peersEnv.length,
+        connectedPeers: stats.totalPeers,
+        healthyPeers: stats.healthyPeers,
+        unhealthyPeers: stats.unhealthyPeers,
+        peerDetails: stats.peers,
+        configuredPeerUrls: peersEnv,
+        timestamp: Date.now()
+    });
+});
+
 // Get block production metrics
 app.get('/metrics/blocks', (req, res) => {
     res.json(nodeMonitor.getBlockProductionMetrics());
@@ -671,23 +688,53 @@ server.listen(PORT, () => {
 // Connect to peer nodes if specified
 if (process.env.PEERS) {
     const peers = process.env.PEERS.split(',').filter(p => p.trim());
-    console.log(`Attempting to connect to ${peers.length} peers...`);
+    console.log(`\n🔗 PEER DISCOVERY: Attempting to connect to ${peers.length} peers...`);
+    console.log(`📍 Configured peers: ${peers.join(', ')}\n`);
     
+    let connectionIndex = 0;
     peers.forEach((peerUrl) => {
         const cleanUrl = peerUrl.trim();
         if (cleanUrl) {
+            const delay = connectionIndex * 2000; // Stagger by 2 seconds
             setTimeout(() => {
+                const peerHost = cleanUrl.split('//')[1];
+                const nodeIdFromHost = peerHost ? peerHost.split(':')[0] : `peer_${cleanUrl}`;
+                
+                console.log(`[${connectionIndex + 1}/${peers.length}] Connecting to ${cleanUrl}...`);
+                
                 peerManager.connectToPeer(cleanUrl, {
-                    nodeId: `peer_${cleanUrl}`,
+                    nodeId: nodeIdFromHost,
                     port: cleanUrl.split(':').pop()
-                }).catch(err => {
-                    console.error(`Failed to connect to ${cleanUrl}:`, err.message);
+                })
+                .then(() => {
+                    console.log(`✅ [${connectionIndex + 1}/${peers.length}] Successfully connected to ${cleanUrl}`);
+                })
+                .catch(err => {
+                    console.error(`❌ [${connectionIndex + 1}/${peers.length}] Failed to connect to ${cleanUrl}: ${err.message}`);
+                    // Connection will retry automatically via exponential backoff
                 });
-            }, 1000); // Stagger connection attempts
+            }, delay);
+            connectionIndex++;
         }
     });
+    
+    // Show peer discovery status after all connections have been attempted
+    setTimeout(() => {
+        console.log('\n📊 PEER DISCOVERY STATUS:');
+        const stats = peerManager.getStats();
+        console.log(`   Connected peers: ${stats.healthyPeers + stats.unhealthyPeers}/${peers.length}`);
+        console.log(`   Healthy: ${stats.healthyPeers}`);
+        console.log(`   Unhealthy: ${stats.unhealthyPeers}`);
+        if (stats.peers && stats.peers.length > 0) {
+            console.log('   Peer details:');
+            stats.peers.forEach(p => {
+                console.log(`     - ${p.nodeId}: ${p.health?.status || 'unknown'}`);
+            });
+        }
+        console.log('');
+    }, (peers.length * 2000) + 1000);
 } else {
-    console.log('No peers configured (PEERS environment variable not set)');
+    console.log('⚠️  No peers configured (PEERS environment variable not set)');
 }
 
 // Graceful shutdown
