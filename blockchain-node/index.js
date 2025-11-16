@@ -7,9 +7,12 @@ const socketIo = require('socket.io');
 const Blockchain = require('./blockchain');
 const Block = require('./block');
 const { MerkleTree, MerkleTreeUtils } = require('./merkleTree');
+const { PeerManager, MessageTypes } = require('./peerManager');
+const NodeMonitor = require('./nodeMonitor');
 
 // Get node ID from environment or use default
 const nodeId = process.env.NODE_ID || 'node1';
+const nodeType = process.env.NODE_TYPE || 'validator';
 const PORT = process.env.PORT || 3001;
 
 // Create express app
@@ -21,11 +24,21 @@ app.use(cors());
 const server = http.createServer(app);
 
 // Initialize Socket.io for P2P communication
-const io = socketIo(server);
-const sockets = [];
+const io = socketIo(server, {
+    cors: {
+        origin: "*",
+        methods: ["GET", "POST"]
+    }
+});
 
 // Initialize blockchain
 const blockchain = new Blockchain(nodeId);
+
+// Initialize PeerManager
+const peerManager = new PeerManager(nodeId, nodeType);
+
+// Initialize NodeMonitor
+const nodeMonitor = new NodeMonitor(nodeId, nodeType);
 
 // Generate a simple keypair for this node (for development only)
 // In production, this would use proper cryptographic key generation
@@ -36,6 +49,21 @@ const nodeKeyPair = {
 
 // Register this node as a validator
 blockchain.registerValidator(nodeId, nodeKeyPair.publicKey);
+
+// Listen for peer manager events
+peerManager.on('peer_connected', (data) => {
+    console.log(`[PEER] Connected: ${data.nodeId}`);
+});
+
+peerManager.on('peer_message', (data) => {
+    handlePeerMessage(data.nodeId, data.message);
+});
+
+peerManager.on('peer_unhealthy', (data) => {
+    console.warn(`[PEER] Unhealthy: ${data.nodeId} - ${data.reason}`);
+});
+
+const sockets = [];
 
 // Socket.io connection handling
 io.on('connection', (socket) => {
@@ -61,72 +89,110 @@ io.on('connection', (socket) => {
     socket.emit('message', { type: 'CHAIN', data: blockchain.chain });
 });
 
-// Handle messages from peers
-function handleMessage(socket, message) {
+// Handle messages from peers and socket connections
+function handleMessage(senderId, message) {
+    if (!message || !message.type) {
+        console.warn('Invalid message received');
+        return;
+    }
+
     switch (message.type) {
-        case 'CHAIN':
+        case MessageTypes.NODE_JOIN:
+            console.log(`[MSG] Node join: ${message.data.nodeId}`);
+            // Node join handshake handled by peer manager
+            break;
+
+        case MessageTypes.CHAIN_REQUEST:
+            // Send current blockchain to requesting node
+            peerManager.sendChainToPeer(senderId, blockchain.chain);
+            break;
+
+        case MessageTypes.CHAIN_RESPONSE:
             // Handle receiving a blockchain
             const receivedChain = message.data;
-            if (receivedChain.length > blockchain.chain.length) {
-                console.log('Received chain is longer than current chain. Validating...');
+            if (receivedChain && receivedChain.length > blockchain.chain.length) {
+                console.log('[MSG] Received longer chain. Validating...');
                 // In a real implementation, we would validate the received chain
                 blockchain.chain = receivedChain;
                 blockchain.saveChain();
-                console.log('Chain replaced');
+                nodeMonitor.updateChainHeight(receivedChain.length);
+                console.log('Chain synchronized');
             }
             break;
-            
-        case 'TRANSACTION':
-            // Handle receiving a new transaction
-            console.log('Received new transaction');
-            try {
-                blockchain.addTransaction(message.data);
-                broadcastMessage({ type: 'TRANSACTION', data: message.data });
-            } catch (error) {
-                console.error('Error adding transaction:', error.message);
-            }
+
+        case MessageTypes.HEARTBEAT:
+            // Respond to heartbeat
+            peerManager.sendToPeer(senderId, {
+                type: MessageTypes.HEARTBEAT_RESPONSE,
+                timestamp: Date.now()
+            });
             break;
-            
-        case 'VOTE':
+
+        case MessageTypes.HEARTBEAT_RESPONSE:
+            peerManager.handleHeartbeatResponse(senderId);
+            break;
+
+        case MessageTypes.VOTE_BROADCAST:
             // Handle receiving a new vote
-            console.log('Received new vote');
+            console.log('[MSG] Received vote broadcast');
             try {
                 blockchain.addVoteTransaction(message.data);
-                broadcastMessage({ type: 'VOTE', data: message.data });
+                nodeMonitor.recordVoteProcessed();
+                // Broadcast to other peers
+                peerManager.broadcastVote(message.data);
             } catch (error) {
                 console.error('Error adding vote:', error.message);
             }
             break;
-            
-        case 'MINE':
-            // Handle mining request
-            console.log('Received mining request');
-            const newBlock = blockchain.createBlock(nodeId);
-            newBlock.signBlock(nodeKeyPair.privateKey);
-            
-            if (blockchain.addBlock(newBlock, nodeId, newBlock.signature)) {
-                broadcastMessage({ type: 'BLOCK', data: newBlock });
-                console.log('New block mined and added to chain');
-            }
-            break;
-            
-        case 'BLOCK':
+
+        case MessageTypes.BLOCK_BROADCAST:
             // Handle receiving a new block
-            console.log('Received new block');
+            console.log('[MSG] Received block broadcast');
             const receivedBlock = message.data;
             if (blockchain.addBlock(receivedBlock, receivedBlock.validator, receivedBlock.signature)) {
-                broadcastMessage({ type: 'BLOCK', data: receivedBlock });
+                nodeMonitor.recordBlockProduced(receivedBlock);
+                nodeMonitor.updateChainHeight(blockchain.chain.length);
+                // Broadcast to other peers
+                peerManager.broadcastBlock(receivedBlock);
                 console.log('New block added to chain');
             }
             break;
+
+        case 'TRANSACTION':
+            // Handle receiving a new transaction
+            console.log('[MSG] Received transaction');
+            try {
+                blockchain.addTransaction(message.data);
+                nodeMonitor.recordTransactionProcessed();
+                // Broadcast to other peers
+                peerManager.broadcastMessage(message);
+            } catch (error) {
+                console.error('Error adding transaction:', error.message);
+            }
+            break;
+
+        case 'MINE':
+            // Handle mining request
+            console.log('[MSG] Received mining request');
+            const newBlock = blockchain.createBlock(nodeId);
+            newBlock.signBlock(nodeKeyPair.privateKey);
+
+            if (blockchain.addBlock(newBlock, nodeId, newBlock.signature)) {
+                nodeMonitor.recordBlockProduced(newBlock);
+                nodeMonitor.updateChainHeight(blockchain.chain.length);
+                peerManager.broadcastBlock(newBlock);
+                console.log('New block mined and added to chain');
+            }
+            break;
+
+        default:
+            console.log(`[MSG] Unknown message type: ${message.type}`);
     }
 }
 
-// Broadcast message to all connected peers
-function broadcastMessage(message) {
-    sockets.forEach(socket => {
-        socket.emit('message', message);
-    });
+// Handle peer messages
+function handlePeerMessage(peerId, message) {
+    handleMessage(peerId, message);
 }
 
 // API endpoints
@@ -143,9 +209,35 @@ app.get('/chain', (req, res) => {
 app.get('/node', (req, res) => {
     res.json({
         nodeId: nodeId,
+        nodeType: nodeType,
         validators: Array.from(blockchain.validators.keys()),
         peers: blockchain.nodes.size
     });
+});
+
+// Get node status (comprehensive)
+app.get('/node/status', (req, res) => {
+    res.json(nodeMonitor.getNodeStatus());
+});
+
+// Get network status
+app.get('/network/status', (req, res) => {
+    res.json(nodeMonitor.getNetworkStatus(peerManager, blockchain));
+});
+
+// Get peer information
+app.get('/peers', (req, res) => {
+    res.json(peerManager.getStats());
+});
+
+// Get block production metrics
+app.get('/metrics/blocks', (req, res) => {
+    res.json(nodeMonitor.getBlockProductionMetrics());
+});
+
+// Get transaction metrics
+app.get('/metrics/transactions', (req, res) => {
+    res.json(nodeMonitor.getTransactionMetrics());
 });
 
 // Register a new node
@@ -188,7 +280,14 @@ app.post('/transactions/new', (req, res) => {
     
     try {
         const index = blockchain.addTransaction(transaction);
-        broadcastMessage({ type: 'TRANSACTION', data: transaction });
+        nodeMonitor.recordTransactionProcessed();
+        
+        // Broadcast to peers
+        peerManager.broadcastMessage({
+            type: 'TRANSACTION',
+            data: transaction,
+            timestamp: Date.now()
+        });
         
         res.json({ message: `Transaction will be added to Block ${index}` });
     } catch (error) {
@@ -214,7 +313,10 @@ app.post('/vote', (req, res) => {
         vote.transactionHash = transactionHash;
         
         const index = blockchain.addVoteTransaction(vote);
-        broadcastMessage({ type: 'VOTE', data: vote });
+        nodeMonitor.recordVoteProcessed();
+        
+        // Broadcast to peers
+        peerManager.broadcastVote(vote);
         
         res.json({ 
             message: `Vote will be added to Block ${index}`,
@@ -236,7 +338,11 @@ app.get('/mine', (req, res) => {
     newBlock.signBlock(nodeKeyPair.privateKey);
     
     if (blockchain.addBlock(newBlock, nodeId, newBlock.signature)) {
-        broadcastMessage({ type: 'BLOCK', data: newBlock });
+        nodeMonitor.recordBlockProduced(newBlock);
+        nodeMonitor.updateChainHeight(blockchain.chain.length);
+        
+        // Broadcast to peers
+        peerManager.broadcastBlock(newBlock);
         
         res.json({
             message: 'New block forged',
@@ -550,25 +656,48 @@ app.post('/merkle/batch-verify', (req, res) => {
 
 // Start the server
 server.listen(PORT, () => {
-    console.log(`Blockchain node server running on port ${PORT}`);
-    console.log(`Node ID: ${nodeId}`);
+    console.log(`
+╔════════════════════════════════════════════╗
+║  Blockchain Node Server Started            ║
+╠════════════════════════════════════════════╣
+║  Node ID: ${nodeId.padEnd(40)} ║
+║  Node Type: ${nodeType.padEnd(37)} ║
+║  Port: ${PORT.toString().padEnd(39)} ║
+║  Timestamp: ${new Date().toISOString()} ║
+╚════════════════════════════════════════════╝
+    `);
 });
 
-// Connect to other nodes if specified
+// Connect to peer nodes if specified
 if (process.env.PEERS) {
-    const peers = process.env.PEERS.split(',');
-    peers.forEach(peer => {
-        const socket = require('socket.io-client')(peer);
-        sockets.push(socket);
-        
-        socket.on('connect', () => {
-            console.log(`Connected to peer: ${peer}`);
-            socket.emit('message', { type: 'CHAIN', data: blockchain.chain });
-        });
-        
-        socket.on('message', (message) => {
-            console.log('Received message from peer:', message);
-            handleMessage(socket, message);
-        });
+    const peers = process.env.PEERS.split(',').filter(p => p.trim());
+    console.log(`Attempting to connect to ${peers.length} peers...`);
+    
+    peers.forEach((peerUrl) => {
+        const cleanUrl = peerUrl.trim();
+        if (cleanUrl) {
+            setTimeout(() => {
+                peerManager.connectToPeer(cleanUrl, {
+                    nodeId: `peer_${cleanUrl}`,
+                    port: cleanUrl.split(':').pop()
+                }).catch(err => {
+                    console.error(`Failed to connect to ${cleanUrl}:`, err.message);
+                });
+            }, 1000); // Stagger connection attempts
+        }
     });
+} else {
+    console.log('No peers configured (PEERS environment variable not set)');
 }
+
+// Graceful shutdown
+process.on('SIGINT', () => {
+    console.log('\nShutting down gracefully...');
+    peerManager.shutdown();
+    server.close(() => {
+        console.log('Server closed');
+        process.exit(0);
+    });
+});
+
+module.exports = { app, server, blockchain, peerManager, nodeMonitor };
