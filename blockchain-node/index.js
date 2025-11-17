@@ -9,6 +9,7 @@ const Block = require('./block');
 const { MerkleTree, MerkleTreeUtils } = require('./merkleTree');
 const { PeerManager, MessageTypes } = require('./peerManager');
 const NodeMonitor = require('./nodeMonitor');
+const PrometheusMetrics = require('./prometheusMetrics');
 
 // Get node ID from environment or use default
 const nodeId = process.env.NODE_ID || 'node1';
@@ -40,7 +41,8 @@ const peerManager = new PeerManager(nodeId, nodeType);
 // Initialize NodeMonitor
 const nodeMonitor = new NodeMonitor(nodeId, nodeType);
 
-// Generate a simple keypair for this node (for development only)
+// Initialize Prometheus Metrics
+const metrics = new PrometheusMetrics(nodeId, nodeType);
 // In production, this would use proper cryptographic key generation
 const nodeKeyPair = {
     privateKey: crypto.lib.WordArray.random(32).toString(),
@@ -53,6 +55,9 @@ blockchain.registerValidator(nodeId, nodeKeyPair.publicKey);
 // Listen for peer manager events
 peerManager.on('peer_connected', (data) => {
     console.log(`[PEER] Connected: ${data.nodeId}`);
+    // Update peer metrics
+    const stats = peerManager.getStats();
+    metrics.updatePeerMetrics(stats.peers || [], stats.healthyPeers, stats.unhealthyPeers);
 });
 
 peerManager.on('peer_message', (data) => {
@@ -61,6 +66,9 @@ peerManager.on('peer_message', (data) => {
 
 peerManager.on('peer_unhealthy', (data) => {
     console.warn(`[PEER] Unhealthy: ${data.nodeId} - ${data.reason}`);
+    // Update peer metrics
+    const stats = peerManager.getStats();
+    metrics.updatePeerMetrics(stats.peers || [], stats.healthyPeers, stats.unhealthyPeers);
 });
 
 const sockets = [];
@@ -138,6 +146,7 @@ function handleMessage(senderId, message) {
             try {
                 blockchain.addVoteTransaction(message.data);
                 nodeMonitor.recordVoteProcessed();
+                metrics.recordVoteProcessed(); // Record vote metric
                 // Broadcast to other peers
                 peerManager.broadcastVote(message.data);
             } catch (error) {
@@ -152,6 +161,7 @@ function handleMessage(senderId, message) {
             if (blockchain.addBlock(receivedBlock, receivedBlock.validator, receivedBlock.signature)) {
                 nodeMonitor.recordBlockProduced(receivedBlock);
                 nodeMonitor.updateChainHeight(blockchain.chain.length);
+                metrics.recordBlockReceived(receivedBlock); // Record block received metric
                 // Broadcast to other peers
                 peerManager.broadcastBlock(receivedBlock);
                 console.log('New block added to chain');
@@ -164,6 +174,7 @@ function handleMessage(senderId, message) {
             try {
                 blockchain.addTransaction(message.data);
                 nodeMonitor.recordTransactionProcessed();
+                metrics.recordTransactionProcessed(0); // Record transaction metric
                 // Broadcast to other peers
                 peerManager.broadcastMessage(message);
             } catch (error) {
@@ -180,6 +191,7 @@ function handleMessage(senderId, message) {
             if (blockchain.addBlock(newBlock, nodeId, newBlock.signature)) {
                 nodeMonitor.recordBlockProduced(newBlock);
                 nodeMonitor.updateChainHeight(blockchain.chain.length);
+                metrics.recordBlockCreated(newBlock); // Record block created metric
                 peerManager.broadcastBlock(newBlock);
                 console.log('New block mined and added to chain');
             }
@@ -257,6 +269,17 @@ app.get('/metrics/transactions', (req, res) => {
     res.json(nodeMonitor.getTransactionMetrics());
 });
 
+// Prometheus metrics endpoint (Prometheus-format)
+app.get('/metrics', (req, res) => {
+    res.set('Content-Type', 'text/plain; charset=utf-8');
+    res.send(metrics.generateMetrics());
+});
+
+// Prometheus metrics endpoint (JSON format for API calls)
+app.get('/metrics/json', (req, res) => {
+    res.json(metrics.getMetricsJSON());
+});
+
 // Register a new node
 app.post('/nodes/register', (req, res) => {
     const nodes = req.body.nodes;
@@ -298,6 +321,7 @@ app.post('/transactions/new', (req, res) => {
     try {
         const index = blockchain.addTransaction(transaction);
         nodeMonitor.recordTransactionProcessed();
+        metrics.recordTransactionProcessed(0); // latency will be 0 initially
         
         // Broadcast to peers
         peerManager.broadcastMessage({
@@ -331,6 +355,7 @@ app.post('/vote', (req, res) => {
         
         const index = blockchain.addVoteTransaction(vote);
         nodeMonitor.recordVoteProcessed();
+        metrics.recordVoteProcessed(); // Record vote processed
         
         // Broadcast to peers
         peerManager.broadcastVote(vote);
@@ -357,6 +382,9 @@ app.get('/mine', (req, res) => {
     if (blockchain.addBlock(newBlock, nodeId, newBlock.signature)) {
         nodeMonitor.recordBlockProduced(newBlock);
         nodeMonitor.updateChainHeight(blockchain.chain.length);
+        
+        // Record metrics
+        metrics.recordBlockCreated(newBlock);
         
         // Broadcast to peers
         peerManager.broadcastBlock(newBlock);
