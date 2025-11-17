@@ -64,9 +64,14 @@ scrape_configs:
   # Blockchain Node metrics (if implemented)
   - job_name: 'blockchain-node'
     static_configs:
-      - targets: ['blockchain-node:3001']
+      - targets: 
+          - 'voting-blockchain-node-1:3001'
+          - 'voting-blockchain-node-2:3002'
+          - 'voting-blockchain-node-3:3003'
+          - 'voting-blockchain-node-4:3004'
+          - 'voting-blockchain-node-5:3005'
     metrics_path: '/metrics'
-    scrape_interval: 30s
+    scrape_interval: 15s
 
   # Docker daemon metrics (if Docker metrics are enabled)
   - job_name: 'docker'
