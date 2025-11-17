@@ -1,3 +1,18 @@
 cat TEST_SESSION_LOG.md
 docker-compose logs blockchain-node 2>&1 | tail -30
 bash docker-health-check.sh 2>&1 | head -50
+
+
+Byzantine attacks (real-time detection)
+Network consensus status (4/5 threshold)
+Transaction throughput and latency
+Peer connectivity and health
+Chain synchronization
+Node uptime and performance
+System resources (CPU, memory, I/O)
+
+Dashboard: http://localhost:5173/monitor
+Prometheus: http://localhost:9090
+Grafana: http://localhost:3030
+
+cd /h/Voting && docker-compose -f docker-compose.multi-node.yml -f docker-compose.monitoring.yml up -d 2>&1 | head -50

@@ -34,7 +34,7 @@ services:
     ports:
       - "9090:9090"
     networks:
-      - voting-network
+      - voting-blockchain-network
       - monitoring
     depends_on:
       - cadvisor
@@ -108,12 +108,18 @@ services:
     image: prom/mysqld-exporter:latest
     container_name: voting-mysql-exporter
     restart: unless-stopped
+    command:
+      - "--collect.global_status"
+      - "--collect.info_schema.innodb_stats"
+      - "--collect.info_schema.innodb_trx"
+      - "--collect.info_schema.innodb_cmp"
+      - "--collect.info_schema.innodb_cmpmem"
     environment:
-      - DATA_SOURCE_NAME=voting_user:voting_pass@(mysql:3306)/voting_db
+      - DATA_SOURCE_NAME=voting_user:voting_pass@(voting-mysql-multinode:3306)/voting_db
     ports:
       - "9104:9104"
     networks:
-      - voting-network
+      - voting-blockchain-network
       - monitoring
     depends_on:
       - mysql
@@ -122,6 +128,10 @@ networks:
   monitoring:
     driver: bridge
     name: voting-monitoring
+  voting-network:
+    driver: bridge
+    name: voting-blockchain-network
+    external: true
 
 volumes:
   prometheus_data:
