@@ -118,7 +118,7 @@
         "gridPos": {"h": 8, "w": 6, "x": 0, "y": 8},
         "targets": [
           {
-            "expr": "count(container_memory_usage_bytes{name!=\"\"})",
+            "expr": "count(up{job=\"cadvisor\"})",
             "refId": "A"
           }
         ],
@@ -189,8 +189,8 @@
         "gridPos": {"h": 10, "w": 12, "x": 0, "y": 16},
         "targets": [
           {
-            "expr": "sum(rate(container_cpu_usage_seconds_total[5m])) by (name)",
-            "legendFormat": "{{ name }}",
+            "expr": "rate(container_cpu_usage_seconds_total[5m])",
+            "legendFormat": "CPU",
             "refId": "A"
           }
         ],
@@ -206,8 +206,8 @@
         "gridPos": {"h": 10, "w": 12, "x": 12, "y": 16},
         "targets": [
           {
-            "expr": "sum(container_memory_usage_bytes) by (name) / 1024 / 1024",
-            "legendFormat": "{{ name }}",
+            "expr": "container_memory_usage_bytes / 1024 / 1024",
+            "legendFormat": "Memory (MB)",
             "refId": "A"
           }
         ],
