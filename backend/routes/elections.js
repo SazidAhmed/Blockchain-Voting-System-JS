@@ -7,6 +7,7 @@ const { voteLimiter } = require('../middleware/rateLimiter');
 const { validateVote, validateElectionId, validateCreateElection } = require('../middleware/validation');
 const { generateToken, generateNullifier, encryptBallot, signData, verifyECDSASignature } = require('../utils/crypto');
 const auditLogger = require('../utils/auditLogger');
+const AdminAuditLogger = require('../utils/adminAuditLogger');
 const axios = require('axios');
 require('dotenv').config();
 
@@ -15,36 +16,86 @@ const blockchainApi = axios.create({
   baseURL: process.env.BLOCKCHAIN_NODE_URL
 });
 
+// Admin Audit Logger
+const adminLogger = new AdminAuditLogger(pool);
+
+// Helper function to get client IP
+function getClientIp(req) {
+  return req.headers['x-forwarded-for']?.split(',')[0] || req.connection.remoteAddress || 'unknown';
+}
+
 // @route   POST /api/elections
 // @desc    Create a new election
 // @access  Admin only
 router.post('/', adminAuth, async (req, res) => {
   try {
     const { title, description, startDate, endDate, candidates } = req.body;
+    const adminId = req.user.id;
+    const clientIp = getClientIp(req);
 
     // Validate input
     if (!title || !startDate || !endDate || !candidates || candidates.length === 0) {
+      await adminLogger.logFailedAction(
+        adminId, 'CREATE_ELECTION', 'elections', null,
+        'Invalid input: missing required fields',
+        { ipAddress: clientIp }
+      );
       return res.status(400).json({ message: 'Please provide all required fields' });
     }
 
-    // Generate a public key for the election (in production, this would be a threshold key)
-    const electionPublicKey = require('crypto').randomBytes(32).toString('hex');
+    // Validate dates
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    if (start >= end) {
+      await adminLogger.logFailedAction(
+        adminId, 'CREATE_ELECTION', 'elections', null,
+        'Invalid dates: start date must be before end date',
+        { ipAddress: clientIp }
+      );
+      return res.status(400).json({ message: 'Start date must be before end date' });
+    }
+
+    // Generate a public key for the election
+    const electionPublicKey = crypto.randomBytes(32).toString('hex');
 
     // Insert election into database
     const [result] = await pool.query(
-      'INSERT INTO elections (title, description, start_date, end_date, status, created_by, public_key) VALUES (?, ?, ?, ?, ?, ?, ?)',
-      [title, description, startDate, endDate, 'pending', req.user.id, electionPublicKey]
+      'INSERT INTO elections (title, description, start_date, end_date, status, created_by, public_key, is_locked) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+      [title, description, startDate, endDate, 'pending', adminId, electionPublicKey, false]
     );
 
     const electionId = result.insertId;
+    const candidateIds = [];
 
     // Insert candidates
     for (const candidate of candidates) {
-      await pool.query(
-        'INSERT INTO candidates (election_id, name, description) VALUES (?, ?, ?)',
-        [electionId, candidate.name, candidate.description]
+      const [candResult] = await pool.query(
+        'INSERT INTO candidates (election_id, name, description, is_locked) VALUES (?, ?, ?, ?)',
+        [electionId, candidate.name, candidate.description, false]
       );
+      candidateIds.push(candResult.insertId);
     }
+
+    // Log the election creation
+    await adminLogger.logAdminAction(
+      adminId, 'CREATE_ELECTION', 'elections', electionId,
+      {
+        title,
+        description,
+        startDate,
+        endDate,
+        candidatesCount: candidates.length,
+        candidateIds
+      },
+      { ipAddress: clientIp, userAgent: req.get('user-agent') }
+    );
+
+    // Log security event
+    await adminLogger.logSecurityEvent(
+      adminId, 'ELECTION_CREATED', 'LOW',
+      `Election #${electionId} created with ${candidates.length} candidates`,
+      { electionId, title }
+    );
 
     res.status(201).json({
       message: 'Election created successfully',
@@ -56,6 +107,11 @@ router.post('/', adminAuth, async (req, res) => {
     });
   } catch (err) {
     console.error(err);
+    await adminLogger.logFailedAction(
+      req.user.id, 'CREATE_ELECTION', 'elections', null,
+      `Server error: ${err.message}`,
+      { ipAddress: getClientIp(req) }
+    );
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -507,6 +563,269 @@ router.patch('/:id/status', adminAuth, async (req, res) => {
     );
 
     res.json({ message: 'Election status updated successfully', status });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// @route   PATCH /api/elections/:id/lock
+// @desc    Lock election (prevent mutations after start)
+// @access  Admin only
+router.patch('/:id/lock', adminAuth, async (req, res) => {
+  try {
+    const electionId = req.params.id;
+    const adminId = req.user.id;
+    const clientIp = getClientIp(req);
+
+    // Check election exists
+    const [elections] = await pool.query('SELECT * FROM elections WHERE id = ?', [electionId]);
+    if (elections.length === 0) {
+      return res.status(404).json({ message: 'Election not found' });
+    }
+
+    const election = elections[0];
+
+    // Lock the election
+    const now = new Date();
+    await pool.query(
+      'UPDATE elections SET is_locked = TRUE, locked_at = ?, locked_by = ? WHERE id = ?',
+      [now, adminId, electionId]
+    );
+
+    // Lock all candidates
+    await pool.query(
+      'UPDATE candidates SET is_locked = TRUE, locked_at = ? WHERE election_id = ?',
+      [now, electionId]
+    );
+
+    // Log the action
+    await adminLogger.logAdminAction(
+      adminId, 'LOCK_ELECTION', 'elections', electionId,
+      { previousStatus: election.status, lockedAt: now },
+      { ipAddress: clientIp }
+    );
+
+    await adminLogger.logSecurityEvent(
+      adminId, 'ELECTION_LOCKED', 'MEDIUM',
+      `Election #${electionId} locked - no more mutations allowed`,
+      { electionId }
+    );
+
+    res.json({ message: 'Election locked successfully' });
+  } catch (err) {
+    console.error(err);
+    await adminLogger.logFailedAction(
+      req.user.id, 'LOCK_ELECTION', 'elections', req.params.id,
+      err.message,
+      { ipAddress: getClientIp(req) }
+    );
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// @route   POST /api/elections/:id/candidates
+// @desc    Add candidate to election (before election starts)
+// @access  Admin only
+router.post('/:id/candidates', adminAuth, async (req, res) => {
+  try {
+    const { name, description } = req.body;
+    const electionId = req.params.id;
+    const adminId = req.user.id;
+    const clientIp = getClientIp(req);
+
+    if (!name) {
+      await adminLogger.logFailedAction(
+        adminId, 'ADD_CANDIDATE', 'candidates', null,
+        'Candidate name is required',
+        { electionId, ipAddress: clientIp }
+      );
+      return res.status(400).json({ message: 'Candidate name is required' });
+    }
+
+    // Check election exists and is not locked
+    const [elections] = await pool.query('SELECT * FROM elections WHERE id = ?', [electionId]);
+    if (elections.length === 0) {
+      return res.status(404).json({ message: 'Election not found' });
+    }
+
+    const election = elections[0];
+
+    // Check if election is locked
+    if (election.is_locked || election.status === 'active') {
+      await adminLogger.logFailedAction(
+        adminId, 'ADD_CANDIDATE', 'candidates', null,
+        'Cannot add candidate - election is locked or active',
+        { electionId, status: election.status, isLocked: election.is_locked, ipAddress: clientIp }
+      );
+      
+      await adminLogger.logSecurityEvent(
+        adminId, 'UNAUTHORIZED_MUTATION_ATTEMPT', 'HIGH',
+        `Attempt to add candidate to locked/active election #${electionId}`,
+        { electionId, status: election.status }
+      );
+
+      return res.status(403).json({ 
+        message: 'Cannot add candidate - election is locked or active' 
+      });
+    }
+
+    const [result] = await pool.query(
+      'INSERT INTO candidates (election_id, name, description, is_locked) VALUES (?, ?, ?, ?)',
+      [electionId, name, description, false]
+    );
+
+    const candidateId = result.insertId;
+
+    // Log the action
+    await adminLogger.logAdminAction(
+      adminId, 'ADD_CANDIDATE', 'candidates', candidateId,
+      { electionId, name, description },
+      { ipAddress: clientIp, userAgent: req.get('user-agent') }
+    );
+
+    res.status(201).json({
+      message: 'Candidate added successfully',
+      candidateId,
+      name,
+      description
+    });
+  } catch (err) {
+    console.error(err);
+    await adminLogger.logFailedAction(
+      req.user.id, 'ADD_CANDIDATE', 'candidates', null,
+      err.message,
+      { electionId: req.params.id, ipAddress: getClientIp(req) }
+    );
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// @route   DELETE /api/candidates/:id
+// @desc    Delete a candidate (before election starts)
+// @access  Admin only
+router.delete('/:electionId/candidates/:candidateId', adminAuth, async (req, res) => {
+  try {
+    const { electionId, candidateId } = req.params;
+    const adminId = req.user.id;
+    const clientIp = getClientIp(req);
+
+    // Get candidate info
+    const [candidates] = await pool.query('SELECT * FROM candidates WHERE id = ? AND election_id = ?', [candidateId, electionId]);
+    if (candidates.length === 0) {
+      return res.status(404).json({ message: 'Candidate not found' });
+    }
+
+    const candidate = candidates[0];
+
+    // Check election status
+    const [elections] = await pool.query('SELECT * FROM elections WHERE id = ?', [electionId]);
+    if (elections.length === 0) {
+      return res.status(404).json({ message: 'Election not found' });
+    }
+
+    const election = elections[0];
+
+    // Check if election is locked
+    if (election.is_locked || election.status === 'active') {
+      await adminLogger.logFailedAction(
+        adminId, 'DELETE_CANDIDATE', 'candidates', candidateId,
+        'Cannot delete candidate - election is locked or active',
+        { electionId, status: election.status, isLocked: election.is_locked, ipAddress: clientIp }
+      );
+
+      await adminLogger.logSecurityEvent(
+        adminId, 'UNAUTHORIZED_MUTATION_ATTEMPT', 'HIGH',
+        `Attempt to delete candidate from locked/active election #${electionId}`,
+        { electionId, candidateId, status: election.status }
+      );
+
+      return res.status(403).json({ 
+        message: 'Cannot delete candidate - election is locked or active' 
+      });
+    }
+
+    // Delete candidate
+    await pool.query('DELETE FROM candidates WHERE id = ?', [candidateId]);
+
+    // Log the action
+    await adminLogger.logAdminAction(
+      adminId, 'DELETE_CANDIDATE', 'candidates', candidateId,
+      { electionId, candidateName: candidate.name },
+      { ipAddress: clientIp, userAgent: req.get('user-agent') }
+    );
+
+    res.json({ message: 'Candidate deleted successfully' });
+  } catch (err) {
+    console.error(err);
+    await adminLogger.logFailedAction(
+      req.user.id, 'DELETE_CANDIDATE', 'candidates', req.params.candidateId,
+      err.message,
+      { electionId: req.params.electionId, ipAddress: getClientIp(req) }
+    );
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// @route   GET /api/admin/audit-logs
+// @desc    Get audit logs (admin only)
+// @access  Admin only
+router.get('/admin/audit-logs', adminAuth, async (req, res) => {
+  try {
+    const { adminId, limit = 100, offset = 0 } = req.query;
+    const clientIp = getClientIp(req);
+    
+    const logs = await adminLogger.getAdminLogs(adminId || req.user.id, parseInt(limit), parseInt(offset));
+    
+    // Log the audit access
+    await adminLogger.logSecurityEvent(
+      req.user.id, 'AUDIT_LOG_ACCESSED', 'LOW',
+      `Admin accessed audit logs for admin #${adminId || req.user.id}`,
+      { targetAdminId: adminId || req.user.id, ipAddress: clientIp }
+    );
+
+    res.json(logs);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// @route   GET /api/admin/security-logs
+// @desc    Get security logs (admin only)
+// @access  Admin only
+router.get('/admin/security-logs', adminAuth, async (req, res) => {
+  try {
+    const { limit = 100, offset = 0 } = req.query;
+    
+    const logs = await adminLogger.getSecurityLogs(parseInt(limit), parseInt(offset));
+
+    res.json(logs);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// @route   POST /api/admin/verify-audit-integrity
+// @desc    Verify integrity of audit log
+// @access  Admin only
+router.post('/admin/verify-audit-integrity/:logId', adminAuth, async (req, res) => {
+  try {
+    const { logId } = req.params;
+    const adminId = req.user.id;
+    const clientIp = getClientIp(req);
+
+    const result = await adminLogger.verifyAuditIntegrity(logId);
+
+    // Log the verification
+    await adminLogger.logSecurityEvent(
+      adminId, 'AUDIT_INTEGRITY_CHECK', 'MEDIUM',
+      `Audit integrity verified for log #${logId} - Result: ${result.valid ? 'VALID' : 'INVALID'}`,
+      { logId, valid: result.valid, ipAddress: clientIp }
+    );
+
+    res.json(result);
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'Server error' });

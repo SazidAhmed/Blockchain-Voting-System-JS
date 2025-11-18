@@ -31,6 +31,11 @@
               📈 Results & Stats
             </button>
           </li>
+          <li :class="{ active: activeTab === 'audit' }">
+            <button @click="activeTab = 'audit'" class="nav-link">
+              🔐 Audit Logs
+            </button>
+          </li>
         </ul>
       </nav>
 
@@ -316,6 +321,11 @@
             </div>
           </div>
         </section>
+
+        <!-- Audit Logs Tab -->
+        <section v-if="activeTab === 'audit'" class="tab-content">
+          <AdminAuditLogs />
+        </section>
       </main>
     </div>
   </div>
@@ -323,9 +333,13 @@
 
 <script>
 import { mapGetters } from 'vuex'
+import AdminAuditLogs from '../components/AdminAuditLogs.vue'
 
 export default {
   name: 'AdminDashboard',
+  components: {
+    AdminAuditLogs
+  },
   data() {
     return {
       activeTab: 'elections',
