@@ -273,25 +273,59 @@
       {
         "id": 13,
         "title": "Validators Information",
-        "type": "text",
+        "type": "stat",
         "gridPos": {"h": 8, "w": 12, "x": 0, "y": 26},
+        "targets": [
+          {
+            "expr": "label_replace(up{job=\"blockchain-node\",instance=~\"voting-blockchain-node-[1-3]:.*\"}, \"node\", \"Validator\", \"\", \"\")",
+            "legendFormat": "{{ instance }}",
+            "refId": "A"
+          }
+        ],
         "fieldConfig": {
-          "defaults": {}
-        },
-        "options": {
-          "text": "## Validators (Consensus Nodes)\n\n**Node 1:** voting-blockchain-node-1:3001\n\n**Node 2:** voting-blockchain-node-2:3002\n\n**Node 3:** voting-blockchain-node-3:3003\n\n**Role:** Participate in Byzantine Fault Tolerant (BFT) consensus\n\n**Fault Tolerance:** Can survive 1 validator failure (2/3 majority required)"
+          "defaults": {
+            "unit": "short",
+            "custom": {},
+            "color": {"mode": "value"},
+            "mappings": [
+              {
+                "type": "value",
+                "options": {
+                  "1": {"text": "UP", "color": "green"},
+                  "0": {"text": "DOWN", "color": "red"}
+                }
+              }
+            ]
+          }
         }
       },
       {
         "id": 14,
         "title": "Observers Information",
-        "type": "text",
+        "type": "stat",
         "gridPos": {"h": 8, "w": 12, "x": 12, "y": 26},
+        "targets": [
+          {
+            "expr": "label_replace(up{job=\"blockchain-node\",instance=~\"voting-blockchain-node-[4-5]:.*\"}, \"node\", \"Observer\", \"\", \"\")",
+            "legendFormat": "{{ instance }}",
+            "refId": "A"
+          }
+        ],
         "fieldConfig": {
-          "defaults": {}
-        },
-        "options": {
-          "text": "## Observers (Read-Only Nodes)\n\n**Node 4:** voting-blockchain-node-4:3004\n\n**Node 5:** voting-blockchain-node-5:3005\n\n**Role:** Maintain blockchain copy, distribute read load\n\n**Impact:** Non-voting nodes, can fail without affecting consensus"
+          "defaults": {
+            "unit": "short",
+            "custom": {},
+            "color": {"mode": "value"},
+            "mappings": [
+              {
+                "type": "value",
+                "options": {
+                  "1": {"text": "UP", "color": "green"},
+                  "0": {"text": "DOWN", "color": "red"}
+                }
+              }
+            ]
+          }
         }
       }
     ]
