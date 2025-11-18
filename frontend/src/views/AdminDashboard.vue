@@ -1,53 +1,53 @@
 <template>
   <div class="admin-dashboard">
-    <header class="admin-header">
-      <h1>📊 Admin Dashboard</h1>
-      <div class="header-actions">
-        <span class="admin-badge">Admin</span>
-        <button @click="logout" class="btn btn-danger">Logout</button>
+    <!-- Sidebar Navigation -->
+    <aside class="admin-sidebar">
+      <div class="sidebar-header">
+        <div class="logo">
+          <span class="logo-icon">⚙️</span>
+          <h2>Admin Panel</h2>
+        </div>
+        <button @click="logout" class="btn btn-danger btn-logout">
+          <span>🚪 Logout</span>
+        </button>
       </div>
-    </header>
 
-    <div class="admin-container">
-      <nav class="admin-nav">
-        <ul>
-          <li :class="{ active: activeTab === 'elections' }">
-            <button @click="activeTab = 'elections'" class="nav-link">
-              📋 Elections
-            </button>
-          </li>
-          <li :class="{ active: activeTab === 'create' }">
-            <button @click="activeTab = 'create'" class="nav-link">
-              ➕ Create Election
-            </button>
-          </li>
-          <li :class="{ active: activeTab === 'candidates' }">
-            <button @click="activeTab = 'candidates'" class="nav-link">
-              👥 Manage Candidates
-            </button>
-          </li>
-          <li :class="{ active: activeTab === 'results' }">
-            <button @click="activeTab = 'results'" class="nav-link">
-              📈 Results & Stats
-            </button>
-          </li>
-          <li :class="{ active: activeTab === 'audit' }">
-            <button @click="activeTab = 'audit'" class="nav-link">
-              🔐 Audit Logs
-            </button>
-          </li>
-        </ul>
+      <nav class="sidebar-nav">
+        <button
+          v-for="tab in navigationTabs"
+          :key="tab.id"
+          @click="activeTab = tab.id"
+          :class="['nav-item', { active: activeTab === tab.id }]"
+        >
+          <span class="nav-icon">{{ tab.icon }}</span>
+          <span class="nav-label">{{ tab.label }}</span>
+        </button>
       </nav>
 
-      <main class="admin-content">
+      <div class="sidebar-footer">
+        <p>Admin Dashboard</p>
+        <small>© 2025 Voting System</small>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="admin-main">
+      <header class="admin-header">
+        <h1>{{ getCurrentTabLabel() }}</h1>
+        <div class="header-info">
+          <span class="admin-badge">🔐 Admin User</span>
+        </div>
+      </header>
+
+      <div class="admin-content">
         <!-- Elections Tab -->
-        <section v-if="activeTab === 'elections'" class="tab-content">
+        <section v-show="activeTab === 'elections'" class="tab-content">
           <h2>Elections Management</h2>
           
           <div v-if="loading" class="loading">Loading elections...</div>
           <div v-else-if="error" class="alert alert-danger">{{ error }}</div>
           <div v-else-if="elections.length === 0" class="alert alert-info">
-            No elections found. <router-link to="/admin/dashboard?tab=create">Create one now</router-link>
+            No elections found. Create one in the Create Election tab.
           </div>
           <div v-else class="elections-table">
             <table>
@@ -88,7 +88,7 @@
         </section>
 
         <!-- Create Election Tab -->
-        <section v-if="activeTab === 'create'" class="tab-content">
+        <section v-show="activeTab === 'create'" class="tab-content">
           <h2>Create New Election</h2>
           <form @submit.prevent="createElection" class="election-form">
             <div class="form-group">
@@ -187,7 +187,7 @@
         </section>
 
         <!-- Manage Candidates Tab -->
-        <section v-if="activeTab === 'candidates'" class="tab-content">
+        <section v-show="activeTab === 'candidates'" class="tab-content">
           <h2>Manage Candidates</h2>
           
           <div v-if="elections.length === 0" class="alert alert-info">
@@ -248,7 +248,7 @@
         </section>
 
         <!-- Results & Stats Tab -->
-        <section v-if="activeTab === 'results'" class="tab-content">
+        <section v-show="activeTab === 'results'" class="tab-content">
           <h2>Results & Statistics</h2>
           
           <div v-if="elections.length === 0" class="alert alert-info">
@@ -323,11 +323,11 @@
         </section>
 
         <!-- Audit Logs Tab -->
-        <section v-if="activeTab === 'audit'" class="tab-content">
+        <section v-show="activeTab === 'audit'" class="tab-content">
           <AdminAuditLogs />
         </section>
-      </main>
-    </div>
+      </div>
+    </main>
   </div>
 </template>
 
@@ -351,6 +351,13 @@ export default {
       createSuccess: null,
       selectedElectionId: '',
       selectedResultsElectionId: '',
+      navigationTabs: [
+        { id: 'elections', label: 'Elections', icon: '📋' },
+        { id: 'create', label: 'Create Election', icon: '➕' },
+        { id: 'candidates', label: 'Manage Candidates', icon: '👥' },
+        { id: 'results', label: 'Results & Stats', icon: '📈' },
+        { id: 'audit', label: 'Audit Logs', icon: '🔐' }
+      ],
       newElection: {
         title: '',
         description: '',
@@ -376,6 +383,10 @@ export default {
     }
   },
   methods: {
+    getCurrentTabLabel() {
+      const tab = this.navigationTabs.find(t => t.id === this.activeTab)
+      return tab ? tab.label : 'Dashboard'
+    },
     async fetchElections() {
       this.loading = true
       this.error = null
@@ -552,103 +563,272 @@ export default {
 </script>
 
 <style scoped>
+* {
+  box-sizing: border-box;
+}
+
 .admin-dashboard {
+  display: flex;
   min-height: 100vh;
   background-color: #f5f7fa;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* ============= SIDEBAR ============= */
+.admin-sidebar {
+  width: 280px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  position: relative;
+}
+
+.sidebar-header {
+  padding: 30px 20px 20px;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.logo-icon {
+  font-size: 2rem;
+}
+
+.logo h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.btn-logout {
+  width: 100%;
+  padding: 10px;
+  background-color: rgba(255, 255, 255, 0.2);
+  color: white;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.btn-logout:hover {
+  background-color: rgba(255, 255, 255, 0.3);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+.sidebar-nav {
+  flex: 1;
+  padding: 20px 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-left: 12px;
+  padding-right: 12px;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  background-color: transparent;
+  color: rgba(255, 255, 255, 0.8);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  text-align: left;
+  width: calc(100% - 24px);
+}
+
+.nav-item:hover {
+  background-color: rgba(255, 255, 255, 0.15);
+  color: white;
+}
+
+.nav-item.active {
+  background-color: rgba(255, 255, 255, 0.25);
+  color: white;
+  font-weight: 700;
+  border-left: 4px solid white;
+  padding-left: 12px;
+}
+
+.nav-icon {
+  font-size: 1.3rem;
+  min-width: 30px;
+}
+
+.nav-label {
+  flex: 1;
+}
+
+.sidebar-footer {
+  padding: 20px;
+  border-top: 2px solid rgba(255, 255, 255, 0.2);
+  text-align: center;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.sidebar-footer p {
+  margin: 0 0 8px 0;
+  font-weight: 600;
+}
+
+.sidebar-footer small {
+  margin: 0;
+}
+
+/* ============= MAIN CONTENT ============= */
+.admin-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .admin-header {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  padding: 30px;
+  background: white;
+  padding: 20px 30px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   display: flex;
   justify-content: space-between;
   align-items: center;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border-bottom: 1px solid #e0e0e0;
 }
 
 .admin-header h1 {
   margin: 0;
-  font-size: 2rem;
+  color: #2c3e50;
+  font-size: 1.8rem;
 }
 
-.header-actions {
+.header-info {
   display: flex;
-  gap: 15px;
   align-items: center;
+  gap: 15px;
 }
 
 .admin-badge {
-  background-color: rgba(255, 255, 255, 0.3);
-  padding: 6px 12px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 8px 16px;
   border-radius: 20px;
   font-size: 0.9rem;
   font-weight: 600;
 }
 
-.admin-container {
-  display: flex;
-  max-width: 1400px;
-  margin: 0 auto;
-  padding: 20px;
-  gap: 20px;
-}
-
-.admin-nav {
-  width: 200px;
-}
-
-.admin-nav ul {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-.admin-nav li {
-  margin-bottom: 10px;
-}
-
-.nav-link {
-  display: block;
-  width: 100%;
-  padding: 12px 16px;
-  border: none;
-  border-radius: 6px;
-  background-color: white;
-  cursor: pointer;
-  text-align: left;
-  font-size: 0.95rem;
-  transition: all 0.3s ease;
-  color: #2c3e50;
-}
-
-.nav-link:hover {
-  background-color: #e8e8ff;
-  transform: translateX(4px);
-}
-
-.admin-nav li.active .nav-link {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  font-weight: 600;
-}
-
 .admin-content {
   flex: 1;
+  overflow-y: auto;
+  padding: 30px;
+}
+
+.tab-content {
   background: white;
-  border-radius: 8px;
+  border-radius: 12px;
   padding: 30px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .tab-content h2 {
   margin-top: 0;
   color: #2c3e50;
-  border-bottom: 2px solid #667eea;
+  border-bottom: 3px solid #667eea;
   padding-bottom: 15px;
   margin-bottom: 25px;
 }
 
+.tab-content h3 {
+  color: #2c3e50;
+  margin-top: 25px;
+  margin-bottom: 15px;
+}
+
+/* ============= FORMS ============= */
+.election-form {
+  max-width: 900px;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: #2c3e50;
+  font-size: 0.95rem;
+}
+
+.form-control {
+  width: 100%;
+  padding: 12px;
+  border: 2px solid #ddd;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-family: inherit;
+  transition: border-color 0.3s ease;
+}
+
+.form-control:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.candidates-input {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.candidate-input {
+  display: grid;
+  grid-template-columns: 1fr 1.5fr auto;
+  gap: 10px;
+  align-items: end;
+}
+
+.form-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 25px;
+}
+
+/* ============= TABLES ============= */
 .elections-table {
   overflow-x: auto;
 }
@@ -660,15 +840,15 @@ export default {
 
 .elections-table th {
   background-color: #f8f9fa;
-  padding: 12px;
+  padding: 15px;
   text-align: left;
-  font-weight: 600;
+  font-weight: 700;
   color: #2c3e50;
-  border-bottom: 2px solid #e0e0e0;
+  border-bottom: 3px solid #667eea;
 }
 
 .elections-table td {
-  padding: 12px;
+  padding: 15px;
   border-bottom: 1px solid #e0e0e0;
 }
 
@@ -706,79 +886,28 @@ export default {
 .actions {
   display: flex;
   gap: 8px;
+  flex-wrap: wrap;
 }
 
-.election-form {
-  max-width: 800px;
-}
-
-.form-group {
-  margin-bottom: 20px;
-}
-
-.form-group label {
-  display: block;
-  margin-bottom: 8px;
-  font-weight: 600;
-  color: #2c3e50;
-}
-
-.form-control {
-  width: 100%;
-  padding: 10px;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  font-size: 1rem;
-  font-family: inherit;
-}
-
-.form-control:focus {
-  outline: none;
-  border-color: #667eea;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-}
-
-.form-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 15px;
-}
-
-.candidates-input {
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-}
-
-.candidate-input {
-  display: grid;
-  grid-template-columns: 1fr 1.5fr auto;
-  gap: 10px;
-  align-items: end;
-}
-
-.form-actions {
-  display: flex;
-  gap: 10px;
-  margin-top: 25px;
-}
-
+/* ============= BUTTONS ============= */
 .btn {
-  padding: 10px 20px;
+  padding: 10px 16px;
   border: none;
   border-radius: 6px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
+  font-size: 0.95rem;
 }
 
 .btn-primary {
-  background-color: #667eea;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
 }
 
 .btn-primary:hover {
-  background-color: #5568d3;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
 }
 
 .btn-secondary {
@@ -809,99 +938,75 @@ export default {
 }
 
 .btn-small {
-  padding: 6px 12px;
-  font-size: 0.9rem;
+  padding: 8px 12px;
+  font-size: 0.85rem;
 }
 
 .btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+  transform: none;
+}
+
+/* ============= CARDS & ALERTS ============= */
+.candidate-card {
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  padding: 20px;
+  border-radius: 8px;
+  border-left: 4px solid #667eea;
+}
+
+.candidate-card h4 {
+  margin: 0 0 10px 0;
+  color: #2c3e50;
+}
+
+.candidate-card p {
+  margin: 0 0 12px 0;
+  color: #7f8c8d;
+  font-size: 0.9rem;
+}
+
+.candidate-stats {
+  margin-bottom: 12px;
+  font-size: 0.9rem;
+  color: #667eea;
+  font-weight: 600;
 }
 
 .alert {
   padding: 15px;
   margin-bottom: 20px;
   border-radius: 6px;
+  border-left: 4px solid;
 }
 
 .alert-danger {
   background-color: #f8d7da;
   color: #721c24;
-  border: 1px solid #f5c6cb;
+  border-left-color: #dc3545;
 }
 
 .alert-success {
   background-color: #d4edda;
   color: #155724;
-  border: 1px solid #c3e6cb;
+  border-left-color: #28a745;
 }
 
 .alert-info {
   background-color: #d1ecf1;
   color: #0c5460;
-  border: 1px solid #bee5eb;
+  border-left-color: #17a2b8;
 }
 
 .loading {
   text-align: center;
   padding: 40px;
   color: #7f8c8d;
+  font-size: 1.1rem;
 }
 
-.candidates-management {
-  margin-top: 30px;
-}
-
-.candidates-list {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-  gap: 15px;
-  margin-bottom: 30px;
-}
-
-.candidate-card {
-  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-  padding: 15px;
-  border-radius: 8px;
-  border-left: 4px solid #667eea;
-}
-
-.candidate-card h4 {
-  margin: 0 0 8px 0;
-  color: #2c3e50;
-}
-
-.candidate-card p {
-  margin: 0 0 10px 0;
-  color: #7f8c8d;
-  font-size: 0.9rem;
-}
-
-.candidate-stats {
-  margin-bottom: 10px;
-  font-size: 0.9rem;
-  color: #667eea;
-  font-weight: 600;
-}
-
-.add-candidate-form {
-  background-color: #f8f9fa;
-  padding: 20px;
-  border-radius: 8px;
-  margin-top: 20px;
-}
-
-.add-candidate-form h4 {
-  margin-top: 0;
-}
-
-.add-candidate-form .form-row {
-  display: grid;
-  grid-template-columns: 1fr 1.5fr auto;
-  gap: 10px;
-  align-items: end;
-}
-
+/* ============= RESULTS ============= */
 .results-overview {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -912,27 +1017,23 @@ export default {
 .stat-card {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
-  padding: 20px;
-  border-radius: 8px;
+  padding: 25px;
+  border-radius: 12px;
   text-align: center;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
 }
 
 .stat-card h4 {
-  margin: 0 0 10px 0;
-  font-size: 0.9rem;
-  opacity: 0.9;
+  margin: 0 0 12px 0;
+  font-size: 0.95rem;
+  opacity: 0.95;
+  font-weight: 600;
 }
 
 .stat-value {
   margin: 0;
-  font-size: 2.5rem;
-  font-weight: bold;
-}
-
-.results-chart {
-  background-color: #f8f9fa;
-  padding: 20px;
-  border-radius: 8px;
+  font-size: 2.8rem;
+  font-weight: 700;
 }
 
 .candidates-results {
@@ -943,22 +1044,23 @@ export default {
 
 .candidate-result {
   background: white;
-  padding: 15px;
-  border-radius: 6px;
+  padding: 20px;
+  border-radius: 8px;
+  border-left: 4px solid #667eea;
 }
 
 .result-header {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
 }
 
 .candidate-rank {
   font-weight: bold;
   color: #667eea;
-  font-size: 1.2rem;
-  width: 25px;
+  font-size: 1.3rem;
+  width: 30px;
 }
 
 .result-header h4 {
@@ -967,17 +1069,17 @@ export default {
 }
 
 .vote-count {
-  font-weight: 600;
+  font-weight: 700;
   color: #764ba2;
   font-size: 0.9rem;
 }
 
 .result-bar {
-  height: 30px;
+  height: 35px;
   background-color: #e0e0e0;
-  border-radius: 15px;
+  border-radius: 18px;
   overflow: hidden;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
 }
 
 .bar-fill {
@@ -988,34 +1090,96 @@ export default {
 
 .result-percentage {
   text-align: right;
-  font-weight: 600;
+  font-weight: 700;
   color: #667eea;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
 }
 
-@media (max-width: 768px) {
-  .admin-container {
-    flex-direction: column;
+.add-candidate-form {
+  background-color: #f8f9fa;
+  padding: 25px;
+  border-radius: 8px;
+  margin-top: 30px;
+  border-left: 4px solid #667eea;
+}
+
+.add-candidate-form h4 {
+  margin-top: 0;
+  color: #2c3e50;
+}
+
+.add-candidate-form .form-row {
+  display: grid;
+  grid-template-columns: 1fr 1.5fr auto;
+  gap: 10px;
+  align-items: end;
+}
+
+.candidates-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 15px;
+  margin-bottom: 30px;
+}
+
+/* ============= RESPONSIVE ============= */
+@media (max-width: 1024px) {
+  .admin-sidebar {
+    width: 240px;
   }
 
-  .admin-nav {
-    width: 100%;
-  }
-
-  .admin-nav ul {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 10px;
+  .admin-content {
+    padding: 20px;
   }
 
   .form-row,
-  .candidate-input,
   .add-candidate-form .form-row {
     grid-template-columns: 1fr;
   }
+}
 
-  .actions {
+@media (max-width: 768px) {
+  .admin-dashboard {
+    flex-direction: column;
+  }
+
+  .admin-sidebar {
+    width: 100%;
+    height: auto;
+  }
+
+  .sidebar-nav {
+    flex-direction: row;
     flex-wrap: wrap;
+    gap: 5px;
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+
+  .nav-item {
+    width: calc(50% - 8px);
+    padding: 10px 12px;
+    font-size: 0.9rem;
+  }
+
+  .nav-icon {
+    font-size: 1.1rem;
+  }
+
+  .nav-label {
+    display: none;
+  }
+
+  .nav-item.active .nav-label {
+    display: block;
+  }
+
+  .admin-content {
+    padding: 15px;
+  }
+
+  .tab-content {
+    padding: 20px;
   }
 
   .elections-table {
@@ -1024,7 +1188,19 @@ export default {
 
   .elections-table td,
   .elections-table th {
-    padding: 8px;
+    padding: 10px;
+  }
+
+  .candidate-input {
+    grid-template-columns: 1fr;
+  }
+
+  .actions {
+    flex-direction: column;
+  }
+
+  .actions .btn {
+    width: 100%;
   }
 }
 </style>
