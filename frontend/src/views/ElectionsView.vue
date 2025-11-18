@@ -14,7 +14,7 @@
     <div v-else-if="elections.length === 0" class="no-elections">
       <p>No elections are currently available.</p>
       <div v-if="isAdmin" class="admin-actions">
-        <router-link to="/admin" class="btn btn-primary">Create New Election</router-link>
+        <router-link to="/admin/dashboard" class="btn btn-primary">Create New Election</router-link>
       </div>
     </div>
     
@@ -44,7 +44,7 @@
     </div>
     
     <div v-if="isAdmin" class="admin-actions">
-      <router-link to="/admin" class="btn btn-primary">Admin Dashboard</router-link>
+      <router-link to="/admin/dashboard" class="btn btn-primary">Admin Dashboard</router-link>
     </div>
   </div>
 </template>

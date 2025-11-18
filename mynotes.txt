@@ -15,6 +15,14 @@ Dashboard: http://localhost:5173/monitor
 Prometheus: http://localhost:9090
 Grafana: http://localhost:3030
 
+Admin Login Credentials
+Username: ADMIN001
+Password: admin123
+Other Test Users (for reference):
+Student: STU001 / password123
+Teacher: TEACH001 / password123
+Staff: STAFF001 / password123
+
 cd /h/Voting && docker-compose -f docker-compose.multi-node.yml -f docker-compose.monitoring.yml up -d 2>&1 | head -50
 
 ACCESS THE VOTING APPLICATION

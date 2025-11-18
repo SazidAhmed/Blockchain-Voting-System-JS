@@ -32,6 +32,10 @@ const router = createRouter({
       meta: { requiresAuth: true, requiresAdmin: true }
     },
     {
+      path: '/admin',
+      redirect: '/admin/dashboard'
+    },
+    {
       path: '/elections',
       name: 'elections',
       component: ElectionsView,
