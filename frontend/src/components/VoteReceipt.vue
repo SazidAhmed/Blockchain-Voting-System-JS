@@ -6,6 +6,14 @@
     </div>
     
     <div class="receipt-body">
+      <div class="receipt-section vote-result">
+        <h4>✓ Your Vote</h4>
+        <div class="receipt-item">
+          <span class="label">Candidate:</span>
+          <span class="value candidate-name">{{ receipt.candidateName || 'Encrypted Vote' }}</span>
+        </div>
+      </div>
+      
       <div class="receipt-section">
         <h4>Transaction Details</h4>
         <div class="receipt-item">
@@ -228,6 +236,21 @@ export default {
   margin-bottom: 8px;
   color: #2c3e50;
   line-height: 1.6;
+}
+
+.vote-result {
+  background-color: #d4edda;
+  border-left: 4px solid #2ecc71;
+}
+
+.vote-result h4 {
+  color: #155724;
+}
+
+.candidate-name {
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: #155724;
 }
 
 .receipt-actions {

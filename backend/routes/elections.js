@@ -410,6 +410,18 @@ router.post('/:id/vote', voteLimiter, auth, validateVote, async (req, res) => {
     const transactionHash = receipt.transactionHash || crypto.randomBytes(32).toString('hex');
     const blockIndex = receipt.blockIndex || 0;
 
+    // Get candidate name (for non-legacy flow, we need to fetch it separately)
+    let candidateName = '';
+    if (!isNewCryptoFlow) {
+      const [cands] = await pool.query(
+        'SELECT name FROM candidates WHERE id = ?',
+        [candidateId]
+      );
+      if (cands.length > 0) {
+        candidateName = cands[0].name;
+      }
+    }
+
     await pool.query(
       'INSERT INTO votes_meta (tx_hash, block_index, election_id, nullifier_hash, encrypted_ballot, signature, voter_public_key) VALUES (?, ?, ?, ?, ?, ?, ?)',
       [transactionHash, blockIndex, electionId, finalNullifier, finalEncryptedBallot, finalSignature, finalPublicKey]
@@ -442,7 +454,9 @@ router.post('/:id/vote', voteLimiter, auth, validateVote, async (req, res) => {
         blockIndex,
         timestamp: receipt.timestamp || new Date().toISOString(),
         nullifier: finalNullifier,
-        signature: finalSignature
+        signature: finalSignature,
+        candidateId: candidateId || null,
+        candidateName: candidateName
       }
     });
   } catch (err) {
