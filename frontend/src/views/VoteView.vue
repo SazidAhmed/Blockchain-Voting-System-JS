@@ -26,11 +26,6 @@
       <h2>Vote Successfully Cast!</h2>
       <p>Your vote has been securely encrypted and recorded on the blockchain.</p>
       
-      <div class="vote-confirmation">
-        <h3>You voted for:</h3>
-        <p class="voted-candidate">{{ getSelectedCandidateName() }}</p>
-      </div>
-      
       <VoteReceipt :receipt="voteReceipt" />
       
       <div class="actions">
@@ -143,11 +138,6 @@ export default {
   methods: {
     selectCandidate(candidateId) {
       this.selectedCandidate = candidateId
-    },
-    getSelectedCandidateName() {
-      if (!this.election || !this.selectedCandidate) return 'Unknown'
-      const candidate = this.election.candidates.find(c => c.id === this.selectedCandidate)
-      return candidate ? candidate.name : 'Unknown'
     },
     async submitVote() {
       if (!this.canSubmitVote) return
@@ -270,28 +260,6 @@ export default {
   border-radius: 50%;
   font-size: 40px;
   margin-bottom: 20px;
-}
-
-.vote-confirmation {
-  background-color: #d4edda;
-  border-left: 4px solid #2ecc71;
-  padding: 20px;
-  margin: 20px 0;
-  border-radius: 6px;
-  text-align: center;
-}
-
-.vote-confirmation h3 {
-  color: #155724;
-  margin-bottom: 10px;
-  margin-top: 0;
-}
-
-.voted-candidate {
-  font-size: 1.3rem;
-  font-weight: 600;
-  color: #155724;
-  margin: 0;
 }
 
 .voting-interface h1 {
