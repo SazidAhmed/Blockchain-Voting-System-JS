@@ -10,112 +10,10 @@
     },
     "panels": [
       {
-        "id": 1,
-        "title": "Blockchain Nodes - Active",
-        "type": "stat",
-        "gridPos": {"h": 8, "w": 6, "x": 0, "y": 0},
-        "targets": [
-          {
-            "expr": "count(up{job=\"blockchain-node\"})",
-            "refId": "A"
-          }
-        ],
-        "fieldConfig": {
-          "defaults": {
-            "unit": "short",
-            "color": {"mode": "thresholds"},
-            "thresholds": {
-              "mode": "absolute",
-              "steps": [
-                {"color": "red", "value": null},
-                {"color": "yellow", "value": 3},
-                {"color": "green", "value": 5}
-              ]
-            }
-          }
-        }
-      },
-      {
-        "id": 2,
-        "title": "Total Votes Processed",
-        "type": "stat",
-        "gridPos": {"h": 8, "w": 6, "x": 6, "y": 0},
-        "targets": [
-          {
-            "expr": "vector(3)",
-            "refId": "A"
-          }
-        ],
-        "fieldConfig": {
-          "defaults": {
-            "unit": "short",
-            "color": {"mode": "thresholds"},
-            "thresholds": {
-              "mode": "absolute",
-              "steps": [{"color": "blue", "value": null}]
-            }
-          }
-        }
-      },
-      {
-        "id": 11,
-        "title": "Validators Active",
-        "type": "stat",
-        "gridPos": {"h": 8, "w": 6, "x": 12, "y": 0},
-        "targets": [
-          {
-            "expr": "vector(3)",
-            "refId": "A"
-          }
-        ],
-        "fieldConfig": {
-          "defaults": {
-            "unit": "short",
-            "color": {"mode": "thresholds"},
-            "thresholds": {
-              "mode": "absolute",
-              "steps": [
-                {"color": "red", "value": null},
-                {"color": "yellow", "value": 2},
-                {"color": "green", "value": 3}
-              ]
-            }
-          }
-        },
-        "description": "Validators: Nodes 1-3 (voting-blockchain-node-1:3001, voting-blockchain-node-2:3002, voting-blockchain-node-3:3003)"
-      },
-      {
-        "id": 12,
-        "title": "Observers Active",
-        "type": "stat",
-        "gridPos": {"h": 8, "w": 6, "x": 18, "y": 0},
-        "targets": [
-          {
-            "expr": "vector(2)",
-            "refId": "A"
-          }
-        ],
-        "fieldConfig": {
-          "defaults": {
-            "unit": "short",
-            "color": {"mode": "thresholds"},
-            "thresholds": {
-              "mode": "absolute",
-              "steps": [
-                {"color": "red", "value": null},
-                {"color": "yellow", "value": 1},
-                {"color": "green", "value": 2}
-              ]
-            }
-          }
-        },
-        "description": "Observers: Nodes 4-5 (voting-blockchain-node-4:3004, voting-blockchain-node-5:3005)"
-      },
-      {
         "id": 3,
         "title": "System CPU Usage",
         "type": "gauge",
-        "gridPos": {"h": 8, "w": 6, "x": 12, "y": 0},
+        "gridPos": {"h": 8, "w": 6, "x": 0, "y": 0},
         "targets": [
           {
             "expr": "100 - (avg(rate(node_cpu_seconds_total{mode=\"idle\"}[5m])) * 100)",
@@ -142,7 +40,7 @@
         "id": 4,
         "title": "System Memory Usage",
         "type": "gauge",
-        "gridPos": {"h": 8, "w": 6, "x": 18, "y": 0},
+        "gridPos": {"h": 8, "w": 6, "x": 6, "y": 0},
         "targets": [
           {
             "expr": "(1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100",
@@ -166,28 +64,10 @@
         }
       },
       {
-        "id": 5,
-        "title": "Container Count",
-        "type": "stat",
-        "gridPos": {"h": 8, "w": 6, "x": 0, "y": 8},
-        "targets": [
-          {
-            "expr": "count(up{job=\"cadvisor\"})",
-            "refId": "A"
-          }
-        ],
-        "fieldConfig": {
-          "defaults": {
-            "unit": "short",
-            "color": {"mode": "thresholds"}
-          }
-        }
-      },
-      {
         "id": 6,
         "title": "Network Bytes In (5m avg)",
         "type": "stat",
-        "gridPos": {"h": 8, "w": 6, "x": 6, "y": 8},
+        "gridPos": {"h": 8, "w": 6, "x": 12, "y": 0},
         "targets": [
           {
             "expr": "rate(node_network_receive_bytes_total[5m])",
@@ -205,7 +85,7 @@
         "id": 7,
         "title": "Network Bytes Out (5m avg)",
         "type": "stat",
-        "gridPos": {"h": 8, "w": 6, "x": 12, "y": 8},
+        "gridPos": {"h": 8, "w": 6, "x": 18, "y": 0},
         "targets": [
           {
             "expr": "rate(node_network_transmit_bytes_total[5m])",
@@ -223,7 +103,7 @@
         "id": 8,
         "title": "Disk I/O Operations",
         "type": "graph",
-        "gridPos": {"h": 8, "w": 6, "x": 18, "y": 8},
+        "gridPos": {"h": 10, "w": 24, "x": 0, "y": 8},
         "targets": [
           {
             "expr": "rate(node_disk_io_now[5m])",
@@ -240,7 +120,7 @@
         "id": 9,
         "title": "System CPU Usage Trend",
         "type": "graph",
-        "gridPos": {"h": 10, "w": 12, "x": 0, "y": 16},
+        "gridPos": {"h": 10, "w": 12, "x": 0, "y": 18},
         "targets": [
           {
             "expr": "100 - (avg(rate(node_cpu_seconds_total{mode=\"idle\"}[5m])) * 100)",
@@ -257,7 +137,7 @@
         "id": 10,
         "title": "System Memory Usage Trend",
         "type": "graph",
-        "gridPos": {"h": 10, "w": 12, "x": 12, "y": 16},
+        "gridPos": {"h": 10, "w": 12, "x": 12, "y": 18},
         "targets": [
           {
             "expr": "(1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100",
@@ -269,64 +149,6 @@
           {"format": "percent", "label": "Memory Usage %"},
           {"format": "short"}
         ]
-      },
-      {
-        "id": 13,
-        "title": "Validators Information",
-        "type": "stat",
-        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 26},
-        "targets": [
-          {
-            "expr": "label_replace(up{job=\"blockchain-node\",instance=~\"voting-blockchain-node-[1-3]:.*\"}, \"node\", \"Validator\", \"\", \"\")",
-            "legendFormat": "{{ instance }}",
-            "refId": "A"
-          }
-        ],
-        "fieldConfig": {
-          "defaults": {
-            "unit": "short",
-            "custom": {},
-            "color": {"mode": "value"},
-            "mappings": [
-              {
-                "type": "value",
-                "options": {
-                  "1": {"text": "UP", "color": "green"},
-                  "0": {"text": "DOWN", "color": "red"}
-                }
-              }
-            ]
-          }
-        }
-      },
-      {
-        "id": 14,
-        "title": "Observers Information",
-        "type": "stat",
-        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 26},
-        "targets": [
-          {
-            "expr": "label_replace(up{job=\"blockchain-node\",instance=~\"voting-blockchain-node-[4-5]:.*\"}, \"node\", \"Observer\", \"\", \"\")",
-            "legendFormat": "{{ instance }}",
-            "refId": "A"
-          }
-        ],
-        "fieldConfig": {
-          "defaults": {
-            "unit": "short",
-            "custom": {},
-            "color": {"mode": "value"},
-            "mappings": [
-              {
-                "type": "value",
-                "options": {
-                  "1": {"text": "UP", "color": "green"},
-                  "0": {"text": "DOWN", "color": "red"}
-                }
-              }
-            ]
-          }
-        }
       }
     ]
   }

@@ -1,0 +1,206 @@
+{
+  "dashboard": {
+    "title": "Blockchain Monitoring",
+    "tags": ["blockchain"],
+    "timezone": "browser",
+    "refresh": "30s",
+    "time": {
+      "from": "now-6h",
+      "to": "now"
+    },
+    "panels": [
+      {
+        "id": 1,
+        "title": "Blockchain Nodes - Active",
+        "type": "stat",
+        "gridPos": {"h": 8, "w": 6, "x": 0, "y": 0},
+        "targets": [
+          {
+            "expr": "count(up{job=\"blockchain-node\"})",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "color": {"mode": "thresholds"},
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"color": "red", "value": null},
+                {"color": "yellow", "value": 3},
+                {"color": "green", "value": 5}
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 17,
+        "title": "Observers Active",
+        "type": "stat",
+        "gridPos": {"h": 8, "w": 6, "x": 6, "y": 0},
+        "targets": [
+          {
+            "expr": "vector(2)",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "color": {"mode": "thresholds"},
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"color": "red", "value": null},
+                {"color": "yellow", "value": 1},
+                {"color": "green", "value": 2}
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 4,
+        "title": "Validators Active",
+        "type": "stat",
+        "gridPos": {"h": 8, "w": 6, "x": 12, "y": 0},
+        "targets": [
+          {
+            "expr": "vector(3)",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "color": {"mode": "thresholds"},
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"color": "red", "value": null},
+                {"color": "yellow", "value": 2},
+                {"color": "green", "value": 3}
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 2,
+        "title": "Total Votes Processed",
+        "type": "stat",
+        "gridPos": {"h": 8, "w": 6, "x": 18, "y": 0},
+        "targets": [
+          {
+            "expr": "vector(3)",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "color": {"mode": "thresholds"},
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [{"color": "blue", "value": null}]
+            }
+          }
+        }
+      },
+      {
+        "id": 6,
+        "title": "Blockchain Nodes Information",
+        "type": "table",
+        "gridPos": {"h": 12, "w": 24, "x": 0, "y": 8},
+        "targets": [
+          {
+            "expr": "up{job=\"blockchain-node\"}",
+            "format": "table",
+            "instant": true,
+            "refId": "A",
+            "legendFormat": "Status"
+          },
+          {
+            "expr": "blockchain_transactions_processed_total",
+            "format": "table",
+            "instant": true,
+            "refId": "B",
+            "legendFormat": "Transactions Processed"
+          },
+          {
+            "expr": "blockchain_byzantine_attacks_detected_total",
+            "format": "table",
+            "instant": true,
+            "refId": "C",
+            "legendFormat": "Byzantine Attacks Detected"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "hideFrom": {
+                "tooltip": false,
+                "viz": false,
+                "legend": false
+              }
+            },
+            "color": {"mode": "thresholds"},
+            "mappings": [
+              {
+                "type": "value",
+                "options": {
+                  "0": {"text": "DOWN", "color": "red"},
+                  "1": {"text": "UP", "color": "green"}
+                }
+              }
+            ]
+          }
+        },
+        "options": {
+          "showHeader": true,
+          "sortBy": [],
+          "footer": {
+            "show": false,
+            "reducer": ["mean"]
+          }
+        }
+      },
+      {
+        "id": 10,
+        "title": "Blocks Created Trend",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 24, "x": 0, "y": 20},
+        "targets": [
+          {
+            "expr": "rate(blockchain_blocks_created_total[5m])",
+            "legendFormat": "{{ instance }}",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {"format": "ops", "label": "Blocks/sec"},
+          {"format": "short"}
+        ]
+      },
+      {
+        "id": 11,
+        "title": "Transaction Latency",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 24, "x": 0, "y": 28},
+        "targets": [
+          {
+            "expr": "blockchain_transaction_latency_avg",
+            "legendFormat": "{{ instance }}",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {"format": "ms", "label": "Latency (ms)"},
+          {"format": "short"}
+        ]
+      }
+    ]
+  }
+}
