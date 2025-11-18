@@ -1,7 +1,7 @@
 {
   "dashboard": {
-    "title": "Blockchain Voting System - Complete Monitoring with Logs",
-    "tags": ["blockchain", "voting", "monitoring", "logs"],
+    "title": "Blockchain Voting System - Unified Monitoring",
+    "tags": ["blockchain", "voting", "monitoring"],
     "timezone": "browser",
     "refresh": "30s",
     "time": {
@@ -23,10 +23,7 @@
         "fieldConfig": {
           "defaults": {
             "unit": "short",
-            "custom": {},
-            "color": {
-              "mode": "thresholds"
-            },
+            "color": {"mode": "thresholds"},
             "thresholds": {
               "mode": "absolute",
               "steps": [
@@ -52,22 +49,17 @@
         "fieldConfig": {
           "defaults": {
             "unit": "short",
-            "custom": {},
-            "color": {
-              "mode": "thresholds"
-            },
+            "color": {"mode": "thresholds"},
             "thresholds": {
               "mode": "absolute",
-              "steps": [
-                {"color": "blue", "value": null}
-              ]
+              "steps": [{"color": "blue", "value": null}]
             }
           }
         }
       },
       {
         "id": 3,
-        "title": "System CPU Usage %",
+        "title": "System CPU Usage",
         "type": "gauge",
         "gridPos": {"h": 8, "w": 6, "x": 12, "y": 0},
         "targets": [
@@ -80,10 +72,7 @@
           "defaults": {
             "unit": "percent",
             "max": 100,
-            "custom": {},
-            "color": {
-              "mode": "thresholds"
-            },
+            "color": {"mode": "thresholds"},
             "thresholds": {
               "mode": "absolute",
               "steps": [
@@ -97,7 +86,7 @@
       },
       {
         "id": 4,
-        "title": "System Memory Usage %",
+        "title": "System Memory Usage",
         "type": "gauge",
         "gridPos": {"h": 8, "w": 6, "x": 18, "y": 0},
         "targets": [
@@ -110,10 +99,7 @@
           "defaults": {
             "unit": "percent",
             "max": 100,
-            "custom": {},
-            "color": {
-              "mode": "thresholds"
-            },
+            "color": {"mode": "thresholds"},
             "thresholds": {
               "mode": "absolute",
               "steps": [
@@ -127,111 +113,108 @@
       },
       {
         "id": 5,
-        "title": "Backend Logs",
-        "type": "logs",
-        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
+        "title": "Container Count",
+        "type": "stat",
+        "gridPos": {"h": 8, "w": 6, "x": 0, "y": 8},
         "targets": [
           {
-            "expr": "{service=\"backend\"}",
+            "expr": "count(container_memory_usage_bytes{name!=\"\"})",
             "refId": "A"
           }
         ],
-        "options": {
-          "showLabels": "auto",
-          "showTime": true,
-          "wrapLogMessage": true,
-          "sortOrder": 2
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "color": {"mode": "thresholds"}
+          }
         }
       },
       {
         "id": 6,
-        "title": "Blockchain Node Logs",
-        "type": "logs",
-        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8},
+        "title": "Network Bytes In (5m avg)",
+        "type": "stat",
+        "gridPos": {"h": 8, "w": 6, "x": 6, "y": 8},
         "targets": [
           {
-            "expr": "{service=\"blockchain-node\"}",
+            "expr": "rate(node_network_receive_bytes_total[5m])",
             "refId": "A"
           }
         ],
-        "options": {
-          "showLabels": "auto",
-          "showTime": true,
-          "wrapLogMessage": true,
-          "sortOrder": 2
+        "fieldConfig": {
+          "defaults": {
+            "unit": "Bps",
+            "color": {"mode": "thresholds"}
+          }
         }
       },
       {
         "id": 7,
-        "title": "Database Logs",
-        "type": "logs",
-        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 16},
+        "title": "Network Bytes Out (5m avg)",
+        "type": "stat",
+        "gridPos": {"h": 8, "w": 6, "x": 12, "y": 8},
         "targets": [
           {
-            "expr": "{service=\"mysql\"}",
+            "expr": "rate(node_network_transmit_bytes_total[5m])",
             "refId": "A"
           }
         ],
-        "options": {
-          "showLabels": "auto",
-          "showTime": true,
-          "wrapLogMessage": true,
-          "sortOrder": 2
+        "fieldConfig": {
+          "defaults": {
+            "unit": "Bps",
+            "color": {"mode": "thresholds"}
+          }
         }
       },
       {
         "id": 8,
-        "title": "Frontend Logs",
-        "type": "logs",
-        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 16},
-        "targets": [
-          {
-            "expr": "{service=\"frontend\"}",
-            "refId": "A"
-          }
-        ],
-        "options": {
-          "showLabels": "auto",
-          "showTime": true,
-          "wrapLogMessage": true,
-          "sortOrder": 2
-        }
-      },
-      {
-        "id": 9,
-        "title": "Error Rate Trend",
+        "title": "Disk I/O Operations",
         "type": "graph",
-        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 24},
+        "gridPos": {"h": 8, "w": 6, "x": 18, "y": 8},
         "targets": [
           {
-            "expr": "sum(rate({level=\"error\"} [5m])) by (service)",
-            "legendFormat": "{{ service }}",
+            "expr": "rate(node_disk_io_now[5m])",
+            "legendFormat": "{{ device }}",
             "refId": "A"
           }
         ],
         "yaxes": [
-          {"format": "errors/sec", "label": "Error Rate"},
+          {"format": "ops", "label": "Operations/sec"},
+          {"format": "short"}
+        ]
+      },
+      {
+        "id": 9,
+        "title": "Container CPU Usage Trend",
+        "type": "graph",
+        "gridPos": {"h": 10, "w": 12, "x": 0, "y": 16},
+        "targets": [
+          {
+            "expr": "sum(rate(container_cpu_usage_seconds_total[5m])) by (name)",
+            "legendFormat": "{{ name }}",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {"format": "percentunit", "label": "CPU Usage"},
           {"format": "short"}
         ]
       },
       {
         "id": 10,
-        "title": "All System Logs",
-        "type": "logs",
-        "gridPos": {"h": 10, "w": 24, "x": 0, "y": 32},
+        "title": "Container Memory Usage Trend",
+        "type": "graph",
+        "gridPos": {"h": 10, "w": 12, "x": 12, "y": 16},
         "targets": [
           {
-            "expr": "{job=\"voting-system\"} | json",
+            "expr": "sum(container_memory_usage_bytes) by (name) / 1024 / 1024",
+            "legendFormat": "{{ name }}",
             "refId": "A"
           }
         ],
-        "options": {
-          "showLabels": "auto",
-          "showTime": true,
-          "wrapLogMessage": false,
-          "sortOrder": 2,
-          "dedupStrategy": "none"
-        }
+        "yaxes": [
+          {"format": "decmbytes", "label": "Memory"},
+          {"format": "short"}
+        ]
       }
     ]
   }
