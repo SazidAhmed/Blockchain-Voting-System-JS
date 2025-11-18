@@ -15,8 +15,8 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Configuration
-TEST_DIR="/home/security-tests"
-RESULTS_DIR="$TEST_DIR/results"
+TEST_DIR="$(cd "$(dirname "$0")" && pwd)/results"
+RESULTS_DIR="$TEST_DIR"
 LOGS_DIR="$TEST_DIR/logs"
 DOCKER_COMPOSE_FILE="docker-compose.multi-node.yml"
 API_BASE_URL="http://localhost:3000/api"
