@@ -464,4 +464,116 @@ router.post('/:id/vote', voteLimiter, auth, validateVote, async (req, res) => {
   }
 });
 
+// @route   GET /api/elections/admin
+// @desc    Get all elections with stats (admin only)
+// @access  Admin only
+router.get('/admin/all', adminAuth, async (req, res) => {
+  try {
+    const [elections] = await pool.query(
+      'SELECT e.*, COUNT(DISTINCT c.id) as candidates_count, COUNT(DISTINCT vm.id) as votes_count FROM elections e LEFT JOIN candidates c ON e.id = c.election_id LEFT JOIN votes_meta vm ON e.id = vm.election_id GROUP BY e.id ORDER BY e.created_at DESC'
+    );
+
+    // Get candidates for each election
+    for (const election of elections) {
+      const [candidates] = await pool.query(
+        'SELECT c.*, COUNT(DISTINCT vm.id) as votes_count FROM candidates c LEFT JOIN votes_meta vm ON c.id = vm.election_id GROUP BY c.id WHERE c.election_id = ?',
+        [election.id]
+      );
+      election.candidates = candidates;
+    }
+
+    res.json(elections);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// @route   PATCH /api/elections/:id/status
+// @desc    Update election status
+// @access  Admin only
+router.patch('/:id/status', adminAuth, async (req, res) => {
+  try {
+    const { status } = req.body;
+    const electionId = req.params.id;
+
+    if (!['pending', 'active', 'completed'].includes(status)) {
+      return res.status(400).json({ message: 'Invalid status' });
+    }
+
+    await pool.query(
+      'UPDATE elections SET status = ? WHERE id = ?',
+      [status, electionId]
+    );
+
+    res.json({ message: 'Election status updated successfully', status });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// @route   DELETE /api/elections/:id
+// @desc    Delete an election
+// @access  Admin only
+router.delete('/:id', adminAuth, async (req, res) => {
+  try {
+    const electionId = req.params.id;
+
+    // Delete related data first
+    await pool.query('DELETE FROM votes_meta WHERE election_id = ?', [electionId]);
+    await pool.query('DELETE FROM voter_registrations WHERE election_id = ?', [electionId]);
+    await pool.query('DELETE FROM candidates WHERE election_id = ?', [electionId]);
+    await pool.query('DELETE FROM elections WHERE id = ?', [electionId]);
+
+    res.json({ message: 'Election deleted successfully' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// @route   POST /api/elections/:id/candidates
+// @desc    Add a candidate to election
+// @access  Admin only
+router.post('/:id/candidates', adminAuth, async (req, res) => {
+  try {
+    const { name, description } = req.body;
+    const electionId = req.params.id;
+
+    if (!name) {
+      return res.status(400).json({ message: 'Candidate name is required' });
+    }
+
+    const [result] = await pool.query(
+      'INSERT INTO candidates (election_id, name, description) VALUES (?, ?, ?)',
+      [electionId, name, description]
+    );
+
+    res.status(201).json({
+      message: 'Candidate added successfully',
+      candidateId: result.insertId
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// @route   DELETE /api/candidates/:id
+// @desc    Delete a candidate
+// @access  Admin only
+router.delete('/candidates/:id', adminAuth, async (req, res) => {
+  try {
+    const candidateId = req.params.id;
+
+    await pool.query('DELETE FROM candidates WHERE id = ?', [candidateId]);
+
+    res.json({ message: 'Candidate deleted successfully' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 module.exports = router;

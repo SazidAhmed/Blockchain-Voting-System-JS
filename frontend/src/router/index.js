@@ -5,6 +5,7 @@ import RegisterView from '../views/RegisterView.vue'
 import ElectionsView from '../views/ElectionsView.vue'
 import ElectionDetailView from '../views/ElectionDetailView.vue'
 import VoteView from '../views/VoteView.vue'
+import AdminDashboard from '../views/AdminDashboard.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -23,6 +24,12 @@ const router = createRouter({
       path: '/register',
       name: 'register',
       component: RegisterView
+    },
+    {
+      path: '/admin/dashboard',
+      name: 'admin-dashboard',
+      component: AdminDashboard,
+      meta: { requiresAuth: true, requiresAdmin: true }
     },
     {
       path: '/elections',
@@ -48,11 +55,18 @@ const router = createRouter({
 // Navigation guard
 router.beforeEach((to, from, next) => {
   const token = localStorage.getItem('token')
+  const user = JSON.parse(localStorage.getItem('user') || '{}')
   const isAuthenticated = !!token
 
   if (to.matched.some(record => record.meta.requiresAuth)) {
     if (!isAuthenticated) {
       next({ name: 'login', query: { redirect: to.fullPath } })
+    } else if (to.matched.some(record => record.meta.requiresAdmin)) {
+      if (user.role === 'admin') {
+        next()
+      } else {
+        next({ name: 'home' })
+      }
     } else {
       next()
     }

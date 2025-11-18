@@ -7,8 +7,9 @@
         <router-link to="/login" class="btn btn-primary">Login</router-link>
         <router-link to="/register" class="btn btn-secondary">Register</router-link>
       </div>
-      <div v-else>
+      <div v-else class="cta-buttons">
         <router-link to="/elections" class="btn btn-primary">View Elections</router-link>
+        <router-link v-if="isAdmin" to="/admin/dashboard" class="btn btn-warning">Admin Dashboard</router-link>
       </div>
     </div>
 
@@ -61,7 +62,11 @@ import { mapGetters } from 'vuex'
 export default {
   name: 'HomeView',
   computed: {
-    ...mapGetters(['isAuthenticated'])
+    ...mapGetters(['isAuthenticated']),
+    isAdmin() {
+      const user = JSON.parse(localStorage.getItem('user') || '{}')
+      return user.role === 'admin'
+    }
   }
 }
 </script>
@@ -124,6 +129,15 @@ export default {
 
 .btn-secondary:hover {
   background-color: #bdc3c7;
+}
+
+.btn-warning {
+  background-color: #f39c12;
+  color: white;
+}
+
+.btn-warning:hover {
+  background-color: #e67e22;
 }
 
 .features {
