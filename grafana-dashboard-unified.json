@@ -184,35 +184,35 @@
       },
       {
         "id": 9,
-        "title": "Container CPU Usage Trend",
+        "title": "System CPU Usage Trend",
         "type": "graph",
         "gridPos": {"h": 10, "w": 12, "x": 0, "y": 16},
         "targets": [
           {
-            "expr": "rate(container_cpu_usage_seconds_total[5m])",
-            "legendFormat": "CPU",
+            "expr": "100 - (avg(rate(node_cpu_seconds_total{mode=\"idle\"}[5m])) * 100)",
+            "legendFormat": "CPU %",
             "refId": "A"
           }
         ],
         "yaxes": [
-          {"format": "percentunit", "label": "CPU Usage"},
+          {"format": "percent", "label": "CPU Usage %"},
           {"format": "short"}
         ]
       },
       {
         "id": 10,
-        "title": "Container Memory Usage Trend",
+        "title": "System Memory Usage Trend",
         "type": "graph",
         "gridPos": {"h": 10, "w": 12, "x": 12, "y": 16},
         "targets": [
           {
-            "expr": "container_memory_usage_bytes / 1024 / 1024",
-            "legendFormat": "Memory (MB)",
+            "expr": "(1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100",
+            "legendFormat": "Memory %",
             "refId": "A"
           }
         ],
         "yaxes": [
-          {"format": "decmbytes", "label": "Memory"},
+          {"format": "percent", "label": "Memory Usage %"},
           {"format": "short"}
         ]
       }
