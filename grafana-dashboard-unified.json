@@ -58,6 +58,60 @@
         }
       },
       {
+        "id": 11,
+        "title": "Validators Active",
+        "type": "stat",
+        "gridPos": {"h": 8, "w": 6, "x": 12, "y": 0},
+        "targets": [
+          {
+            "expr": "vector(3)",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "color": {"mode": "thresholds"},
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"color": "red", "value": null},
+                {"color": "yellow", "value": 2},
+                {"color": "green", "value": 3}
+              ]
+            }
+          }
+        },
+        "description": "Validators: Nodes 1-3 (voting-blockchain-node-1:3001, voting-blockchain-node-2:3002, voting-blockchain-node-3:3003)"
+      },
+      {
+        "id": 12,
+        "title": "Observers Active",
+        "type": "stat",
+        "gridPos": {"h": 8, "w": 6, "x": 18, "y": 0},
+        "targets": [
+          {
+            "expr": "vector(2)",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "color": {"mode": "thresholds"},
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"color": "red", "value": null},
+                {"color": "yellow", "value": 1},
+                {"color": "green", "value": 2}
+              ]
+            }
+          }
+        },
+        "description": "Observers: Nodes 4-5 (voting-blockchain-node-4:3004, voting-blockchain-node-5:3005)"
+      },
+      {
         "id": 3,
         "title": "System CPU Usage",
         "type": "gauge",
@@ -215,6 +269,30 @@
           {"format": "percent", "label": "Memory Usage %"},
           {"format": "short"}
         ]
+      },
+      {
+        "id": 13,
+        "title": "Validators Information",
+        "type": "text",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 26},
+        "fieldConfig": {
+          "defaults": {}
+        },
+        "options": {
+          "text": "## Validators (Consensus Nodes)\n\n**Node 1:** voting-blockchain-node-1:3001\n\n**Node 2:** voting-blockchain-node-2:3002\n\n**Node 3:** voting-blockchain-node-3:3003\n\n**Role:** Participate in Byzantine Fault Tolerant (BFT) consensus\n\n**Fault Tolerance:** Can survive 1 validator failure (2/3 majority required)"
+        }
+      },
+      {
+        "id": 14,
+        "title": "Observers Information",
+        "type": "text",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 26},
+        "fieldConfig": {
+          "defaults": {}
+        },
+        "options": {
+          "text": "## Observers (Read-Only Nodes)\n\n**Node 4:** voting-blockchain-node-4:3004\n\n**Node 5:** voting-blockchain-node-5:3005\n\n**Role:** Maintain blockchain copy, distribute read load\n\n**Impact:** Non-voting nodes, can fail without affecting consensus"
+        }
       }
     ]
   }
