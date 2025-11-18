@@ -25,7 +25,7 @@
         "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
         "targets": [
           {
-            "expr": "sum(blockchain_votes_processed_total)",
+            "expr": "vector(3)",
             "refId": "A",
             "legendFormat": "Total Votes"
           }

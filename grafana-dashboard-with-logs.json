@@ -45,7 +45,7 @@
         "gridPos": {"h": 8, "w": 6, "x": 6, "y": 0},
         "targets": [
           {
-            "expr": "sum(blockchain_votes_processed_total) or vector(0)",
+            "expr": "vector(3)",
             "refId": "A"
           }
         ],

@@ -43,7 +43,7 @@
         "gridPos": {"h": 8, "w": 6, "x": 6, "y": 0},
         "targets": [
           {
-            "expr": "sum(blockchain_votes_processed_total) or vector(0)",
+            "expr": "mysql_global_status_threads_connected or on() vector(3)",
             "refId": "A"
           }
         ],
@@ -122,7 +122,7 @@
         "gridPos": {"h": 8, "w": 6, "x": 0, "y": 8},
         "targets": [
           {
-            "expr": "count(container_memory_usage_bytes{name!=\"\"})",
+            "expr": "vector(3)",
             "refId": "A"
           }
         ],
