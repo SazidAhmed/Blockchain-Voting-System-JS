@@ -1,0 +1,49 @@
+Tue, Nov 18, 2025 12:24:24 PM - PHASE 1: System Health Check
+[TEST] Checking blockchain node health...
+  ✓ node-1 (port 3001): Healthy
+  ✓ node-2 (port 3002): Healthy
+  ✓ node-3 (port 3003): Healthy
+  ✓ node-4 (port 3004): Healthy
+  ✓ node-5 (port 3005): Healthy
+[PASS] All nodes healthy
+Tue, Nov 18, 2025 12:24:25 PM - PHASE 2: Core Security Testing
+[INFO] Running 7 practical security tests...\n
+[TEST] Test 1: Blockchain Consensus Validation
+[INFO] Fetching blockchain from all nodes...
+[PASS] Blockchain Consensus: All nodes have consistent chain (length: 0)
+[TEST] Test 2: Vote Submission and Validation
+[INFO] Submitting test vote to node 1...
+[INFO] Vote submission response: {"message":"Cannot add invalid vote to chain"}
+[WARN] Vote Submission: Unable to verify response format
+[TEST] Test 3: Nullifier System (Double Voting Prevention)
+[INFO] Testing nullifier tracking...
+[PASS] Nullifier System: Infrastructure present for tracking
+[INFO] Nullifier deduplication infrastructure is in place
+[TEST] Test 4: Peer Discovery and Network Health
+[INFO] Checking peer discovery on all nodes...
+[WARN] Node (port 3001): Low peer count (0)
+[WARN] Node (port 3002): Low peer count (0)
+[WARN] Node (port 3003): Low peer count (0)
+[WARN] Node (port 3004): Low peer count (0)
+[WARN] Node (port 3005): Low peer count (0)
+[WARN] Peer Discovery: Some nodes have limited connections
+[TEST] Test 5: Metrics Exposure (Prometheus)
+[INFO] Checking Prometheus metrics on all nodes...
+[PASS] Metrics Exposure: All nodes exposing Prometheus metrics
+[TEST] Test 6: Fork Detection (Network Partition)
+[INFO] Testing fork detection capability...
+[INFO] Chain heights before: 0
+[PASS] Fork Detection: Network is synchronized
+[TEST] Test 7: Message Integrity Verification
+[INFO] Verifying message signature verification is working...
+[WARN] Message Integrity: Unsigned vote accepted (may need signature verification)
+Tue, Nov 18, 2025 12:24:32 PM - TEST RESULTS SUMMARY
+
+SUMMARY
+Total Tests: 8
+Passed: 5
+Failed: 0
+Warnings: 3
+
+✓ All critical tests passed!
+[INFO] Results saved to: ./results/security_tests_20251118_122424.txt

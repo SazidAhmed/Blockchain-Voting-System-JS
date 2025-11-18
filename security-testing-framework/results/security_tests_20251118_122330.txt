@@ -1,0 +1,17 @@
+Tue, Nov 18, 2025 12:23:30 PM - PHASE 1: System Health Check
+[TEST] Checking blockchain node health...
+  ✓ node-1 (port 3001): Healthy
+  ✓ node-2 (port 3002): Healthy
+  ✓ node-3 (port 3003): Healthy
+  ✓ node-4 (port 3004): Healthy
+  ✓ node-5 (port 3005): Healthy
+[PASS] All nodes healthy
+Tue, Nov 18, 2025 12:23:30 PM - PHASE 2: Core Security Testing
+[INFO] Running 7 practical security tests...\n
+[TEST] Test 1: Blockchain Consensus Validation
+[INFO] Fetching blockchain from all nodes...
+[PASS] Blockchain Consensus: All nodes have consistent chain (length: 0)
+[TEST] Test 2: Vote Submission and Validation
+[INFO] Submitting test vote to node 1...
+[INFO] Vote submission response: {"message":"Vote must include voterId, electionId, encryptedBallot, and nullifier"}
+[FAIL] Vote Submission: Vote rejected

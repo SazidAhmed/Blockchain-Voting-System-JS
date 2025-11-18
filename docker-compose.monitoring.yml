@@ -124,13 +124,45 @@ services:
     depends_on:
       - mysql
 
+  # Loki - Log aggregation
+  loki:
+    image: grafana/loki:latest
+    container_name: voting-loki
+    restart: unless-stopped
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./loki-config.yml:/etc/loki/local-config.yml:ro
+      - loki_data:/loki
+    command: -config.file=/etc/loki/local-config.yml
+    networks:
+      - monitoring
+    environment:
+      - JAEGER_AGENT_HOST=jaeger
+      - JAEGER_AGENT_PORT=6831
+
+  # Promtail - Log shipper to Loki
+  promtail:
+    image: grafana/promtail:latest
+    container_name: voting-promtail
+    restart: unless-stopped
+    volumes:
+      - ./promtail-config.yml:/etc/promtail/config.yml:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /var/log:/var/log:ro
+    command: -config.file=/etc/promtail/config.yml
+    networks:
+      - monitoring
+    depends_on:
+      - loki
+
 networks:
   monitoring:
     driver: bridge
     name: voting-monitoring
-  voting-network:
+  voting-blockchain-network:
     driver: bridge
-    name: voting-blockchain-network
     external: true
 
 volumes:
@@ -138,3 +170,5 @@ volumes:
     name: voting_prometheus_data
   grafana_data:
     name: voting_grafana_data
+  loki_data:
+    name: voting_loki_data

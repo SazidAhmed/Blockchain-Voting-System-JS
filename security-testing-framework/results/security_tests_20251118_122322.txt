@@ -1,0 +1,9 @@
+Tue, Nov 18, 2025 12:23:22 PM - PHASE 1: System Health Check
+[TEST] Checking blockchain node health...
+  ✓ node-1 (port 3001): Healthy
+  ✓ node-2 (port 3002): Healthy
+  ✓ node-3 (port 3003): Healthy
+  ✓ node-4 (port 3004): Healthy
+  ✓ node-5 (port 3005): Healthy
+[PASS] All nodes healthy
+[FAIL] System not ready

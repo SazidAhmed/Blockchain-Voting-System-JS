@@ -16,3 +16,84 @@ Prometheus: http://localhost:9090
 Grafana: http://localhost:3030
 
 cd /h/Voting && docker-compose -f docker-compose.multi-node.yml -f docker-compose.monitoring.yml up -d 2>&1 | head -50
+
+ACCESS THE VOTING APPLICATION
+
+📱 FRONTEND (User Interface)
+   URL: http://localhost:5173
+   
+   What you can do:
+   ✅ Register as voter
+   ✅ Create elections
+   ✅ Cast encrypted votes
+   ✅ View results
+   ✅ Monitor blockchain in real-time
+
+🔧 BACKEND API
+   URL: http://localhost:3000/api
+   
+   Key endpoints:
+   ✅ /elections - List all elections
+   ✅ /elections/create - Create new election
+   ✅ /vote - Submit encrypted vote
+   ✅ /users/register - Register voter
+
+💾 DATABASE ADMIN
+   URL: http://localhost:8080
+   User: voting_user
+   Password: voting_pass
+   
+   Access phpMyAdmin to view database directly
+
+🔗 BLOCKCHAIN NODES (Already Running)
+   ✅ Node 1: http://localhost:3001
+   ✅ Node 2: http://localhost:3002
+   ✅ Node 3: http://localhost:3003
+   ✅ Node 4: http://localhost:3004
+   ✅ Node 5: http://localhost:3005
+
+📊 MONITORING & METRICS
+   Prometheus: http://localhost:9090
+   Grafana: http://localhost:3030 (admin/admin)
+
+═══════════════════════════════════════════════════════════════════════════
+
+🚀 SYSTEM STATUS
+
+Containers Running:
+  ✅ voting-mysql              (Database)
+  ✅ voting-backend            (API Server)
+  ✅ voting-frontend           (Web UI)
+  ✅ voting-blockchain-node-1  (Blockchain)
+  ✅ voting-blockchain-node-2  (Blockchain)
+  ✅ voting-blockchain-node-3  (Blockchain)
+  ✅ voting-blockchain-node-4  (Blockchain)
+  ✅ voting-blockchain-node-5  (Blockchain)
+  ✅ Prometheus & Grafana      (Monitoring)
+
+═══════════════════════════════════════════════════════════════════════════
+
+📝 RECOMMENDED TESTING FLOW
+
+1. Open http://localhost:5173 in your browser
+2. Register as a new voter
+3. Create a test election
+4. Cast your encrypted vote
+5. Watch the blockchain record it
+6. View results on the dashboard
+
+═══════════════════════════════════════════════════════════════════════════
+
+⚡ QUICK COMMANDS
+
+Check Backend Logs:
+  docker logs voting-backend -f
+
+Check Frontend Logs:
+  docker logs voting-frontend -f
+
+Check API Health:
+  curl http://localhost:3000/api/elections
+
+Stop Services:
+  docker-compose down

@@ -1,0 +1,238 @@
+{
+  "dashboard": {
+    "title": "Blockchain Voting System - Complete Monitoring with Logs",
+    "tags": ["blockchain", "voting", "monitoring", "logs"],
+    "timezone": "browser",
+    "refresh": "30s",
+    "time": {
+      "from": "now-6h",
+      "to": "now"
+    },
+    "panels": [
+      {
+        "id": 1,
+        "title": "Blockchain Nodes - Active",
+        "type": "stat",
+        "gridPos": {"h": 8, "w": 6, "x": 0, "y": 0},
+        "targets": [
+          {
+            "expr": "count(up{job=\"blockchain-node\"})",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "custom": {},
+            "color": {
+              "mode": "thresholds"
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"color": "red", "value": null},
+                {"color": "yellow", "value": 3},
+                {"color": "green", "value": 5}
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 2,
+        "title": "Total Votes Processed",
+        "type": "stat",
+        "gridPos": {"h": 8, "w": 6, "x": 6, "y": 0},
+        "targets": [
+          {
+            "expr": "sum(blockchain_votes_processed_total) or vector(0)",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "custom": {},
+            "color": {
+              "mode": "thresholds"
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"color": "blue", "value": null}
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 3,
+        "title": "System CPU Usage %",
+        "type": "gauge",
+        "gridPos": {"h": 8, "w": 6, "x": 12, "y": 0},
+        "targets": [
+          {
+            "expr": "100 - (avg(rate(node_cpu_seconds_total{mode=\"idle\"}[5m])) * 100)",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent",
+            "max": 100,
+            "custom": {},
+            "color": {
+              "mode": "thresholds"
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"color": "green", "value": null},
+                {"color": "yellow", "value": 60},
+                {"color": "red", "value": 90}
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 4,
+        "title": "System Memory Usage %",
+        "type": "gauge",
+        "gridPos": {"h": 8, "w": 6, "x": 18, "y": 0},
+        "targets": [
+          {
+            "expr": "(1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent",
+            "max": 100,
+            "custom": {},
+            "color": {
+              "mode": "thresholds"
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"color": "green", "value": null},
+                {"color": "yellow", "value": 60},
+                {"color": "red", "value": 90}
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 5,
+        "title": "Backend Logs",
+        "type": "logs",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
+        "targets": [
+          {
+            "expr": "{service=\"backend\"}",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "showLabels": "auto",
+          "showTime": true,
+          "wrapLogMessage": true,
+          "sortOrder": 2
+        }
+      },
+      {
+        "id": 6,
+        "title": "Blockchain Node Logs",
+        "type": "logs",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8},
+        "targets": [
+          {
+            "expr": "{service=\"blockchain-node\"}",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "showLabels": "auto",
+          "showTime": true,
+          "wrapLogMessage": true,
+          "sortOrder": 2
+        }
+      },
+      {
+        "id": 7,
+        "title": "Database Logs",
+        "type": "logs",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 16},
+        "targets": [
+          {
+            "expr": "{service=\"mysql\"}",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "showLabels": "auto",
+          "showTime": true,
+          "wrapLogMessage": true,
+          "sortOrder": 2
+        }
+      },
+      {
+        "id": 8,
+        "title": "Frontend Logs",
+        "type": "logs",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 16},
+        "targets": [
+          {
+            "expr": "{service=\"frontend\"}",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "showLabels": "auto",
+          "showTime": true,
+          "wrapLogMessage": true,
+          "sortOrder": 2
+        }
+      },
+      {
+        "id": 9,
+        "title": "Error Rate Trend",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 24},
+        "targets": [
+          {
+            "expr": "sum(rate({level=\"error\"} [5m])) by (service)",
+            "legendFormat": "{{ service }}",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {"format": "errors/sec", "label": "Error Rate"},
+          {"format": "short"}
+        ]
+      },
+      {
+        "id": 10,
+        "title": "All System Logs",
+        "type": "logs",
+        "gridPos": {"h": 10, "w": 24, "x": 0, "y": 32},
+        "targets": [
+          {
+            "expr": "{job=\"voting-system\"} | json",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "showLabels": "auto",
+          "showTime": true,
+          "wrapLogMessage": false,
+          "sortOrder": 2,
+          "dedupStrategy": "none"
+        }
+      }
+    ]
+  }
+}

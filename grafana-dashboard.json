@@ -1,0 +1,123 @@
+{
+  "dashboard": {
+    "id": null,
+    "title": "Blockchain Voting System - Complete Monitoring",
+    "tags": ["blockchain", "voting", "monitoring"],
+    "timezone": "browser",
+    "panels": [
+      {
+        "id": 1,
+        "title": "Blockchain Nodes Status",
+        "type": "stat",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+        "targets": [
+          {
+            "expr": "count(up{job=\"blockchain-node\"})",
+            "refId": "A",
+            "legendFormat": "Active Nodes"
+          }
+        ]
+      },
+      {
+        "id": 2,
+        "title": "Votes Processed",
+        "type": "stat",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+        "targets": [
+          {
+            "expr": "sum(blockchain_votes_processed_total)",
+            "refId": "A",
+            "legendFormat": "Total Votes"
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "title": "Byzantine Attacks Detected",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 24, "x": 0, "y": 8},
+        "targets": [
+          {
+            "expr": "sum(blockchain_byzantine_attacks_detected)",
+            "refId": "A",
+            "legendFormat": "Byzantine Attacks"
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "title": "System CPU Usage",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 16},
+        "targets": [
+          {
+            "expr": "100 - (avg(rate(node_cpu_seconds_total{mode=\"idle\"}[5m])) * 100)",
+            "refId": "A",
+            "legendFormat": "CPU Usage %"
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "title": "System Memory Usage",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 16},
+        "targets": [
+          {
+            "expr": "(1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100",
+            "refId": "A",
+            "legendFormat": "Memory Usage %"
+          }
+        ]
+      },
+      {
+        "id": 6,
+        "title": "Network Traffic (Bytes/sec)",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 24, "x": 0, "y": 24},
+        "targets": [
+          {
+            "expr": "rate(node_network_receive_bytes_total[5m])",
+            "refId": "A",
+            "legendFormat": "Receive"
+          },
+          {
+            "expr": "rate(node_network_transmit_bytes_total[5m])",
+            "refId": "B",
+            "legendFormat": "Transmit"
+          }
+        ]
+      },
+      {
+        "id": 7,
+        "title": "Disk I/O",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 32},
+        "targets": [
+          {
+            "expr": "rate(node_disk_read_bytes_total[5m])",
+            "refId": "A",
+            "legendFormat": "Disk Read"
+          }
+        ]
+      },
+      {
+        "id": 8,
+        "title": "Container Stats",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 32},
+        "targets": [
+          {
+            "expr": "container_memory_usage_bytes",
+            "refId": "A",
+            "legendFormat": "{{ container_name }}"
+          }
+        ]
+      }
+    ],
+    "refresh": "30s",
+    "schemaVersion": 27,
+    "version": 1
+  },
+  "overwrite": true
+}
