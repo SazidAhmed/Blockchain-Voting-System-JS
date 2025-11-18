@@ -62,14 +62,19 @@ export default {
   methods: {
     async handleLogin() {
       try {
-        await this.$store.dispatch('login', {
+        const loginResponse = await this.$store.dispatch('login', {
           institutionId: this.studentId, // Backend expects institutionId
           password: this.password
         })
         
-        // Redirect to elections page or to the page user was trying to access
-        const redirectPath = this.$route.query.redirect || '/elections'
-        this.$router.push(redirectPath)
+        // Check if user is admin and redirect to admin dashboard
+        if (loginResponse.user && loginResponse.user.role === 'admin') {
+          this.$router.push('/admin/dashboard')
+        } else {
+          // Redirect to elections page or to the page user was trying to access
+          const redirectPath = this.$route.query.redirect || '/elections'
+          this.$router.push(redirectPath)
+        }
       } catch (error) {
         // Error is handled in the store
         console.error('Login error:', error)
