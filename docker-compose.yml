@@ -128,6 +128,26 @@ services:
       - voting-network
     command: npm run dev -- --host 0.0.0.0
 
+  # Admin Panel (Separate Vue App)
+  admin-panel:
+    build:
+      context: ./admin-panel
+      dockerfile: Dockerfile
+    container_name: voting-admin-panel
+    restart: always
+    environment:
+      VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:3000/api}
+    ports:
+      - "5174:5174"
+    volumes:
+      - ./admin-panel:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+    networks:
+      - voting-network
+    command: npm run dev -- --host 0.0.0.0 --port 5174
+
 networks:
   voting-network:
     driver: bridge
@@ -137,3 +157,4 @@ volumes:
     driver: local
   blockchain_data:
     driver: local
+

@@ -1,0 +1,22 @@
+{
+  "name": "admin-panel",
+  "version": "1.0.0",
+  "description": "Admin Panel for Voting System",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "vue": "^3.5.22",
+    "vue-router": "^4.6.3",
+    "axios": "^1.12.2",
+    "vuex": "^4.1.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^6.0.1",
+    "vite": "^7.1.10",
+    "vite-plugin-vue-devtools": "^8.0.3"
+  }
+}
