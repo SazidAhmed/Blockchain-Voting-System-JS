@@ -19,7 +19,7 @@ export const useElectionsStore = defineStore('elections', () => {
     error.value = null
 
     try {
-      const response = await fetch('http://localhost:3000/api/elections/admin', {
+      const response = await fetch('http://localhost:3000/api/elections/admin/all', {
         headers: {
           'Authorization': `Bearer ${authStore.token}`
         }

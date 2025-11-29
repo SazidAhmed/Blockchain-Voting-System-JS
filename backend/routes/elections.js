@@ -532,7 +532,7 @@ router.get('/admin/all', adminAuth, async (req, res) => {
     // Get candidates for each election
     for (const election of elections) {
       const [candidates] = await pool.query(
-        'SELECT c.*, COUNT(DISTINCT vm.id) as votes_count FROM candidates c LEFT JOIN votes_meta vm ON c.id = vm.election_id GROUP BY c.id WHERE c.election_id = ?',
+        'SELECT c.*, COUNT(DISTINCT vm.id) as votes_count FROM candidates c LEFT JOIN votes_meta vm ON c.id = vm.candidate_id WHERE c.election_id = ? GROUP BY c.id',
         [election.id]
       );
       election.candidates = candidates;
