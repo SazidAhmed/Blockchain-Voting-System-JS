@@ -553,7 +553,9 @@ export default {
     }
   },
   mounted() {
-    if (!this.currentUser || this.currentUser.role !== 'admin') {
+    // Check user role from localStorage (more reliable than Vuex)
+    const user = JSON.parse(localStorage.getItem('user') || '{}')
+    if (!user || user.role !== 'admin') {
       this.$router.push('/')
       return
     }
