@@ -445,7 +445,7 @@ export default {
       if (!confirm('Are you sure you want to delete this candidate?')) return
 
       try {
-        const response = await fetch(`http://localhost:3000/api/candidates/${candidateId}`, {
+        const response = await fetch(`http://localhost:3000/api/elections/candidates/${candidateId}`, {
           method: 'DELETE',
           headers: {
             'Authorization': `Bearer ${authStore.token}`
