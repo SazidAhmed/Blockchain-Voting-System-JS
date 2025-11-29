@@ -3,8 +3,16 @@ require('dotenv').config();
 
 // Middleware to verify JWT token
 function auth(req, res, next) {
-  // Get token from header
-  const token = req.header('x-auth-token');
+  // Get token from header - support both x-auth-token and Authorization: Bearer
+  let token = req.header('x-auth-token');
+  
+  if (!token) {
+    // Try Authorization header with Bearer format
+    const authHeader = req.header('Authorization');
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.substring(7); // Remove 'Bearer ' prefix
+    }
+  }
 
   // Check if no token
   if (!token) {
