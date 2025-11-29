@@ -90,7 +90,7 @@
         <!-- Create Election Tab -->
         <section v-show="activeTab === 'create'" class="tab-content">
           <h2>Create New Election</h2>
-          <form @submit.prevent="createElection" class="election-form">
+          <form @submit.prevent="createElectionHandler" class="election-form">
             <div class="form-group">
               <label for="title">Election Title *</label>
               <input 
@@ -332,7 +332,10 @@
 </template>
 
 <script>
-import { mapGetters } from 'vuex'
+import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import { useAuthStore } from '../store/auth'
+import { useElectionsStore } from '../store/elections'
 import AdminAuditLogs from '../components/AdminAuditLogs.vue'
 
 export default {
@@ -340,226 +343,227 @@ export default {
   components: {
     AdminAuditLogs
   },
-  data() {
-    return {
-      activeTab: 'elections',
-      elections: [],
-      loading: false,
-      error: null,
-      creating: false,
-      createError: null,
-      createSuccess: null,
-      selectedElectionId: '',
-      selectedResultsElectionId: '',
-      navigationTabs: [
-        { id: 'elections', label: 'Elections', icon: '📋' },
-        { id: 'create', label: 'Create Election', icon: '➕' },
-        { id: 'candidates', label: 'Manage Candidates', icon: '👥' },
-        { id: 'results', label: 'Results & Stats', icon: '📈' },
-        { id: 'audit', label: 'Audit Logs', icon: '🔐' }
-      ],
-      newElection: {
-        title: '',
-        description: '',
-        startDate: '',
-        endDate: '',
-        candidates: [
-          { name: '', description: '' }
-        ]
-      },
-      newCandidate: {
-        name: '',
-        description: ''
-      }
-    }
-  },
-  computed: {
-    ...mapGetters(['currentUser']),
-    selectedElection() {
-      return this.elections.find(e => e.id === parseInt(this.selectedElectionId))
-    },
-    selectedResultsElection() {
-      return this.elections.find(e => e.id === parseInt(this.selectedResultsElectionId))
-    }
-  },
-  methods: {
-    getCurrentTabLabel() {
-      const tab = this.navigationTabs.find(t => t.id === this.activeTab)
+  setup() {
+    const router = useRouter()
+    const authStore = useAuthStore()
+    const electionsStore = useElectionsStore()
+
+    // Local state
+    const activeTab = ref('elections')
+    const creating = ref(false)
+    const createError = ref(null)
+    const createSuccess = ref(null)
+    const selectedElectionId = ref('')
+    const selectedResultsElectionId = ref('')
+
+    const navigationTabs = [
+      { id: 'elections', label: 'Elections', icon: '📋' },
+      { id: 'create', label: 'Create Election', icon: '➕' },
+      { id: 'candidates', label: 'Manage Candidates', icon: '👥' },
+      { id: 'results', label: 'Results & Stats', icon: '📈' },
+      { id: 'audit', label: 'Audit Logs', icon: '🔐' }
+    ]
+
+    const newElection = ref({
+      title: '',
+      description: '',
+      startDate: '',
+      endDate: '',
+      candidates: [{ name: '', description: '' }]
+    })
+
+    const newCandidate = ref({
+      name: '',
+      description: ''
+    })
+
+    // Computed
+    const elections = computed(() => electionsStore.elections)
+    const loading = computed(() => electionsStore.loading)
+    const error = computed(() => electionsStore.error)
+    const currentUser = computed(() => authStore.currentUser)
+
+    const selectedElection = computed(() => {
+      return elections.value.find(e => e.id === parseInt(selectedElectionId.value))
+    })
+
+    const selectedResultsElection = computed(() => {
+      return elections.value.find(e => e.id === parseInt(selectedResultsElectionId.value))
+    })
+
+    // Methods
+    const getCurrentTabLabel = () => {
+      const tab = navigationTabs.find(t => t.id === activeTab.value)
       return tab ? tab.label : 'Dashboard'
-    },
-    async fetchElections() {
-      this.loading = true
-      this.error = null
+    }
+
+    const createElectionHandler = async () => {
+      creating.value = true
+      createError.value = null
+      createSuccess.value = null
+
       try {
-        const response = await fetch('http://localhost:3000/api/elections/admin', {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          }
+        await electionsStore.createElection({
+          title: newElection.value.title,
+          description: newElection.value.description,
+          startDate: newElection.value.startDate,
+          endDate: newElection.value.endDate,
+          candidates: newElection.value.candidates.filter(c => c.name)
         })
-        if (!response.ok) throw new Error('Failed to fetch elections')
-        this.elections = await response.json()
+
+        createSuccess.value = 'Election created successfully!'
+        resetForm()
+        await electionsStore.fetchElections()
+        setTimeout(() => { activeTab.value = 'elections' }, 1500)
       } catch (err) {
-        this.error = err.message
+        createError.value = err.message
       } finally {
-        this.loading = false
+        creating.value = false
       }
-    },
-    async createElection() {
-      this.creating = true
-      this.createError = null
-      this.createSuccess = null
+    }
 
+    const toggleElectionStatus = async (election) => {
       try {
-        const response = await fetch('http://localhost:3000/api/elections', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            title: this.newElection.title,
-            description: this.newElection.description,
-            startDate: this.newElection.startDate,
-            endDate: this.newElection.endDate,
-            candidates: this.newElection.candidates.filter(c => c.name)
-          })
-        })
-
-        if (!response.ok) {
-          const error = await response.json()
-          throw new Error(error.message || 'Failed to create election')
-        }
-
-        this.createSuccess = 'Election created successfully!'
-        this.resetForm()
-        await this.fetchElections()
-        setTimeout(() => { this.activeTab = 'elections' }, 1500)
+        const newStatus = election.status === 'active' ? 'pending' : 'active'
+        await electionsStore.updateElectionStatus(election.id, newStatus)
       } catch (err) {
-        this.createError = err.message
-      } finally {
-        this.creating = false
+        console.error('Status update error:', err)
       }
-    },
-    async toggleElectionStatus(election) {
-      const newStatus = election.status === 'active' ? 'pending' : 'active'
-      try {
-        const response = await fetch(`http://localhost:3000/api/elections/${election.id}/status`, {
-          method: 'PATCH',
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ status: newStatus })
-        })
+    }
 
-        if (!response.ok) throw new Error('Failed to update election status')
-        await this.fetchElections()
-      } catch (err) {
-        this.error = err.message
-      }
-    },
-    async deleteElection(electionId) {
+    const deleteElection = async (electionId) => {
       if (!confirm('Are you sure you want to delete this election?')) return
 
       try {
-        const response = await fetch(`http://localhost:3000/api/elections/${electionId}`, {
-          method: 'DELETE',
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          }
-        })
-
-        if (!response.ok) throw new Error('Failed to delete election')
-        await this.fetchElections()
+        await electionsStore.deleteElection(electionId)
       } catch (err) {
-        this.error = err.message
+        console.error('Delete error:', err)
       }
-    },
-    async deleteCandidate(candidateId) {
+    }
+
+    const deleteCandidate = async (candidateId) => {
       if (!confirm('Are you sure you want to delete this candidate?')) return
 
       try {
         const response = await fetch(`http://localhost:3000/api/candidates/${candidateId}`, {
           method: 'DELETE',
           headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
+            'Authorization': `Bearer ${authStore.token}`
           }
         })
 
         if (!response.ok) throw new Error('Failed to delete candidate')
-        await this.fetchElections()
+        await electionsStore.fetchElections()
       } catch (err) {
-        this.error = err.message
+        alert(err.message)
       }
-    },
-    async addCandidateToElection() {
-      if (!this.newCandidate.name) {
+    }
+
+    const addCandidateToElection = async () => {
+      if (!newCandidate.value.name) {
         alert('Please enter a candidate name')
         return
       }
 
       try {
-        const response = await fetch(`http://localhost:3000/api/elections/${this.selectedElectionId}/candidates`, {
+        const response = await fetch(`http://localhost:3000/api/elections/${selectedElectionId.value}/candidates`, {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'Authorization': `Bearer ${authStore.token}`,
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify(this.newCandidate)
+          body: JSON.stringify(newCandidate.value)
         })
 
         if (!response.ok) throw new Error('Failed to add candidate')
-        this.newCandidate = { name: '', description: '' }
-        await this.fetchElections()
+        newCandidate.value = { name: '', description: '' }
+        await electionsStore.fetchElections()
       } catch (err) {
         alert(err.message)
       }
-    },
-    editElection(election) {
-      this.newElection = {
+    }
+
+    const editElection = (election) => {
+      newElection.value = {
         title: election.title,
         description: election.description,
         startDate: new Date(election.start_date).toISOString().slice(0, 16),
         endDate: new Date(election.end_date).toISOString().slice(0, 16),
         candidates: election.candidates || []
       }
-      this.activeTab = 'create'
-    },
-    addCandidate() {
-      this.newElection.candidates.push({ name: '', description: '' })
-    },
-    removeCandidate(index) {
-      this.newElection.candidates.splice(index, 1)
-    },
-    resetForm() {
-      this.newElection = {
+      activeTab.value = 'create'
+    }
+
+    const addCandidate = () => {
+      newElection.value.candidates.push({ name: '', description: '' })
+    }
+
+    const removeCandidate = (index) => {
+      newElection.value.candidates.splice(index, 1)
+    }
+
+    const resetForm = () => {
+      newElection.value = {
         title: '',
         description: '',
         startDate: '',
         endDate: '',
         candidates: [{ name: '', description: '' }]
       }
-      this.createError = null
-      this.createSuccess = null
-    },
-    formatDate(dateString) {
+      createError.value = null
+      createSuccess.value = null
+    }
+
+    const formatDate = (dateString) => {
       const options = { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }
       return new Date(dateString).toLocaleDateString(undefined, options)
-    },
-    logout() {
-      localStorage.removeItem('token')
-      localStorage.removeItem('user')
-      this.$router.push('/login')
     }
-  },
-  mounted() {
-    // Check user role from localStorage (more reliable than Vuex)
-    const user = JSON.parse(localStorage.getItem('user') || '{}')
-    if (!user || user.role !== 'admin') {
-      this.$router.push('/')
-      return
+
+    const logout = async () => {
+      await authStore.logout()
+      await router.push('/login')
     }
-    this.fetchElections()
+
+    // Lifecycle
+    onMounted(async () => {
+      // Check user role
+      const user = authStore.currentUser
+      if (!user || user.role !== 'admin') {
+        await router.push('/')
+        return
+      }
+      await electionsStore.fetchElections()
+    })
+
+    return {
+      activeTab,
+      creating,
+      createError,
+      createSuccess,
+      selectedElectionId,
+      selectedResultsElectionId,
+      navigationTabs,
+      newElection,
+      newCandidate,
+      elections,
+      loading,
+      error,
+      currentUser,
+      selectedElection,
+      selectedResultsElection,
+      getCurrentTabLabel,
+      createElectionHandler,
+      toggleElectionStatus,
+      deleteElection,
+      deleteCandidate,
+      addCandidateToElection,
+      editElection,
+      addCandidate,
+      removeCandidate,
+      resetForm,
+      formatDate,
+      logout
+    }
   }
 }
 </script>

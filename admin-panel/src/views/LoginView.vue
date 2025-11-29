@@ -48,37 +48,45 @@
 </template>
 
 <script>
-import { mapGetters } from 'vuex'
+import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import { useAuthStore } from '../store/auth'
 
 export default {
   name: 'LoginView',
-  data() {
-    return {
-      username: 'ADMIN001',
-      password: 'admin123'
-    }
-  },
-  computed: {
-    ...mapGetters(['error', 'isLoading']),
-    loading() {
-      return this.isLoading
-    }
-  },
-  methods: {
-    async handleLogin() {
+  setup() {
+    const router = useRouter()
+    const authStore = useAuthStore()
+    
+    const username = ref('ADMIN001')
+    const password = ref('admin123')
+    
+    const error = computed(() => authStore.error)
+    const loading = computed(() => authStore.loading)
+
+    const handleLogin = async () => {
       try {
-        await this.$store.dispatch('login', {
-          institutionId: this.username,
-          password: this.password
+        await authStore.login({
+          institutionId: username.value,
+          password: password.value
         })
-        this.$router.push('/dashboard')
-      } catch (error) {
-        console.error('Login error:', error)
+        await router.push('/dashboard')
+      } catch (err) {
+        console.error('Login error:', err)
       }
     }
-  },
-  created() {
-    this.$store.commit('CLEAR_ERROR')
+
+    onMounted(() => {
+      authStore.clearError()
+    })
+
+    return {
+      username,
+      password,
+      error,
+      loading,
+      handleLogin
+    }
   }
 }
 </script>
