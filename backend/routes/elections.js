@@ -205,6 +205,92 @@ router.put('/:id/status', adminAuth, async (req, res) => {
   }
 });
 
+// @route   PUT /api/elections/:id
+// @desc    Update election details
+// @access  Admin only
+router.put('/:id', adminAuth, async (req, res) => {
+  try {
+    const { title, description, startDate, endDate, candidates } = req.body;
+    const electionId = req.params.id;
+
+    // Validate required fields
+    if (!title || !startDate || !endDate) {
+      return res.status(400).json({ message: 'Title, start date, and end date are required' });
+    }
+
+    // Check if election exists and get current details
+    const [elections] = await pool.query(
+      'SELECT id, start_date, status FROM elections WHERE id = ?',
+      [electionId]
+    );
+
+    if (elections.length === 0) {
+      return res.status(404).json({ message: 'Election not found' });
+    }
+
+    const election = elections[0];
+    const now = new Date();
+    const electionStartDate = new Date(election.start_date);
+
+    // Prevent updates if election has already started
+    if (electionStartDate <= now) {
+      return res.status(403).json({ 
+        message: 'Cannot update election after it has started',
+        reason: 'Election has already begun and cannot be modified'
+      });
+    }
+
+    // Update election
+    const [result] = await pool.query(
+      'UPDATE elections SET title = ?, description = ?, start_date = ?, end_date = ? WHERE id = ?',
+      [title, description, new Date(startDate), new Date(endDate), electionId]
+    );
+
+    // Handle candidates if provided
+    if (candidates && Array.isArray(candidates)) {
+      // Get existing candidates
+      const [existingCandidates] = await pool.query(
+        'SELECT id, name FROM candidates WHERE election_id = ?',
+        [electionId]
+      );
+
+      const existingIds = existingCandidates.map(c => c.id);
+      const updatedIds = candidates.filter(c => c.id).map(c => c.id);
+
+      // Delete candidates not in the updated list
+      const toDelete = existingIds.filter(id => !updatedIds.includes(id));
+      if (toDelete.length > 0) {
+        await pool.query(
+          'DELETE FROM candidates WHERE id IN (?)',
+          [toDelete]
+        );
+      }
+
+      // Update or insert candidates
+      for (const candidate of candidates) {
+        if (candidate.id) {
+          // Update existing candidate
+          await pool.query(
+            'UPDATE candidates SET name = ?, description = ? WHERE id = ?',
+            [candidate.name, candidate.description || '', candidate.id]
+          );
+        } else if (candidate.name) {
+          // Insert new candidate
+          await pool.query(
+            'INSERT INTO candidates (election_id, name, description) VALUES (?, ?, ?)',
+            [electionId, candidate.name, candidate.description || '']
+          );
+        }
+      }
+    }
+
+    res.json({ message: 'Election updated successfully' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 // @route   POST /api/elections/:id/register
 // @desc    Register to vote in an election
 // @access  Private
@@ -299,7 +385,7 @@ router.post('/:id/vote', voteLimiter, auth, validateVote, async (req, res) => {
 
     // Check if election exists and is active
     const [elections] = await pool.query(
-      'SELECT id, status, public_key FROM elections WHERE id = ?',
+      'SELECT id, status, end_date, public_key FROM elections WHERE id = ?',
       [electionId]
     );
 
@@ -308,6 +394,17 @@ router.post('/:id/vote', voteLimiter, auth, validateVote, async (req, res) => {
     }
 
     const election = elections[0];
+
+    // Check if election has ended
+    const now = new Date();
+    const endDate = new Date(election.end_date);
+    
+    if (now > endDate) {
+      return res.status(403).json({ 
+        message: 'Voting has closed for this election',
+        reason: 'The election end date has passed'
+      });
+    }
 
     if (election.status !== 'active') {
       return res.status(400).json({ message: 'Voting is not currently open for this election' });
@@ -838,6 +935,30 @@ router.post('/admin/verify-audit-integrity/:logId', adminAuth, async (req, res) 
 router.delete('/:id', adminAuth, async (req, res) => {
   try {
     const electionId = req.params.id;
+
+    // Check if election exists and get current details
+    const [elections] = await pool.query(
+      'SELECT id, start_date, status, title FROM elections WHERE id = ?',
+      [electionId]
+    );
+
+    if (elections.length === 0) {
+      return res.status(404).json({ message: 'Election not found' });
+    }
+
+    const election = elections[0];
+    const now = new Date();
+    const electionStartDate = new Date(election.start_date);
+
+    // Prevent deletion only if election is ACTIVE and has already started
+    // Deactivated elections can be deleted even after start date
+    if (election.status === 'active' && electionStartDate <= now) {
+      return res.status(403).json({ 
+        message: 'Cannot delete active election after it has started',
+        reason: 'Election is active and has already begun. Deactivate it first if you need to delete it.',
+        election: election.title
+      });
+    }
 
     // Delete related data first
     await pool.query('DELETE FROM votes_meta WHERE election_id = ?', [electionId]);

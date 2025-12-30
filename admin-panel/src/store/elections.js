@@ -97,6 +97,35 @@ export const useElectionsStore = defineStore('elections', () => {
     }
   }
 
+  async function updateElection(electionId, electionData) {
+    const authStore = useAuthStore()
+    loading.value = true
+    error.value = null
+
+    try {
+      const response = await fetch(`http://localhost:3000/api/elections/${electionId}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${authStore.token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(electionData)
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.message || 'Failed to update election')
+      }
+
+      await fetchElections()
+    } catch (err) {
+      error.value = err.message
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
   async function deleteElection(electionId) {
     const authStore = useAuthStore()
     loading.value = true
@@ -138,6 +167,7 @@ export const useElectionsStore = defineStore('elections', () => {
     // Actions
     fetchElections,
     createElection,
+    updateElection,
     updateElectionStatus,
     deleteElection,
     clearError

@@ -113,7 +113,7 @@ export default {
     async fetchLogs() {
       this.loading = true
       try {
-        const response = await fetch(`http://localhost:3000/api/admin/audit-logs?limit=${this.limit}&offset=${this.offset}`, {
+        const response = await fetch(`http://localhost:3000/api/elections/admin/audit-logs?limit=${this.limit}&offset=${this.offset}`, {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('token')}`
           }
@@ -129,7 +129,7 @@ export default {
     },
     async verifyIntegrity(logId) {
       try {
-        const response = await fetch(`http://localhost:3000/api/admin/verify-audit-integrity/${logId}`, {
+        const response = await fetch(`http://localhost:3000/api/elections/admin/verify-audit-integrity/${logId}`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('token')}`

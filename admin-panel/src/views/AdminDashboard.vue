@@ -75,11 +75,23 @@
                   <td class="text-center">{{ election.candidates_count || 0 }}</td>
                   <td class="text-center">{{ election.votes_count || 0 }}</td>
                   <td class="actions">
-                    <button @click="editElection(election)" class="btn btn-small btn-primary">Edit</button>
+                    <button 
+                      @click="editElection(election)" 
+                      class="btn btn-small btn-primary"
+                      :disabled="hasElectionStarted(election)"
+                      :title="hasElectionStarted(election) ? 'Cannot edit after election starts' : 'Edit election'">
+                      Edit
+                    </button>
                     <button @click="toggleElectionStatus(election)" class="btn btn-small btn-warning">
                       {{ election.status === 'active' ? 'Deactivate' : 'Activate' }}
                     </button>
-                    <button @click="deleteElection(election.id)" class="btn btn-small btn-danger">Delete</button>
+                    <button 
+                      @click="deleteElection(election.id)" 
+                      class="btn btn-small btn-danger"
+                      :disabled="election.status === 'active' && hasElectionStarted(election)"
+                      :title="(election.status === 'active' && hasElectionStarted(election)) ? 'Cannot delete active election after it starts' : 'Delete election'">
+                      Delete
+                    </button>
                   </td>
                 </tr>
               </tbody>
@@ -179,7 +191,7 @@
 
             <div class="form-actions">
               <button type="submit" class="btn btn-primary" :disabled="creating">
-                {{ creating ? 'Creating...' : 'Create Election' }}
+                {{ creating ? (editingElectionId ? 'Updating...' : 'Creating...') : (editingElectionId ? 'Update Election' : 'Create Election') }}
               </button>
               <button type="button" @click="resetForm" class="btn btn-secondary">Cancel</button>
             </div>
@@ -355,6 +367,7 @@ export default {
     const createSuccess = ref(null)
     const selectedElectionId = ref('')
     const selectedResultsElectionId = ref('')
+    const editingElectionId = ref(null)
 
     const navigationTabs = [
       { id: 'elections', label: 'Elections', icon: '📋' },
@@ -397,21 +410,46 @@ export default {
       return tab ? tab.label : 'Dashboard'
     }
 
+    const hasElectionStarted = (election) => {
+      const now = new Date()
+      const startDate = new Date(election.start_date)
+      return startDate <= now
+    }
+
+    const hasElectionEnded = (election) => {
+      const now = new Date()
+      const endDate = new Date(election.end_date)
+      return endDate <= now
+    }
+
     const createElectionHandler = async () => {
       creating.value = true
       createError.value = null
       createSuccess.value = null
 
       try {
-        await electionsStore.createElection({
-          title: newElection.value.title,
-          description: newElection.value.description,
-          startDate: newElection.value.startDate,
-          endDate: newElection.value.endDate,
-          candidates: newElection.value.candidates.filter(c => c.name)
-        })
+        if (editingElectionId.value) {
+          // Update existing election
+          await electionsStore.updateElection(editingElectionId.value, {
+            title: newElection.value.title,
+            description: newElection.value.description,
+            startDate: newElection.value.startDate,
+            endDate: newElection.value.endDate,
+            candidates: newElection.value.candidates.filter(c => c.name)
+          })
+          createSuccess.value = 'Election updated successfully!'
+        } else {
+          // Create new election
+          await electionsStore.createElection({
+            title: newElection.value.title,
+            description: newElection.value.description,
+            startDate: newElection.value.startDate,
+            endDate: newElection.value.endDate,
+            candidates: newElection.value.candidates.filter(c => c.name)
+          })
+          createSuccess.value = 'Election created successfully!'
+        }
 
-        createSuccess.value = 'Election created successfully!'
         resetForm()
         await electionsStore.fetchElections()
         setTimeout(() => { activeTab.value = 'elections' }, 1500)
@@ -484,6 +522,7 @@ export default {
     }
 
     const editElection = (election) => {
+      editingElectionId.value = election.id
       newElection.value = {
         title: election.title,
         description: election.description,
@@ -503,6 +542,7 @@ export default {
     }
 
     const resetForm = () => {
+      editingElectionId.value = null
       newElection.value = {
         title: '',
         description: '',
@@ -556,6 +596,7 @@ export default {
       createSuccess,
       selectedElectionId,
       selectedResultsElectionId,
+      editingElectionId,
       navigationTabs,
       newElection,
       newCandidate,
@@ -566,6 +607,8 @@ export default {
       selectedElection,
       selectedResultsElection,
       getCurrentTabLabel,
+      hasElectionStarted,
+      hasElectionEnded,
       createElectionHandler,
       toggleElectionStatus,
       deleteElection,

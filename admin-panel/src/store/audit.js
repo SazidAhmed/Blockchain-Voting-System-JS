@@ -43,7 +43,7 @@ export const useAuditStore = defineStore('audit', () => {
     error.value = null
 
     try {
-      const response = await fetch('http://localhost:3000/api/admin/audit-logs', {
+      const response = await fetch('http://localhost:3000/api/elections/admin/audit-logs', {
         headers: {
           'Authorization': `Bearer ${authStore.token}`
         }
@@ -68,7 +68,8 @@ export const useAuditStore = defineStore('audit', () => {
     error.value = null
 
     try {
-      const response = await fetch(`http://localhost:3000/api/admin/audit-logs/${logId}/verify`, {
+      const response = await fetch(`http://localhost:3000/api/elections/admin/verify-audit-integrity/${logId}`, {
+        method: 'POST',
         headers: {
           'Authorization': `Bearer ${authStore.token}`
         }
@@ -94,7 +95,7 @@ export const useAuditStore = defineStore('audit', () => {
     error.value = null
 
     try {
-      const response = await fetch('http://localhost:3000/api/admin/audit-logs/verify-blockchain', {
+      const response = await fetch('http://localhost:3000/api/elections/admin/security-logs', {
         headers: {
           'Authorization': `Bearer ${authStore.token}`
         }
@@ -118,7 +119,7 @@ export const useAuditStore = defineStore('audit', () => {
     error.value = null
 
     try {
-      const response = await fetch(`http://localhost:3000/api/admin/audit-logs/export?format=${format}`, {
+      const response = await fetch(`http://localhost:3000/api/elections/admin/audit-logs/export?format=${format}`, {
         headers: {
           'Authorization': `Bearer ${authStore.token}`
         }
