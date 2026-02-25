@@ -15,8 +15,6 @@ class DatabaseSeeder {
     this.connection = null;
     this.createdIds = {
       users: [],
-      elections: [],
-      candidates: [],
       nodes: []
     };
   }
@@ -50,10 +48,7 @@ class DatabaseSeeder {
       'votes_meta',
       'tally_partial_decryptions',
       'threshold_key_shares',
-      'voter_registrations',
       'blind_tokens',
-      'candidates',
-      'elections',
       'audit_logs',
       'nodes',
       'users'
@@ -145,107 +140,9 @@ class DatabaseSeeder {
     }
   }
 
-  async seedElections() {
-    console.log('\n→ Seeding elections...');
 
-    const now = new Date();
-    const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
-    const nextWeek = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-    const lastWeek = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-    const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
-    const elections = [
-      {
-        title: 'Student Union President Election 2025',
-        description: 'Vote for the next Student Union President. Eligible voters: Students only.',
-        start_date: now,
-        end_date: nextWeek,
-        status: 'active',
-        eligible_roles: JSON.stringify(['student'])
-      },
-      {
-        title: 'University Board Election',
-        description: 'Election for university board members. All faculty and staff can vote.',
-        start_date: tomorrow,
-        end_date: new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000),
-        status: 'pending',
-        eligible_roles: JSON.stringify(['teacher', 'staff', 'board_member'])
-      },
-      {
-        title: 'Budget Allocation Referendum',
-        description: 'Referendum on the proposed budget allocation for 2026.',
-        start_date: lastWeek,
-        end_date: yesterday,
-        status: 'completed',
-        eligible_roles: JSON.stringify(['student', 'teacher', 'staff', 'board_member'])
-      }
-    ];
 
-    const adminId = this.createdIds.users[0]; // Admin user
-
-    for (const election of elections) {
-      const publicKey = crypto.randomBytes(32).toString('hex');
-      const thresholdParams = JSON.stringify({ t: 2, n: 3, algorithm: 'ElGamal' });
-
-      const [result] = await this.connection.query(
-        `INSERT INTO elections 
-         (title, description, start_date, end_date, status, created_by, public_key, threshold_params, eligible_roles)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [election.title, election.description, election.start_date, election.end_date,
-         election.status, adminId, publicKey, thresholdParams, election.eligible_roles]
-      );
-
-      this.createdIds.elections.push(result.insertId);
-      console.log(`  ✓ Created election: ${election.title} (${election.status})`);
-    }
-  }
-
-  async seedCandidates() {
-    console.log('\n→ Seeding candidates...');
-
-    const candidatesByElection = [
-      // Student Union President candidates
-      [
-        { name: 'Emma Wilson', description: 'Computer Science senior. Focus: Technology and innovation in student services.' },
-        { name: 'Michael Chen', description: 'Business Administration senior. Focus: Financial transparency and affordability.' },
-        { name: 'Sofia Rodriguez', description: 'Political Science senior. Focus: Diversity and inclusion initiatives.' }
-      ],
-      // University Board candidates
-      [
-        { name: 'Prof. David Anderson', description: 'Professor of Economics. 15 years of experience in university governance.' },
-        { name: 'Dr. Lisa Thompson', description: 'Associate Professor of Engineering. Advocate for STEM programs.' },
-        { name: 'Mark Davis', description: 'Director of Student Affairs. Focus on student wellbeing and campus life.' }
-      ],
-      // Budget Referendum options
-      [
-        { name: 'Approve Budget', description: 'Vote YES to approve the proposed 2026 budget allocation.' },
-        { name: 'Reject Budget', description: 'Vote NO to reject the proposed budget and request revisions.' }
-      ]
-    ];
-
-    for (let i = 0; i < this.createdIds.elections.length; i++) {
-      const electionId = this.createdIds.elections[i];
-      const candidates = candidatesByElection[i];
-
-      for (let j = 0; j < candidates.length; j++) {
-        const candidate = candidates[j];
-        const metadata = JSON.stringify({ 
-          displayOrder: j + 1,
-          imageUrl: null 
-        });
-
-        const [result] = await this.connection.query(
-          `INSERT INTO candidates 
-           (election_id, name, description, metadata, display_order)
-           VALUES (?, ?, ?, ?, ?)`,
-          [electionId, candidate.name, candidate.description, metadata, j + 1]
-        );
-
-        this.createdIds.candidates.push(result.insertId);
-        console.log(`  ✓ Created candidate: ${candidate.name}`);
-      }
-    }
-  }
 
   async seedNodes() {
     console.log('\n→ Seeding validator nodes...');
@@ -300,42 +197,7 @@ class DatabaseSeeder {
     }
   }
 
-  async seedVoterRegistrations() {
-    console.log('\n→ Seeding voter registrations...');
 
-    // Register students for Student Union election (election 1)
-    const studentIds = this.createdIds.users.slice(1, 4); // Alice, Bob, Charlie
-    const studentElectionId = this.createdIds.elections[0];
-
-    for (const userId of studentIds) {
-      const registrationToken = crypto.randomBytes(16).toString('hex');
-
-      await this.connection.query(
-        `INSERT INTO voter_registrations 
-         (user_id, election_id, registration_token, status)
-         VALUES (?, ?, ?, 'registered')`,
-        [userId, studentElectionId, registrationToken]
-      );
-    }
-
-    console.log(`  ✓ Registered 3 students for Student Union election`);
-
-    // Register all users for completed budget referendum
-    const budgetElectionId = this.createdIds.elections[2];
-    
-    for (const userId of this.createdIds.users.slice(1, 5)) { // Skip admin
-      const registrationToken = crypto.randomBytes(16).toString('hex');
-
-      await this.connection.query(
-        `INSERT INTO voter_registrations 
-         (user_id, election_id, registration_token, status)
-         VALUES (?, ?, ?, 'voted')`,
-        [userId, budgetElectionId, registrationToken]
-      );
-    }
-
-    console.log(`  ✓ Registered 4 users for Budget referendum (marked as voted)`);
-  }
 
   async seedSystemConfig() {
     console.log('\n→ Updating system configuration...');
@@ -371,19 +233,15 @@ class DatabaseSeeder {
       await this.connect();
       await this.clearExistingData();
       await this.seedUsers();
-      await this.seedElections();
-      await this.seedCandidates();
       await this.seedNodes();
-      await this.seedVoterRegistrations();
       await this.seedSystemConfig();
 
       console.log('\n========================================');
       console.log('Seeding Summary');
       console.log('========================================');
       console.log(`Users created: ${this.createdIds.users.length}`);
-      console.log(`Elections created: ${this.createdIds.elections.length}`);
-      console.log(`Candidates created: ${this.createdIds.candidates.length}`);
       console.log(`Nodes created: ${this.createdIds.nodes.length}`);
+      console.log('\n  ℹ️  Elections and candidates are not seeded - create them via the admin panel.');
       console.log('\n✓ Database seeding completed successfully!');
       console.log('\n📝 Login Credentials (Development Only):');
       console.log('  Admin:    ADMIN001 / admin123');
