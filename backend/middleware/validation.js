@@ -24,21 +24,10 @@ const validate = (req, res, next) => {
 
 /**
  * Validation rules for user registration
+ * Note: username, email, and role are sourced from the institutional directory
+ * and are not validated from the request body.
  */
 const validateRegistration = [
-  body('username')
-    .trim()
-    .notEmpty().withMessage('Username is required')
-    .isLength({ min: 2, max: 100 }).withMessage('Username must be 2-100 characters')
-    .escape(),
-  
-  body('email')
-    .trim()
-    .notEmpty().withMessage('Email is required')
-    .isEmail().withMessage('Invalid email format')
-    .normalizeEmail()
-    .isLength({ max: 100 }).withMessage('Email too long'),
-  
   body('institutionId')
     .trim()
     .notEmpty().withMessage('Institution ID is required')
@@ -49,11 +38,6 @@ const validateRegistration = [
     .notEmpty().withMessage('Password is required')
     .isLength({ min: 8 }).withMessage('Password must be at least 8 characters')
     .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/).withMessage('Password must contain uppercase, lowercase, and number'),
-  
-  body('role')
-    .trim()
-    .notEmpty().withMessage('Role is required')
-    .isIn(['student', 'teacher', 'staff', 'board_member', 'admin']).withMessage('Invalid role'),
   
   body('publicKey')
     .optional()

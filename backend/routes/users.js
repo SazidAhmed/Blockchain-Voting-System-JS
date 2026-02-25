@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
+const axios = require('axios');
 const { pool } = require('../config/db');
 const { auth } = require('../middleware/auth');
 const { registerLimiter, loginLimiter } = require('../middleware/rateLimiter');
@@ -10,14 +11,57 @@ const { hashPassword, comparePassword, generateKeypair } = require('../utils/cry
 const auditLogger = require('../utils/auditLogger');
 require('dotenv').config();
 
+const INSTITUTION_API_URL = process.env.INSTITUTION_API_URL || 'http://localhost:4000';
+
+// Helper: look up a member in the institutional directory
+async function lookupInstitutionMember(institutionId) {
+  try {
+    const response = await axios.get(`${INSTITUTION_API_URL}/api/lookup/${institutionId}`, { timeout: 5000 });
+    return response.data;
+  } catch (err) {
+    if (err.response && err.response.status === 404) return null;
+    throw new Error('Institutional directory is currently unavailable. Please try again later.');
+  }
+}
+
+// @route   GET /api/users/institution-lookup/:institutionId
+// @desc    Look up a member in the institutional directory (proxy)
+// @access  Public
+router.get('/institution-lookup/:institutionId', async (req, res) => {
+  try {
+    const member = await lookupInstitutionMember(req.params.institutionId.toUpperCase());
+    if (!member) {
+      return res.status(404).json({ message: 'Institution ID not found. Please check your ID and try again.' });
+    }
+    res.json(member);
+  } catch (err) {
+    res.status(503).json({ message: err.message });
+  }
+});
+
 // @route   POST /api/users/register
 // @desc    Register a new user
 // @access  Public
 router.post('/register', registerLimiter, validateRegistration, async (req, res) => {
   try {
-    const { institutionId, username, password, role, email, publicKey, encryptionPublicKey } = req.body;
+    const { institutionId, password, publicKey, encryptionPublicKey } = req.body;
 
-    // Input is already validated by middleware
+    // Verify institution ID against the institutional directory
+    let member;
+    try {
+      member = await lookupInstitutionMember(institutionId.toUpperCase());
+    } catch (err) {
+      return res.status(503).json({ message: err.message });
+    }
+
+    if (!member) {
+      return res.status(400).json({ message: 'Institution ID not found in the university directory. Please verify your ID.' });
+    }
+
+    // Use details from institutional directory (not user-supplied)
+    const username = member.fullName;
+    const email = member.email;
+    const role = member.role;
 
     // Check if user already exists
     const [existingUsers] = await pool.query(

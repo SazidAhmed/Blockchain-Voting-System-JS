@@ -87,6 +87,7 @@ services:
       JWT_SECRET: ${JWT_SECRET:-your-super-secret-jwt-key-change-in-production}
       BLOCKCHAIN_NODE_URL: http://blockchain-node:3001
       FRONTEND_URL: http://localhost:5173
+      INSTITUTION_API_URL: http://institution-api:4000
     ports:
       - "3000:3000"
     volumes:
@@ -97,6 +98,8 @@ services:
       mysql:
         condition: service_healthy
       blockchain-node:
+        condition: service_healthy
+      institution-api:
         condition: service_healthy
     networks:
       - voting-network
@@ -117,6 +120,7 @@ services:
     environment:
       VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:3000/api}
       VITE_BLOCKCHAIN_URL: ${VITE_BLOCKCHAIN_URL:-http://localhost:3001}
+      VITE_INSTITUTION_API_URL: ${VITE_INSTITUTION_API_URL:-http://localhost:4000}
     ports:
       - "5173:5173"
     volumes:
@@ -148,6 +152,25 @@ services:
       - voting-network
     command: npm run dev -- --host 0.0.0.0 --port 5174
 
+  # Mock Institutional Directory API
+  institution-api:
+    build:
+      context: ./institution-api
+      dockerfile: Dockerfile
+    container_name: voting-institution-api
+    restart: always
+    ports:
+      - "4000:4000"
+    volumes:
+      - institution_data:/app/data
+    networks:
+      - voting-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:4000/api/health"]
+      timeout: 10s
+      retries: 5
+      start_period: 15s
+
 networks:
   voting-network:
     driver: bridge
@@ -156,5 +179,7 @@ volumes:
   mysql_data:
     driver: local
   blockchain_data:
+    driver: local
+  institution_data:
     driver: local
 
