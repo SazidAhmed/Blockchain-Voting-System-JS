@@ -153,12 +153,17 @@ export default {
   border-radius: 8px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   text-align: center;
+  color: #000 !important;
 }
 
 .feature h3 {
   font-size: 1.5rem;
   margin-bottom: 15px;
-  color: #2c3e50;
+  color: #000 !important;
+}
+
+.feature p {
+  color: #000 !important;
 }
 
 .how-it-works {
@@ -169,7 +174,7 @@ export default {
 .how-it-works h2 {
   font-size: 2rem;
   margin-bottom: 40px;
-  color: #2c3e50;
+  color: #000 !important;
 }
 
 .steps {
@@ -183,6 +188,16 @@ export default {
   background-color: #fff;
   border-radius: 8px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  color: #000 !important;
+}
+
+.step h4 {
+  color: #000 !important;
+  margin-bottom: 10px;
+}
+
+.step p {
+  color: #000 !important;
 }
 
 .step-number {
@@ -196,10 +211,5 @@ export default {
   border-radius: 50%;
   margin: 0 auto 15px;
   font-weight: bold;
-}
-
-.step h4 {
-  margin-bottom: 10px;
-  color: #2c3e50;
 }
 </style>
