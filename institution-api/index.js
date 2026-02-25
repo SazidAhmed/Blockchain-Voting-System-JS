@@ -1,57 +1,71 @@
 /**
  * Mock Institutional Database API
- * Simulates a university's student/staff directory for testing purposes.
- * In a real deployment this would be replaced by the institution's LDAP/SSO/API.
+ * Simulates a university directory. Uses MySQL — visible in phpMyAdmin at localhost:8080.
  */
 
 const express = require('express');
-const cors = require('cors');
-const Database = require('better-sqlite3');
-const path = require('path');
-const crypto = require('crypto');
+const cors    = require('cors');
+const mysql   = require('mysql2/promise');
 
-const app = express();
+const app  = express();
 const PORT = process.env.PORT || 4000;
-const DB_PATH = path.join(__dirname, 'data', 'institution.db');
-
-// ── Middleware ────────────────────────────────────────────────────────────────
 app.use(cors());
 app.use(express.json());
 
-// ── Database setup ────────────────────────────────────────────────────────────
-const fs = require('fs');
-if (!fs.existsSync(path.join(__dirname, 'data'))) {
-  fs.mkdirSync(path.join(__dirname, 'data'));
+let pool;
+function getPool() {
+  if (!pool) {
+    pool = mysql.createPool({
+      host:             process.env.DB_HOST     || 'localhost',
+      port:             parseInt(process.env.DB_PORT || '3306'),
+      user:             process.env.DB_USER     || 'voting_user',
+      password:         process.env.DB_PASSWORD || 'voting_pass',
+      database:         process.env.DB_NAME     || 'institution_db',
+      waitForConnections: true,
+      connectionLimit:  10
+    });
+  }
+  return pool;
 }
 
-const db = new Database(DB_PATH);
+async function initDatabase() {
+  const dbName = process.env.DB_NAME     || 'institution_db';
+  const dbUser = process.env.DB_USER     || 'voting_user';
+  const root = await mysql.createConnection({
+    host:     process.env.DB_HOST || 'localhost',
+    port:     parseInt(process.env.DB_PORT || '3306'),
+    user:     'root',
+    password: process.env.DB_ROOT_PASSWORD || 'voting_root_pass'
+  });
+  await root.query('CREATE DATABASE IF NOT EXISTS ' + dbName + ' CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci');
+  await root.query('GRANT ALL PRIVILEGES ON ' + dbName + '.* TO \'' + dbUser + '\'@\'%\'');
+  await root.query('FLUSH PRIVILEGES');
+  await root.end();
+  console.log('Database ready: ' + dbName);
 
-db.exec(`
-  CREATE TABLE IF NOT EXISTS members (
-    id            INTEGER PRIMARY KEY AUTOINCREMENT,
-    institution_id TEXT UNIQUE NOT NULL,
-    full_name     TEXT NOT NULL,
-    email         TEXT UNIQUE NOT NULL,
-    role          TEXT NOT NULL CHECK(role IN ('student','teacher','staff')),
-    department    TEXT NOT NULL,
-    year          TEXT,
-    created_at    DATETIME DEFAULT CURRENT_TIMESTAMP
-  );
-  CREATE INDEX IF NOT EXISTS idx_institution_id ON members(institution_id);
-`);
+  const db = getPool();
+  await db.query([
+    'CREATE TABLE IF NOT EXISTS institution_members (',
+    '  id             INT AUTO_INCREMENT PRIMARY KEY,',
+    '  institution_id VARCHAR(20)  UNIQUE NOT NULL,',
+    '  full_name      VARCHAR(100) NOT NULL,',
+    '  email          VARCHAR(120) UNIQUE NOT NULL,',
+    '  role           ENUM(\'student\',\'teacher\',\'staff\') NOT NULL,',
+    '  department     VARCHAR(100) NOT NULL,',
+    '  year_level     VARCHAR(20)  NULL,',
+    '  created_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP,',
+    '  INDEX idx_institution_id (institution_id),',
+    '  INDEX idx_role (role)',
+    ') ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
+  ].join(' '));
 
-// ── Seeder ────────────────────────────────────────────────────────────────────
-function seedDatabase() {
-  const count = db.prepare('SELECT COUNT(*) as cnt FROM members').get().cnt;
-  if (count > 0) {
-    console.log(`✓ Database already seeded with ${count} members`);
-    return;
-  }
+  const [[row]] = await db.query('SELECT COUNT(*) AS cnt FROM institution_members');
+  if (row.cnt > 0) { console.log('Already seeded: ' + row.cnt + ' members'); return; }
+  await seedMembers(db);
+}
 
-  console.log('→ Seeding institution database...');
-
-  const firstNames = [
-    'James','Mary','John','Patricia','Robert','Jennifer','Michael','Linda',
+async function seedMembers(db) {
+  const firstNames = ['James','Mary','John','Patricia','Robert','Jennifer','Michael','Linda',
     'William','Barbara','David','Elizabeth','Richard','Susan','Joseph','Jessica',
     'Thomas','Sarah','Charles','Karen','Christopher','Lisa','Daniel','Nancy',
     'Matthew','Betty','Anthony','Margaret','Mark','Sandra','Donald','Ashley',
@@ -69,11 +83,9 @@ function seedDatabase() {
     'Ethan','Hannah','Walter','Sarah','Noah','Sophia','Jeremy','Evelyn',
     'Christian','Victoria','Harold','Lori','Keith','Lauren','Roger','Alice',
     'Terry','Madison','Gerald','Grace','Sean','Judith','Carl','Julia',
-    'Dylan','Catherine','Arthur','Abigail','Lawrence','Alexis','Jordan','Kayla'
-  ];
+    'Dylan','Catherine','Arthur','Abigail','Lawrence','Alexis','Jordan','Kayla'];
 
-  const lastNames = [
-    'Smith','Johnson','Williams','Brown','Jones','Garcia','Miller','Davis',
+  const lastNames = ['Smith','Johnson','Williams','Brown','Jones','Garcia','Miller','Davis',
     'Rodriguez','Martinez','Hernandez','Lopez','Gonzalez','Wilson','Anderson','Thomas',
     'Taylor','Moore','Jackson','Martin','Lee','Perez','Thompson','White',
     'Harris','Sanchez','Clark','Ramirez','Lewis','Robinson','Walker','Young',
@@ -87,173 +99,96 @@ function seedDatabase() {
     'Ruiz','Hughes','Price','Alvarez','Castillo','Sanders','Patel','Myers',
     'Long','Ross','Foster','Jimenez','Powell','Jenkins','Perry','Russell',
     'Sullivan','Bell','Coleman','Butler','Henderson','Barnes','Gonzales','Fisher',
-    'Vasquez','Simmons','Romero','Jordan','Patterson','Alexander','Hamilton','Graham'
-  ];
+    'Vasquez','Simmons','Romero','Jordan','Patterson','Alexander','Hamilton','Graham'];
 
-  const departments = {
-    student: [
-      'Computer Science','Information Technology','Electrical Engineering',
-      'Mechanical Engineering','Civil Engineering','Business Administration',
-      'Economics','Mathematics','Physics','Chemistry','Biology',
-      'Psychology','Sociology','English Literature','History',
-      'Political Science','Architecture','Nursing','Pharmacy','Law'
-    ],
-    teacher: [
-      'Computer Science','Electrical Engineering','Mechanical Engineering',
-      'Business Administration','Economics','Mathematics','Physics',
-      'Chemistry','Biology','Psychology','English','History','Law','Architecture'
-    ],
-    staff: [
-      'Administration','Finance','Human Resources','IT Support',
-      'Library','Student Affairs','Registrar','Security','Facilities',
-      'Research Office','International Office'
-    ]
-  };
+  const stuDepts  = ['Computer Science','Information Technology','Electrical Engineering','Mechanical Engineering','Civil Engineering','Business Administration','Economics','Mathematics','Physics','Chemistry','Biology','Psychology','Sociology','English Literature','History','Political Science','Architecture','Nursing','Pharmacy','Law'];
+  const teachDepts= ['Computer Science','Electrical Engineering','Mechanical Engineering','Business Administration','Economics','Mathematics','Physics','Chemistry','Biology','Psychology','English','History','Law','Architecture'];
+  const staffDepts= ['Administration','Finance','Human Resources','IT Support','Library','Student Affairs','Registrar','Security','Facilities','Research Office','International Office'];
+  const years = ['1st Year','2nd Year','3rd Year','4th Year'];
+  const pick = (arr, seed) => arr[seed % arr.length];
+  const rows = [];
 
-  const years = ['1st Year', '2nd Year', '3rd Year', '4th Year'];
-
-  const insert = db.prepare(`
-    INSERT INTO members (institution_id, full_name, email, role, department, year)
-    VALUES (?, ?, ?, ?, ?, ?)
-  `);
-
-  const insertMany = db.transaction((members) => {
-    for (const m of members) insert.run(m.id, m.name, m.email, m.role, m.dept, m.year);
-  });
-
-  const members = [];
-  let stuCount = 0, teachCount = 0, staffCount = 0;
-
-  // Helper: deterministic but varied picks
-  function pick(arr, seed) {
-    return arr[seed % arr.length];
-  }
-
-  // Generate 350 students
   for (let i = 1; i <= 350; i++) {
-    stuCount++;
-    const id = `STU${String(i).padStart(5, '0')}`;
-    const fn = pick(firstNames, i * 7);
-    const ln = pick(lastNames, i * 13);
-    const name = `${fn} ${ln}`;
-    const emailLocal = `${fn.toLowerCase()}.${ln.toLowerCase()}${i}`;
-    const email = `${emailLocal}@university.edu`;
-    const dept = pick(departments.student, i * 3);
-    const year = pick(years, i);
-    members.push({ id, name, email, role: 'student', dept, year });
+    const fn = pick(firstNames, i*7), ln = pick(lastNames, i*13);
+    rows.push(['STU' + String(i).padStart(5,'0'), fn+' '+ln,
+      fn.toLowerCase()+'.'+ln.toLowerCase()+i+'@university.edu',
+      'student', pick(stuDepts, i*3), pick(years, i)]);
   }
-
-  // Generate 100 teachers
   for (let i = 1; i <= 100; i++) {
-    teachCount++;
-    const id = `TEACH${String(i).padStart(4, '0')}`;
-    const fn = pick(firstNames, i * 11 + 5);
-    const ln = pick(lastNames, i * 17 + 3);
-    const name = `Dr. ${fn} ${ln}`;
-    const email = `${fn.toLowerCase()}.${ln.toLowerCase()}@faculty.university.edu`;
-    const dept = pick(departments.teacher, i * 5);
-    members.push({ id, name, email, role: 'teacher', dept, year: null });
+    const fn = pick(firstNames, i*11+5), ln = pick(lastNames, i*17+3);
+    rows.push(['TEACH' + String(i).padStart(4,'0'), 'Dr. '+fn+' '+ln,
+      fn.toLowerCase()+'.'+ln.toLowerCase()+'@faculty.university.edu',
+      'teacher', pick(teachDepts, i*5), null]);
   }
-
-  // Generate 50 staff
   for (let i = 1; i <= 50; i++) {
-    staffCount++;
-    const id = `STAFF${String(i).padStart(4, '0')}`;
-    const fn = pick(firstNames, i * 19 + 9);
-    const ln = pick(lastNames, i * 23 + 7);
-    const name = `${fn} ${ln}`;
-    const email = `${fn.toLowerCase()}.${ln.toLowerCase()}@staff.university.edu`;
-    const dept = pick(departments.staff, i * 7);
-    members.push({ id, name, email, role: 'staff', dept, year: null });
+    const fn = pick(firstNames, i*19+9), ln = pick(lastNames, i*23+7);
+    rows.push(['STAFF' + String(i).padStart(4,'0'), fn+' '+ln,
+      fn.toLowerCase()+'.'+ln.toLowerCase()+'@staff.university.edu',
+      'staff', pick(staffDepts, i*7), null]);
   }
 
-  insertMany(members);
-
-  console.log(`  ✓ Seeded ${stuCount} students, ${teachCount} teachers, ${staffCount} staff`);
-  console.log(`  ✓ Total: ${members.length} members`);
+  for (let i = 0; i < rows.length; i += 50) {
+    await db.query('INSERT INTO institution_members (institution_id, full_name, email, role, department, year_level) VALUES ?', [rows.slice(i, i+50)]);
+  }
+  console.log('Seeded 500 members: 350 students / 100 teachers / 50 staff');
 }
 
-seedDatabase();
-
-// ── Routes ────────────────────────────────────────────────────────────────────
-
-// Health check
-app.get('/api/health', (req, res) => {
-  const count = db.prepare('SELECT COUNT(*) as cnt FROM members').get().cnt;
-  res.json({ status: 'ok', members: count });
+app.get('/api/health', async (_req, res) => {
+  try {
+    const [[row]] = await getPool().query('SELECT COUNT(*) AS cnt FROM institution_members');
+    res.json({ status: 'ok', members: row.cnt });
+  } catch (e) { res.status(500).json({ status: 'error', message: e.message }); }
 });
 
-// Lookup a single member by institution ID
-app.get('/api/lookup/:institutionId', (req, res) => {
-  const { institutionId } = req.params;
-  const member = db.prepare('SELECT * FROM members WHERE institution_id = ?').get(institutionId.toUpperCase());
+app.get('/api/lookup/:institutionId', async (req, res) => {
+  try {
+    const [[row]] = await getPool().query(
+      'SELECT * FROM institution_members WHERE institution_id = ?',
+      [req.params.institutionId.toUpperCase()]
+    );
+    if (!row) return res.status(404).json({ message: 'Institution ID not found. Please check your ID and try again.' });
+    res.json({ institutionId: row.institution_id, fullName: row.full_name,
+      email: row.email, role: row.role, department: row.department, year: row.year_level });
+  } catch (e) { res.status(500).json({ message: e.message }); }
+});
 
-  if (!member) {
-    return res.status(404).json({ message: 'Institution ID not found. Please check your ID and try again.' });
+app.get('/api/members', async (req, res) => {
+  try {
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const limit = Math.min(100, parseInt(req.query.limit) || 50);
+    const role = req.query.role;
+    const offset = (page - 1) * limit;
+    const where = role ? 'WHERE role = ?' : '';
+    const params = role ? [role] : [];
+    const db = getPool();
+    const [members] = await db.query('SELECT * FROM institution_members ' + where + ' ORDER BY institution_id LIMIT ? OFFSET ?', [...params, limit, offset]);
+    const [[{ total }]] = await db.query('SELECT COUNT(*) AS total FROM institution_members ' + where, params);
+    res.json({ members, pagination: { page, limit, total, pages: Math.ceil(total / limit) } });
+  } catch (e) { res.status(500).json({ message: e.message }); }
+});
+
+app.get('/api/search', async (req, res) => {
+  try {
+    const q = (req.query.q || '').trim();
+    if (q.length < 2) return res.status(400).json({ message: 'Query must be at least 2 characters' });
+    const [results] = await getPool().query(
+      'SELECT institution_id, full_name, email, role, department FROM institution_members WHERE institution_id LIKE ? OR full_name LIKE ? LIMIT 20',
+      ['%' + q + '%', '%' + q + '%']
+    );
+    res.json({ results });
+  } catch (e) { res.status(500).json({ message: e.message }); }
+});
+
+async function start() {
+  for (let attempt = 1; attempt <= 15; attempt++) {
+    try { await initDatabase(); break; }
+    catch (err) {
+      console.log('Attempt ' + attempt + '/15 - DB not ready: ' + err.message);
+      if (attempt === 15) { process.exit(1); }
+      await new Promise(r => setTimeout(r, 3000));
+    }
   }
+  app.listen(PORT, '0.0.0.0', () => console.log('Institution API on port ' + PORT));
+}
 
-  res.json({
-    institutionId: member.institution_id,
-    fullName: member.full_name,
-    email: member.email,
-    role: member.role,
-    department: member.department,
-    year: member.year
-  });
-});
-
-// List all members (paginated) — for admin/debugging use
-app.get('/api/members', (req, res) => {
-  const page = Math.max(1, parseInt(req.query.page) || 1);
-  const limit = Math.min(100, parseInt(req.query.limit) || 50);
-  const role = req.query.role;
-  const offset = (page - 1) * limit;
-
-  let query = 'SELECT * FROM members';
-  let countQuery = 'SELECT COUNT(*) as cnt FROM members';
-  const params = [];
-
-  if (role) {
-    query += ' WHERE role = ?';
-    countQuery += ' WHERE role = ?';
-    params.push(role);
-  }
-
-  query += ' ORDER BY institution_id LIMIT ? OFFSET ?';
-
-  const members = db.prepare(query).all(...params, limit, offset);
-  const total = db.prepare(countQuery).get(...params).cnt;
-
-  res.json({
-    members,
-    pagination: { page, limit, total, pages: Math.ceil(total / limit) }
-  });
-});
-
-// Search members by name or ID (for testing purposes)
-app.get('/api/search', (req, res) => {
-  const q = (req.query.q || '').trim();
-  if (!q || q.length < 2) {
-    return res.status(400).json({ message: 'Search query must be at least 2 characters' });
-  }
-
-  const results = db.prepare(`
-    SELECT institution_id, full_name, email, role, department
-    FROM members
-    WHERE institution_id LIKE ? OR full_name LIKE ?
-    LIMIT 20
-  `).all(`%${q}%`, `%${q}%`);
-
-  res.json({ results });
-});
-
-// ── Start ─────────────────────────────────────────────────────────────────────
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`\n========================================`);
-  console.log(`  Institution API running on port ${PORT}`);
-  console.log(`========================================`);
-  console.log(`  Lookup:  GET /api/lookup/:institutionId`);
-  console.log(`  Search:  GET /api/search?q=...`);
-  console.log(`  Members: GET /api/members?role=student&page=1`);
-  console.log(`  Health:  GET /api/health\n`);
-});
+start();
