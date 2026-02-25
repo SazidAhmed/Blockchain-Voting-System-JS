@@ -72,54 +72,6 @@ class DatabaseSeeder {
         role: 'admin',
         email: 'admin@university.edu',
         registration_status: 'verified'
-      },
-      {
-        institution_id: 'STU001',
-        username: 'Alice Student',
-        password: await bcrypt.hash('password123', 10),
-        role: 'student',
-        email: 'alice@university.edu',
-        registration_status: 'verified'
-      },
-      {
-        institution_id: 'STU002',
-        username: 'Bob Student',
-        password: await bcrypt.hash('password123', 10),
-        role: 'student',
-        email: 'bob@university.edu',
-        registration_status: 'verified'
-      },
-      {
-        institution_id: 'STU003',
-        username: 'Charlie Student',
-        password: await bcrypt.hash('password123', 10),
-        role: 'student',
-        email: 'charlie@university.edu',
-        registration_status: 'verified'
-      },
-      {
-        institution_id: 'TEACH001',
-        username: 'Dr. Smith',
-        password: await bcrypt.hash('password123', 10),
-        role: 'teacher',
-        email: 'smith@university.edu',
-        registration_status: 'verified'
-      },
-      {
-        institution_id: 'STAFF001',
-        username: 'Jane Staff',
-        password: await bcrypt.hash('password123', 10),
-        role: 'staff',
-        email: 'jane.staff@university.edu',
-        registration_status: 'verified'
-      },
-      {
-        institution_id: 'BOARD001',
-        username: 'Board Member Johnson',
-        password: await bcrypt.hash('password123', 10),
-        role: 'board_member',
-        email: 'johnson@university.edu',
-        registration_status: 'verified'
       }
     ];
 
