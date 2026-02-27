@@ -77,15 +77,22 @@
         </div>
       </div>
       
-      <div v-if="election.results" class="results-section">
-        <h2>Current Results</h2>
+      <div v-if="election.candidates && election.candidates.length > 0" class="results-section">
+        <h2>Results</h2>
+        <div class="results-summary">
+          <div class="stat-box"><span class="stat-label">Total Votes</span><span class="stat-value">{{ totalVotes }}</span></div>
+        </div>
         <div class="results-chart">
-          <div v-for="result in election.results" :key="result.candidateId" class="result-bar">
-            <div class="candidate-name">{{ getCandidateName(result.candidateId) }}</div>
-            <div class="bar-container">
-              <div class="bar" :style="{ width: calculatePercentage(result.votes) + '%' }"></div>
-              <span class="vote-count">{{ result.votes }} votes ({{ calculatePercentage(result.votes) }}%)</span>
+          <div v-for="(candidate, idx) in sortedCandidates" :key="candidate.id" class="result-bar">
+            <div class="result-rank-name">
+              <span class="rank">{{ idx + 1 }}.</span>
+              <span class="cname">{{ candidate.name }}</span>
+              <span class="vcount">{{ candidate.votes_count || 0 }} votes</span>
             </div>
+            <div class="bar-container">
+              <div class="bar" :style="{ width: candidatePercent(candidate) + '%' }"></div>
+            </div>
+            <div class="bar-pct">{{ candidatePercent(candidate) }}%</div>
           </div>
         </div>
       </div>
@@ -141,8 +148,12 @@ export default {
       return this.election.status === 'active'
     },
     totalVotes() {
-      if (!this.election || !this.election.results || !Array.isArray(this.election.results)) return 0
-      return this.election.results.reduce((sum, result) => sum + result.votes, 0)
+      if (!this.election || !this.election.candidates) return 0
+      return this.election.candidates.reduce((s, c) => s + (c.votes_count || 0), 0)
+    },
+    sortedCandidates() {
+      if (!this.election || !this.election.candidates) return []
+      return [...this.election.candidates].sort((a, b) => (b.votes_count || 0) - (a.votes_count || 0))
     }
   },
   methods: {
@@ -159,14 +170,9 @@ export default {
       }
       return statusMap[status] || status
     },
-    getCandidateName(candidateId) {
-      if (!this.election || !this.election.candidates) return 'Unknown Candidate'
-      const candidate = this.election.candidates.find(c => c.id === candidateId)
-      return candidate ? candidate.name : 'Unknown Candidate'
-    },
-    calculatePercentage(votes) {
+    candidatePercent(candidate) {
       if (!this.totalVotes) return 0
-      return Math.round((votes / this.totalVotes) * 100)
+      return Math.round(((candidate.votes_count || 0) / this.totalVotes) * 100)
     },
     async registerForElection() {
       this.registrationLoading = true
@@ -384,45 +390,55 @@ h1 {
   background-color: #27ae60;
 }
 
-.results-chart {
-  background-color: #fff;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  padding: 20px;
+.results-summary {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 20px;
 }
+.stat-box {
+  background: linear-gradient(135deg, #6c63ff, #a855f7);
+  color: #fff;
+  border-radius: 10px;
+  padding: 14px 28px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 120px;
+}
+.stat-label { font-size: 0.8rem; opacity: 0.85; }
+.stat-value { font-size: 1.8rem; font-weight: 700; }
 
 .result-bar {
-  margin-bottom: 15px;
+  margin-bottom: 18px;
 }
-
-.candidate-name {
-  margin-bottom: 5px;
-  font-weight: bold;
-  color: #2c3e50;
+.result-rank-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
 }
+.rank { font-weight: 700; color: #6c63ff; min-width: 24px; }
+.cname { font-weight: 600; flex: 1; color: #2c3e50; }
+.vcount { font-size: 0.85rem; color: #6c63ff; font-weight: 600; }
 
 .bar-container {
   position: relative;
-  height: 30px;
+  height: 14px;
   background-color: #ecf0f1;
-  border-radius: 4px;
+  border-radius: 8px;
   overflow: hidden;
 }
-
 .bar {
   height: 100%;
-  background-color: #3498db;
-  transition: width 0.5s ease;
+  background: linear-gradient(90deg, #6c63ff, #a855f7);
+  border-radius: 8px;
+  transition: width 0.6s ease;
 }
-
-.vote-count {
-  position: absolute;
-  top: 50%;
-  left: 10px;
-  transform: translateY(-50%);
-  color: #fff;
-  font-size: 0.9rem;
-  text-shadow: 0 0 2px rgba(0, 0, 0, 0.5);
+.bar-pct {
+  font-size: 0.8rem;
+  color: #888;
+  text-align: right;
+  margin-top: 2px;
 }
 
 .actions {

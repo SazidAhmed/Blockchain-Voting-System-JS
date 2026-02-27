@@ -165,28 +165,32 @@ router.get('/:id', validateElectionId, async (req, res) => {
 
     const election = elections[0];
 
-    // Get candidates
+    // Get candidates with vote tally
     const [candidates] = await pool.query(
       'SELECT id, name, description FROM candidates WHERE election_id = ?',
       [req.params.id]
     );
 
-    // Get blockchain results if election is active or completed
-    let results = null;
-    if (election.status === 'active' || election.status === 'completed') {
+    // Tally votes per candidate from votes_meta (base64 JSON ballots)
+    const [votes] = await pool.query(
+      'SELECT encrypted_ballot FROM votes_meta WHERE election_id = ?',
+      [req.params.id]
+    );
+    const tally = {};
+    for (const v of votes) {
       try {
-        const response = await blockchainApi.get(`/elections/${req.params.id}/results`);
-        results = response.data;
-      } catch (err) {
-        console.error('Error fetching results from blockchain:', err);
-        // Continue without results
-      }
+        const ballot = JSON.parse(Buffer.from(v.encrypted_ballot, 'base64').toString('utf8'));
+        const cid = ballot.candidateId;
+        if (cid) tally[cid] = (tally[cid] || 0) + 1;
+      } catch (_) { /* skip unreadable ballots */ }
     }
+    const candidatesWithVotes = candidates.map(c => ({ ...c, votes_count: tally[c.id] || 0 }));
+    const totalVotes = Object.values(tally).reduce((s, n) => s + n, 0);
 
     res.json({
       ...election,
-      candidates,
-      results
+      candidates: candidatesWithVotes,
+      totalVotes,
     });
   } catch (err) {
     console.error(err);
