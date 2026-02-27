@@ -76,10 +76,9 @@
                   <td class="text-center">{{ election.votes_count || 0 }}</td>
                   <td class="actions">
                     <button 
+                      v-if="election.status !== 'active'"
                       @click="editElection(election)" 
-                      class="btn btn-small btn-primary"
-                      :disabled="election.status === 'active'"
-                      :title="election.status === 'active' ? 'Cannot edit an active election' : 'Edit election'">
+                      class="btn btn-small btn-primary">
                       Edit
                     </button>
                     <button
