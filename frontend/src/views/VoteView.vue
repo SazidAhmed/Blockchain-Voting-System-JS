@@ -18,7 +18,7 @@
     <div v-else-if="election.status !== 'active'" class="not-active">
       <h2>Voting Not Available</h2>
       <p>This election is not currently active for voting.</p>
-      <router-link :to="`/elections/${electionId}`" class="btn btn-primary">View Election Details</router-link>
+      <router-link to="/elections" class="btn btn-primary">Back to Elections</router-link>
     </div>
     
     <div v-else-if="voteSubmitted" class="vote-success">
@@ -29,7 +29,7 @@
       <VoteReceipt :receipt="voteReceipt" />
       
       <div class="actions">
-        <router-link :to="`/elections/${electionId}`" class="btn btn-primary">Back to Election</router-link>
+        <router-link to="/elections" class="btn btn-primary">Back to Elections</router-link>
         <router-link to="/elections" class="btn btn-secondary">All Elections</router-link>
       </div>
     </div>

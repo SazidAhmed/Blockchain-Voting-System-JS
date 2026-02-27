@@ -3,7 +3,6 @@ import HomeView from '../views/HomeView.vue'
 import LoginView from '../views/LoginView.vue'
 import RegisterView from '../views/RegisterView.vue'
 import ElectionsView from '../views/ElectionsView.vue'
-import ElectionDetailView from '../views/ElectionDetailView.vue'
 import VoteView from '../views/VoteView.vue'
 import AdminDashboard from '../views/AdminDashboard.vue'
 import ResultsView from '../views/ResultsView.vue'
@@ -40,12 +39,6 @@ const router = createRouter({
       path: '/elections',
       name: 'elections',
       component: ElectionsView,
-      meta: { requiresAuth: true }
-    },
-    {
-      path: '/elections/:id',
-      name: 'election-detail',
-      component: ElectionDetailView,
       meta: { requiresAuth: true }
     },
     {

@@ -36,9 +36,13 @@
           </div>
         </div>
         <div class="election-actions">
-          <router-link :to="`/elections/${election.id}`" class="btn btn-primary">
-            View Details
+          <router-link
+            v-if="election.status === 'active'"
+            :to="`/elections/${election.id}/vote`"
+            class="btn btn-primary">
+            Cast Your Vote
           </router-link>
+          <span v-else class="btn btn-disabled">{{ formatStatus(election.status) }}</span>
         </div>
       </div>
     </div>
@@ -214,6 +218,16 @@ h1 {
 .election-actions {
   display: flex;
   justify-content: center;
+}
+
+.btn-disabled {
+  display: inline-block;
+  padding: 10px 20px;
+  border-radius: 4px;
+  font-weight: bold;
+  background-color: #ecf0f1;
+  color: #95a5a6;
+  cursor: default;
 }
 
 .btn {
