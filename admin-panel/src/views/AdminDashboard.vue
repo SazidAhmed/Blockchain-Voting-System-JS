@@ -82,8 +82,11 @@
                       :title="election.status === 'active' ? 'Cannot edit an active election' : 'Edit election'">
                       Edit
                     </button>
-                    <button @click="toggleElectionStatus(election)" class="btn btn-small btn-warning">
-                      {{ election.status === 'active' ? 'Deactivate' : 'Activate' }}
+                    <button
+                      v-if="election.status !== 'active'"
+                      @click="promptActivate(election)"
+                      class="btn btn-small btn-warning">
+                      Activate
                     </button>
                     <button 
                       @click="deleteElection(election.id)" 
@@ -343,6 +346,19 @@
         </section>
       </div>
     </main>
+
+    <!-- Activate Election Confirmation Modal -->
+    <div v-if="showActivateModal" class="modal-overlay" @click.self="showActivateModal = false">
+      <div class="modal-box">
+        <h3>Activate Election</h3>
+        <p>You are about to activate <strong>{{ pendingActivateElection?.title }}</strong>.</p>
+        <p class="modal-warning">Once activated, the election <strong>cannot be edited, deactivated, or have candidates modified</strong>. Are you sure?</p>
+        <div class="modal-actions">
+          <button class="btn btn-danger" @click="showActivateModal = false">Cancel</button>
+          <button class="btn btn-primary" @click="confirmActivate">Yes, Activate</button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -371,6 +387,8 @@ export default {
     const selectedElectionId = ref('')
     const selectedResultsElectionId = ref('')
     const editingElectionId = ref(null)
+    const showActivateModal = ref(false)
+    const pendingActivateElection = ref(null)
 
     const navigationTabs = [
       { id: 'elections', label: 'Elections', icon: '📋' },
@@ -463,13 +481,24 @@ export default {
       }
     }
 
-    const toggleElectionStatus = async (election) => {
+    const promptActivate = (election) => {
+      pendingActivateElection.value = election
+      showActivateModal.value = true
+    }
+
+    const confirmActivate = async () => {
       try {
-        const newStatus = election.status === 'active' ? 'pending' : 'active'
-        await electionsStore.updateElectionStatus(election.id, newStatus)
+        await electionsStore.updateElectionStatus(pendingActivateElection.value.id, 'active')
       } catch (err) {
-        console.error('Status update error:', err)
+        console.error('Activation error:', err)
+      } finally {
+        showActivateModal.value = false
+        pendingActivateElection.value = null
       }
+    }
+
+    const toggleElectionStatus = async (election) => {
+      // kept for compatibility but activation now goes through promptActivate
     }
 
     const deleteElection = async (electionId) => {
@@ -614,6 +643,10 @@ export default {
       hasElectionEnded,
       createElectionHandler,
       toggleElectionStatus,
+      showActivateModal,
+      pendingActivateElection,
+      promptActivate,
+      confirmActivate,
       deleteElection,
       deleteCandidate,
       addCandidateToElection,
@@ -933,6 +966,43 @@ export default {
 .status-active {
   background-color: #d4edda;
   color: #155724;
+}
+
+/* Activation confirmation modal */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+.modal-box {
+  background: #fff;
+  border-radius: 10px;
+  padding: 2rem;
+  max-width: 440px;
+  width: 90%;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+}
+.modal-box h3 {
+  margin: 0 0 0.75rem;
+  font-size: 1.25rem;
+}
+.modal-box p {
+  margin: 0 0 0.5rem;
+  color: #444;
+}
+.modal-warning {
+  color: #c0392b !important;
+  font-size: 0.9rem;
+}
+.modal-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+  margin-top: 1.25rem;
 }
 
 .status-pending {

@@ -206,6 +206,13 @@ router.put('/:id/status', adminAuth, async (req, res) => {
       return res.status(400).json({ message: 'Invalid status' });
     }
 
+    // Prevent deactivating an already-active election
+    const [[current]] = await pool.query('SELECT status FROM elections WHERE id = ?', [req.params.id]);
+    if (!current) return res.status(404).json({ message: 'Election not found' });
+    if (current.status === 'active' && status !== 'active') {
+      return res.status(403).json({ message: 'Cannot deactivate an active election' });
+    }
+
     const [result] = await pool.query(
       'UPDATE elections SET status = ? WHERE id = ?',
       [status, req.params.id]
