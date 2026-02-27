@@ -1049,6 +1049,15 @@ router.delete('/candidates/:id', adminAuth, async (req, res) => {
   try {
     const candidateId = req.params.id;
 
+    // Check if the election this candidate belongs to is active
+    const [[candidate]] = await pool.query('SELECT election_id FROM candidates WHERE id = ?', [candidateId]);
+    if (!candidate) return res.status(404).json({ message: 'Candidate not found' });
+
+    const [[election]] = await pool.query('SELECT status FROM elections WHERE id = ?', [candidate.election_id]);
+    if (election && election.status === 'active') {
+      return res.status(403).json({ message: 'Cannot delete a candidate from an active election' });
+    }
+
     await pool.query('DELETE FROM candidates WHERE id = ?', [candidateId]);
 
     res.json({ message: 'Candidate deleted successfully' });

@@ -229,7 +229,10 @@
                   <div class="candidate-stats">
                     <span>Votes: {{ candidate.votes_count || 0 }}</span>
                   </div>
-                  <button @click="deleteCandidate(candidate.id)" class="btn btn-danger btn-small">
+                  <button
+                    v-if="selectedElection?.status !== 'active'"
+                    @click="deleteCandidate(candidate.id)"
+                    class="btn btn-danger btn-small">
                     Delete
                   </button>
                 </div>
