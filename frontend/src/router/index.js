@@ -6,6 +6,7 @@ import ElectionsView from '../views/ElectionsView.vue'
 import ElectionDetailView from '../views/ElectionDetailView.vue'
 import VoteView from '../views/VoteView.vue'
 import AdminDashboard from '../views/AdminDashboard.vue'
+import ResultsView from '../views/ResultsView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -51,6 +52,12 @@ const router = createRouter({
       path: '/elections/:id/vote',
       name: 'vote',
       component: VoteView,
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/results',
+      name: 'results',
+      component: ResultsView,
       meta: { requiresAuth: true }
     }
   ]

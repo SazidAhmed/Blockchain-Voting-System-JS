@@ -29,6 +29,7 @@ export default {
       <div class="navbar-menu">
         <router-link to="/" class="nav-link">Home</router-link>
         <router-link v-if="isAuthenticated" to="/elections" class="nav-link">Elections</router-link>
+        <router-link v-if="isAuthenticated" to="/results" class="nav-link">Results</router-link>
         <router-link v-if="!isAuthenticated" to="/login" class="nav-link">Login</router-link>
         <router-link v-if="!isAuthenticated" to="/register" class="nav-link">Register</router-link>
         <div v-if="isAuthenticated" class="nav-user">
