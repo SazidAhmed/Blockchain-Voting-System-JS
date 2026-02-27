@@ -57,26 +57,6 @@
         </div>
       </div>
       
-      <div v-if="election.candidates && election.candidates.length > 0" class="results-section">
-        <h2>Results</h2>
-        <div class="results-summary">
-          <div class="stat-box"><span class="stat-label">Total Votes</span><span class="stat-value">{{ totalVotes }}</span></div>
-        </div>
-        <div class="results-chart">
-          <div v-for="(candidate, idx) in sortedCandidates" :key="candidate.id" class="result-bar">
-            <div class="result-rank-name">
-              <span class="rank">{{ idx + 1 }}.</span>
-              <span class="cname">{{ candidate.name }}</span>
-              <span class="vcount">{{ candidate.votes_count || 0 }} votes</span>
-            </div>
-            <div class="bar-container">
-              <div class="bar" :style="{ width: candidatePercent(candidate) + '%' }"></div>
-            </div>
-            <div class="bar-pct">{{ candidatePercent(candidate) }}%</div>
-          </div>
-        </div>
-      </div>
-      
       <div class="actions">
         <router-link to="/elections" class="btn btn-secondary">Back to Elections</router-link>
         <button 
