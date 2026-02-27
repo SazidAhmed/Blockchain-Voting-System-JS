@@ -57,26 +57,6 @@
         </div>
       </div>
       
-      <div class="candidates-section">
-        <h2>Candidates</h2>
-        <div v-if="!election.candidates || election.candidates.length === 0" class="no-candidates">
-          <p>No candidates have been added to this election yet.</p>
-        </div>
-        <div v-else class="candidates-list">
-          <div v-for="candidate in election.candidates" :key="candidate.id" class="candidate-card">
-            <h3>{{ candidate.name }}</h3>
-            <p>{{ candidate.description }}</p>
-            <button 
-              v-if="canVote" 
-              @click="goToVote(candidate.id)" 
-              class="btn btn-vote"
-            >
-              Vote for this candidate
-            </button>
-          </div>
-        </div>
-      </div>
-      
       <div v-if="election.candidates && election.candidates.length > 0" class="results-section">
         <h2>Results</h2>
         <div class="results-summary">
