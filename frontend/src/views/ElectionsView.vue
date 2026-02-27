@@ -61,7 +61,8 @@ export default {
   computed: {
     ...mapGetters(['isAdmin', 'getElections', 'isLoading', 'getError']),
     elections() {
-      return this.getElections
+      const order = { active: 0, pending: 1, completed: 2, cancelled: 3 }
+      return [...this.getElections].sort((a, b) => (order[a.status] ?? 9) - (order[b.status] ?? 9))
     },
     loading() {
       return this.isLoading
