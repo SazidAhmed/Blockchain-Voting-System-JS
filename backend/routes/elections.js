@@ -249,6 +249,14 @@ router.put('/:id', adminAuth, async (req, res) => {
     const now = new Date();
     const electionStartDate = new Date(election.start_date);
 
+    // Prevent updates if election is active
+    if (election.status === 'active') {
+      return res.status(403).json({ 
+        message: 'Cannot update an active election',
+        reason: 'Deactivate the election before making changes'
+      });
+    }
+
     // Prevent updates if election has already started
     if (electionStartDate <= now) {
       return res.status(403).json({ 

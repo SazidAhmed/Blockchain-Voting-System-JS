@@ -78,8 +78,8 @@
                     <button 
                       @click="editElection(election)" 
                       class="btn btn-small btn-primary"
-                      :disabled="hasElectionStarted(election)"
-                      :title="hasElectionStarted(election) ? 'Cannot edit after election starts' : 'Edit election'">
+                      :disabled="election.status === 'active'"
+                      :title="election.status === 'active' ? 'Cannot edit an active election' : 'Edit election'">
                       Edit
                     </button>
                     <button @click="toggleElectionStatus(election)" class="btn btn-small btn-warning">
