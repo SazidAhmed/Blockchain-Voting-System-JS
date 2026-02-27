@@ -191,7 +191,7 @@ app.get('/api/members', async (req, res) => {
     const where = conditions.length ? 'WHERE ' + conditions.join(' AND ') : '';
     const db = getPool();
     const [members] = await db.query(
-      'SELECT id, institution_id, full_name, email, role, department, year_level, is_voter FROM institution_members ' + where + ' ORDER BY role, institution_id LIMIT ? OFFSET ?',
+      'SELECT id, institution_id, full_name, email, role, department, year_level, is_voter FROM institution_members ' + where + ' ORDER BY is_voter ASC, role, institution_id LIMIT ? OFFSET ?',
       [...params, limit, offset]
     );
     const [[{ total }]] = await db.query('SELECT COUNT(*) AS total FROM institution_members ' + where, params);
@@ -298,16 +298,18 @@ app.get('/voter-picker', (_req, res) => {
 </div>
 
 <div class="pagination">
+  <button class="pager" id="firstBtn" onclick="goToPage(1)">&#8676; First</button>
   <button class="pager" id="prevBtn" onclick="changePage(-1)">&#8592; Prev</button>
   <span id="pageInfo"></span>
   <button class="pager" id="nextBtn" onclick="changePage(1)">Next &#8594;</button>
+  <button class="pager" id="lastBtn" onclick="goToPage(state.lastPage)">Last &#8677;</button>
 </div>
 
 <div id="status-msg"></div>
 
 <script>
-const LIMIT = 50;
-let state = { page: 1, role: '', voterFilter: null, search: '' };
+const LIMIT = 20;
+let state = { page: 1, role: '', voterFilter: null, search: '', lastPage: 1 };
 let debounceTimer;
 
 async function load() {
@@ -340,13 +342,17 @@ async function load() {
 
   // pagination
   if (data.pagination) {
+    state.lastPage = data.pagination.pages;
     document.getElementById('pageInfo').textContent = 'Page ' + data.pagination.page + ' of ' + data.pagination.pages + ' (' + data.pagination.total + ' rows)';
-    document.getElementById('prevBtn').disabled = data.pagination.page <= 1;
-    document.getElementById('nextBtn').disabled = data.pagination.page >= data.pagination.pages;
+    const atFirst = data.pagination.page <= 1;
+    const atLast  = data.pagination.page >= data.pagination.pages;
+    document.getElementById('firstBtn').disabled = atFirst;
+    document.getElementById('prevBtn').disabled  = atFirst;
+    document.getElementById('nextBtn').disabled  = atLast;
+    document.getElementById('lastBtn').disabled  = atLast;
   } else {
     document.getElementById('pageInfo').textContent = (members || []).length + ' result(s)';
-    document.getElementById('prevBtn').disabled = true;
-    document.getElementById('nextBtn').disabled = true;
+    ['firstBtn','prevBtn','nextBtn','lastBtn'].forEach(id => document.getElementById(id).disabled = true);
   }
 
   const tbody = document.getElementById('tbody');
@@ -359,7 +365,7 @@ async function load() {
     return '<tr class="' + (taken ? 'taken' : 'available') + '">' +
       '<td><span class="badge ' + (taken ? 'taken' : 'avail') + '">' +
         (taken ? '&#10005; Registered' : '&#10003; Available') + '</span></td>' +
-      '<td><code>' + m.institution_id + '</code><button class="copy-btn" onclick="copy(\'' + m.institution_id + '\')" title="Copy ID">copy</button></td>' +
+      '<td><code>' + m.institution_id + '</code><button class="copy-btn" data-id="' + m.institution_id + '" onclick="copy(this.dataset.id)" title="Copy ID">copy</button></td>' +
       '<td>' + m.full_name + '</td>' +
       '<td style="color:#94a3b8">' + m.email + '</td>' +
       '<td><span class="role-badge ' + m.role + '">' + m.role + '</span></td>' +
@@ -370,7 +376,12 @@ async function load() {
 }
 
 function changePage(dir) {
-  state.page += dir;
+  state.page = Math.max(1, Math.min(state.lastPage, state.page + dir));
+  load();
+}
+
+function goToPage(n) {
+  state.page = Math.max(1, Math.min(state.lastPage, n));
   load();
 }
 
