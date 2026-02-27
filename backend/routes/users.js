@@ -167,6 +167,18 @@ router.post('/register', registerLimiter, validateRegistration, async (req, res)
       req
     );
 
+    // Mark this institution member as a registered voter in the directory
+    try {
+      await axios.patch(
+        `${INSTITUTION_API_URL}/api/members/${institutionId.toUpperCase()}/voter`,
+        { is_voter: true },
+        { timeout: 3000 }
+      );
+    } catch (markErr) {
+      // Non-fatal — registration still succeeds
+      console.warn('Warning: Could not mark institution member as voter:', markErr.message);
+    }
+
     res.status(201).json(response);
   } catch (err) {
     console.error(err);

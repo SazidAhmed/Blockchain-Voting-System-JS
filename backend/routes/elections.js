@@ -76,6 +76,23 @@ router.post('/', adminAuth, async (req, res) => {
       candidateIds.push(candResult.insertId);
     }
 
+    // Auto-register all existing verified users for this new election
+    try {
+      const [existingUsers] = await pool.query(
+        "SELECT id FROM users WHERE registration_status = 'verified' OR registration_status IS NULL"
+      );
+      if (existingUsers.length > 0) {
+        const regValues = existingUsers.map(u => [u.id, electionId, crypto.randomBytes(32).toString('hex'), 'registered']);
+        await pool.query(
+          'INSERT IGNORE INTO voter_registrations (user_id, election_id, registration_token, status) VALUES ?',
+          [regValues]
+        );
+        console.log(`✅ Auto-registered ${existingUsers.length} existing user(s) for election #${electionId}`);
+      }
+    } catch (regErr) {
+      console.warn('Warning: Could not auto-register existing users for new election:', regErr.message);
+    }
+
     // Log the election creation
     await adminLogger.logAdminAction(
       adminId, 'CREATE_ELECTION', 'elections', electionId,
@@ -410,17 +427,24 @@ router.post('/:id/vote', voteLimiter, auth, validateVote, async (req, res) => {
       return res.status(400).json({ message: 'Voting is not currently open for this election' });
     }
 
-    // Check if user is registered
+    // Check if user is registered; auto-register if not (any verified user can vote in any active election)
     const [registrations] = await pool.query(
       'SELECT id, status, registration_token FROM voter_registrations WHERE user_id = ? AND election_id = ?',
       [userId, electionId]
     );
 
+    let registration;
     if (registrations.length === 0) {
-      return res.status(400).json({ message: 'You are not registered for this election' });
+      // Auto-register the user for this election now
+      const registrationToken = crypto.randomBytes(32).toString('hex');
+      const [insertResult] = await pool.query(
+        'INSERT INTO voter_registrations (user_id, election_id, registration_token, status) VALUES (?, ?, ?, ?)',
+        [userId, electionId, registrationToken, 'registered']
+      );
+      registration = { id: insertResult.insertId, status: 'registered', registration_token: registrationToken };
+    } else {
+      registration = registrations[0];
     }
-
-    const registration = registrations[0];
 
     if (registration.status === 'voted') {
       // Log double-vote attempt
@@ -546,6 +570,9 @@ router.post('/:id/vote', voteLimiter, auth, validateVote, async (req, res) => {
         signature: finalSignature
       });
       blockchainResponse = response;
+
+      // Auto-mine the pending vote into a block immediately
+      blockchainApi.get('/mine').catch(() => {});
     } catch (blockchainError) {
       console.warn('⚠️ Blockchain node not available, continuing with simulated transaction (development mode)');
       // In development, continue without blockchain
@@ -623,16 +650,31 @@ router.post('/:id/vote', voteLimiter, auth, validateVote, async (req, res) => {
 router.get('/admin/all', adminAuth, async (req, res) => {
   try {
     const [elections] = await pool.query(
-      'SELECT e.*, COUNT(DISTINCT c.id) as candidates_count, COUNT(DISTINCT vm.id) as votes_count FROM elections e LEFT JOIN candidates c ON e.id = c.election_id LEFT JOIN votes_meta vm ON e.id = vm.election_id GROUP BY e.id ORDER BY e.created_at DESC'
+      'SELECT e.*, COUNT(DISTINCT c.id) as candidates_count, COUNT(DISTINCT vr.id) as registrations_count, COUNT(DISTINCT vm.id) as votes_count FROM elections e LEFT JOIN candidates c ON e.id = c.election_id LEFT JOIN voter_registrations vr ON e.id = vr.election_id LEFT JOIN votes_meta vm ON e.id = vm.election_id GROUP BY e.id ORDER BY e.created_at DESC'
     );
 
-    // Get candidates for each election
+    // Get candidates + tally votes per candidate by decoding encrypted ballots
     for (const election of elections) {
       const [candidates] = await pool.query(
         'SELECT * FROM candidates WHERE election_id = ? ORDER BY name',
         [election.id]
       );
-      election.candidates = candidates;
+
+      // Tally votes per candidate from encrypted_ballot (base64 JSON in dev mode)
+      const [votes] = await pool.query(
+        'SELECT encrypted_ballot FROM votes_meta WHERE election_id = ?',
+        [election.id]
+      );
+      const tally = {};
+      for (const v of votes) {
+        try {
+          const ballot = JSON.parse(Buffer.from(v.encrypted_ballot, 'base64').toString('utf8'));
+          const cid = ballot.candidateId;
+          if (cid) tally[cid] = (tally[cid] || 0) + 1;
+        } catch (_) { /* skip unreadable ballots */ }
+      }
+
+      election.candidates = candidates.map(c => ({ ...c, votes_count: tally[c.id] || 0 }));
     }
 
     res.json(elections);

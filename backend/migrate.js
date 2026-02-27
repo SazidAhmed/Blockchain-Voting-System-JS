@@ -47,13 +47,13 @@ class MigrationRunner {
   }
 
   /**
-   * Get list of migration files
+   * Get list of migration files (.sql and .js)
    */
   async getMigrationFiles() {
     try {
       const files = await fs.readdir(this.migrationsDir);
       return files
-        .filter(f => f.endsWith('.sql'))
+        .filter(f => f.endsWith('.sql') || f.endsWith('.js'))
         .sort(); // Ensures migrations run in order
     } catch (error) {
       if (error.code === 'ENOENT') {
@@ -114,7 +114,7 @@ class MigrationRunner {
    */
   async runMigration(filename) {
     const migrationPath = path.join(this.migrationsDir, filename);
-    const migrationName = filename.replace('.sql', '');
+    const migrationName = filename.replace(/\.(sql|js)$/, '');
 
     console.log(`\n→ Running migration: ${migrationName}`);
 
@@ -125,20 +125,23 @@ class MigrationRunner {
         return { status: 'skipped', name: migrationName };
       }
 
-      // Read migration file
-      const sql = await fs.readFile(migrationPath, 'utf8');
-      
-      // Calculate checksum
       const checksum = await this.calculateChecksum(migrationPath);
 
-      // Execute migration
-      await this.connection.query(sql);
-      
-      // Record migration (the migration file itself creates schema_migrations table)
+      if (filename.endsWith('.js')) {
+        // JS migrations manage their own connection — run as subprocess
+        const { execFileSync } = require('child_process');
+        execFileSync(process.execPath, [migrationPath], { stdio: 'inherit' });
+      } else {
+        // SQL migration — execute via shared connection
+        const sql = await fs.readFile(migrationPath, 'utf8');
+        await this.connection.query(sql);
+      }
+
+      // Record migration (the initial schema file creates the tracking table)
       if (!migrationName.includes('initial_schema')) {
         await this.recordMigration(migrationName, checksum);
       }
-      
+
       console.log(`  ✓ Successfully applied`);
       return { status: 'applied', name: migrationName };
     } catch (error) {
