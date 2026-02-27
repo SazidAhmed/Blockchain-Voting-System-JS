@@ -238,7 +238,7 @@
                 </div>
               </div>
 
-              <div class="add-candidate-form">
+              <div v-if="selectedElection?.status !== 'active'" class="add-candidate-form">
                 <h4>Add New Candidate</h4>
                 <div class="form-row">
                   <input 
