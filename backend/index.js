@@ -5,6 +5,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 const userRoutes = require('./routes/users');
 const electionRoutes = require('./routes/elections');
+const emailService = require('./services/emailService');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -111,7 +112,7 @@ app.use((err, req, res, next) => {
 });
 
 // Start server
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log(`Server running on port ${PORT}`);
   console.log('Security features enabled:');
   console.log('  ✓ Helmet.js (Security headers)');
@@ -120,6 +121,15 @@ app.listen(PORT, () => {
   console.log('  ✓ Rate limiting');
   console.log('  ✓ Request timeouts');
   console.log('  ✓ Body size limits');
+  console.log('  ✓ Email OTP verification');
+
+  // Initialize email service (async — creates Ethereal account in dev)
+  try {
+    await emailService.initialize();
+  } catch (err) {
+    console.warn('⚠️ Email service failed to initialize:', err.message);
+    console.warn('   OTP codes will be logged to console as fallback.');
+  }
 });
 
 module.exports = app; // Export for testing

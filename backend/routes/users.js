@@ -5,10 +5,12 @@ const crypto = require('crypto');
 const axios = require('axios');
 const { pool } = require('../config/db');
 const { auth } = require('../middleware/auth');
-const { registerLimiter, loginLimiter } = require('../middleware/rateLimiter');
+const { registerLimiter, loginLimiter, otpLimiter } = require('../middleware/rateLimiter');
 const { validateRegistration, validateLogin } = require('../middleware/validation');
 const { hashPassword, comparePassword, generateKeypair } = require('../utils/crypto');
 const auditLogger = require('../utils/auditLogger');
+const otpService = require('../services/otpService');
+const emailService = require('../services/emailService');
 require('dotenv').config();
 
 const INSTITUTION_API_URL = process.env.INSTITUTION_API_URL || 'http://localhost:4000';
@@ -39,12 +41,100 @@ router.get('/institution-lookup/:institutionId', async (req, res) => {
   }
 });
 
+// @route   POST /api/users/send-otp
+// @desc    Send OTP verification code to member's institutional email
+// @access  Public
+router.post('/send-otp', otpLimiter, async (req, res) => {
+  try {
+    const { institutionId } = req.body;
+
+    if (!institutionId) {
+      return res.status(400).json({ message: 'Institution ID is required.' });
+    }
+
+    // Look up the member in the institutional directory
+    let member;
+    try {
+      member = await lookupInstitutionMember(institutionId.toUpperCase());
+    } catch (err) {
+      return res.status(503).json({ message: err.message });
+    }
+
+    if (!member) {
+      return res.status(404).json({ message: 'Institution ID not found.' });
+    }
+
+    // Check if already registered as a voter
+    const [existingUsers] = await pool.query(
+      'SELECT id FROM users WHERE institution_id = ?',
+      [institutionId.toUpperCase()]
+    );
+    if (existingUsers.length > 0) {
+      return res.status(400).json({ message: 'This ID is already registered. Please login instead.' });
+    }
+
+    // Generate OTP
+    let otpData;
+    try {
+      otpData = otpService.createOTP(institutionId, member.email);
+    } catch (err) {
+      return res.status(429).json({ message: err.message });
+    }
+
+    // Send OTP via email
+    await emailService.sendOTPEmail(member.email, otpData.code, member.fullName, institutionId.toUpperCase());
+
+    console.log(`📧 OTP sent to ${otpData.maskedEmail} for ${institutionId.toUpperCase()}`);
+
+    res.json({
+      message: 'Verification code sent to your institutional email.',
+      maskedEmail: otpData.maskedEmail,
+      expiresInMinutes: otpData.expiresInMinutes
+    });
+  } catch (err) {
+    console.error('OTP send error:', err);
+    res.status(500).json({ message: 'Failed to send verification code. Please try again.' });
+  }
+});
+
+// @route   POST /api/users/verify-otp
+// @desc    Verify OTP code entered by user
+// @access  Public
+router.post('/verify-otp', otpLimiter, async (req, res) => {
+  try {
+    const { institutionId, code } = req.body;
+
+    if (!institutionId || !code) {
+      return res.status(400).json({ message: 'Institution ID and verification code are required.' });
+    }
+
+    const result = otpService.verifyOTP(institutionId, code);
+
+    if (!result.valid) {
+      return res.status(400).json({ message: result.message });
+    }
+
+    res.json({ message: result.message, verified: true });
+  } catch (err) {
+    console.error('OTP verify error:', err);
+    res.status(500).json({ message: 'Verification failed. Please try again.' });
+  }
+});
+
 // @route   POST /api/users/register
-// @desc    Register a new user
+// @desc    Register a new user (requires verified OTP)
 // @access  Public
 router.post('/register', registerLimiter, validateRegistration, async (req, res) => {
   try {
     const { institutionId, password, publicKey, encryptionPublicKey } = req.body;
+
+    // ✅ Verify that email OTP was completed for this institution ID
+    if (!otpService.isVerified(institutionId)) {
+      return res.status(403).json({ 
+        message: 'Email verification required. Please verify your email before registering.',
+        requiresOTP: true
+      });
+    }
 
     // Verify institution ID against the institutional directory
     let member;
@@ -178,6 +268,9 @@ router.post('/register', registerLimiter, validateRegistration, async (req, res)
       // Non-fatal — registration still succeeds
       console.warn('Warning: Could not mark institution member as voter:', markErr.message);
     }
+
+    // Consume the OTP verification (one-time use)
+    otpService.consumeVerification(institutionId);
 
     res.status(201).json(response);
   } catch (err) {

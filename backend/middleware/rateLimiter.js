@@ -73,9 +73,28 @@ const generalLimiter = rateLimit({
   }
 });
 
+// Rate limiter for OTP requests
+// Limits: 5 requests per 15 minutes per IP (prevent OTP spam)
+const otpLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // 5 requests per window
+  message: {
+    message: 'Too many verification code requests. Please try again after 15 minutes.'
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: (req, res) => {
+    res.status(429).json({
+      message: 'Too many verification code requests. Please try again after 15 minutes.',
+      retryAfter: Math.ceil(req.rateLimit.resetTime / 1000)
+    });
+  }
+});
+
 module.exports = {
   registerLimiter,
   loginLimiter,
   voteLimiter,
-  generalLimiter
+  generalLimiter,
+  otpLimiter
 };
