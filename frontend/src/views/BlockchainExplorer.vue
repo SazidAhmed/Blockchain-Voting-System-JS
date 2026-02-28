@@ -24,6 +24,13 @@
     <!-- Stats Bar -->
     <div class="stats-bar">
       <div class="stat-card">
+        <div class="stat-label">Nodes</div>
+        <div class="stat-value" :class="nodesHealthClass">
+          {{ networkStatus.healthyNodes ?? '—' }}<span class="stat-sub">/{{ networkStatus.totalNodes ?? '—' }}</span>
+        </div>
+        <div class="stat-hint">healthy</div>
+      </div>
+      <div class="stat-card">
         <div class="stat-label">Chain Height</div>
         <div class="stat-value">{{ chain.length }}</div>
       </div>
@@ -249,6 +256,7 @@ export default {
     return {
       chain: [],
       nodeStatus: {},
+      networkStatus: {},
       loading: false,
       error: null,
       expandedBlock: null,
@@ -326,6 +334,18 @@ export default {
 
     nodeHealthClass() {
       return this.nodeStatus.status === 'healthy' ? 'node-healthy' : 'node-unhealthy'
+    },
+
+    nodesHealthClass() {
+      const { healthyNodes, totalNodes } = this.networkStatus
+      if (!totalNodes) return ''
+      return healthyNodes === totalNodes ? 'nodes-all-healthy' : 'nodes-degraded'
+    },
+
+    nodesHealthClass() {
+      const { healthyNodes, totalNodes } = this.networkStatus
+      if (!totalNodes) return ''
+      return healthyNodes === totalNodes ? 'nodes-all-healthy' : 'nodes-degraded'
     }
   },
 
@@ -334,12 +354,14 @@ export default {
       this.loading = true
       this.error = null
       try {
-        const [chainRes, statusRes] = await Promise.all([
+        const [chainRes, statusRes, networkRes] = await Promise.all([
           axios.get(`${BLOCKCHAIN_URL}/chain`),
-          axios.get(`${BLOCKCHAIN_URL}/node/status`)
+          axios.get(`${BLOCKCHAIN_URL}/node/status`),
+          axios.get(`${BLOCKCHAIN_URL}/network/status`)
         ])
         this.chain = chainRes.data.chain || []
         this.nodeStatus = statusRes.data || {}
+        this.networkStatus = networkRes.data || {}
       } catch (e) {
         this.error = `Cannot connect to blockchain node at ${BLOCKCHAIN_URL} — is it running?`
       } finally {
@@ -520,6 +542,19 @@ export default {
   font-weight: 700;
   color: #1a1a2e;
 }
+
+.stat-sub {
+  font-size: 0.9rem;
+  font-weight: 400;
+  color: #aaa;
+}
+.stat-hint {
+  font-size: 0.72rem;
+  color: #aaa;
+  margin-top: 2px;
+}
+.nodes-all-healthy { color: #27ae60; }
+.nodes-degraded { color: #e67e22; }
 
 /* ── Search ── */
 .search-bar {

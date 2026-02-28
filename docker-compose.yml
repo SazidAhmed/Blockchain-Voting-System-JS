@@ -54,6 +54,7 @@ services:
       NODE_ID: node1
       PORT: 3001
       NODE_ENV: ${NODE_ENV:-development}
+      PEERS: http://blockchain-node-2:3002,http://blockchain-node-3:3003,http://blockchain-node-4:3004
     ports:
       - "3001:3001"
     volumes:
@@ -64,6 +65,87 @@ services:
       - voting-network
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3001/node"]
+      timeout: 10s
+      retries: 5
+      interval: 15s
+    command: npm start
+
+  # Blockchain Node 2
+  blockchain-node-2:
+    build:
+      context: ./blockchain-node
+      dockerfile: Dockerfile
+    container_name: voting-blockchain-node-2
+    restart: always
+    environment:
+      NODE_ID: blockchain-node-2
+      PORT: 3002
+      NODE_ENV: ${NODE_ENV:-development}
+      PEERS: http://blockchain-node:3001,http://blockchain-node-3:3003,http://blockchain-node-4:3004
+    ports:
+      - "3002:3002"
+    volumes:
+      - blockchain_data_2:/app/data
+      - ./blockchain-node:/app
+      - /app/node_modules
+    networks:
+      - voting-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3002/node"]
+      timeout: 10s
+      retries: 5
+      interval: 15s
+    command: npm start
+
+  # Blockchain Node 3
+  blockchain-node-3:
+    build:
+      context: ./blockchain-node
+      dockerfile: Dockerfile
+    container_name: voting-blockchain-node-3
+    restart: always
+    environment:
+      NODE_ID: blockchain-node-3
+      PORT: 3003
+      NODE_ENV: ${NODE_ENV:-development}
+      PEERS: http://blockchain-node:3001,http://blockchain-node-2:3002,http://blockchain-node-4:3004
+    ports:
+      - "3003:3003"
+    volumes:
+      - blockchain_data_3:/app/data
+      - ./blockchain-node:/app
+      - /app/node_modules
+    networks:
+      - voting-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3003/node"]
+      timeout: 10s
+      retries: 5
+      interval: 15s
+    command: npm start
+
+  # Blockchain Node 4
+  blockchain-node-4:
+    build:
+      context: ./blockchain-node
+      dockerfile: Dockerfile
+    container_name: voting-blockchain-node-4
+    restart: always
+    environment:
+      NODE_ID: blockchain-node-4
+      PORT: 3004
+      NODE_ENV: ${NODE_ENV:-development}
+      PEERS: http://blockchain-node:3001,http://blockchain-node-2:3002,http://blockchain-node-3:3003
+    ports:
+      - "3004:3004"
+    volumes:
+      - blockchain_data_4:/app/data
+      - ./blockchain-node:/app
+      - /app/node_modules
+    networks:
+      - voting-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3004/node"]
       timeout: 10s
       retries: 5
       interval: 15s
@@ -187,5 +269,11 @@ volumes:
   mysql_data:
     driver: local
   blockchain_data:
+    driver: local
+  blockchain_data_2:
+    driver: local
+  blockchain_data_3:
+    driver: local
+  blockchain_data_4:
     driver: local
 

@@ -129,11 +129,19 @@ function handleMessage(senderId, message) {
             break;
 
         case MessageTypes.HEARTBEAT:
-            // Respond to heartbeat
-            peerManager.sendToPeer(senderId, {
-                type: MessageTypes.HEARTBEAT_RESPONSE,
-                timestamp: Date.now()
-            });
+            // Respond to heartbeat — senderId may be a socket object (incoming)
+            // or a nodeId string (outgoing peerManager connection)
+            if (senderId && typeof senderId.emit === 'function') {
+                senderId.emit('message', {
+                    type: MessageTypes.HEARTBEAT_RESPONSE,
+                    timestamp: Date.now()
+                });
+            } else {
+                peerManager.sendToPeer(senderId, {
+                    type: MessageTypes.HEARTBEAT_RESPONSE,
+                    timestamp: Date.now()
+                });
+            }
             break;
 
         case MessageTypes.HEARTBEAT_RESPONSE:
