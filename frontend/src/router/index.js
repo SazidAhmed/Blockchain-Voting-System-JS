@@ -7,6 +7,7 @@ import VoteView from '../views/VoteView.vue'
 import AdminDashboard from '../views/AdminDashboard.vue'
 import ResultsView from '../views/ResultsView.vue'
 import VoterPickerView from '../views/VoterPickerView.vue'
+import BlockchainExplorer from '../views/BlockchainExplorer.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -58,6 +59,11 @@ const router = createRouter({
       path: '/voter-picker',
       name: 'voter-picker',
       component: VoterPickerView
+    },
+    {
+      path: '/explorer',
+      name: 'explorer',
+      component: BlockchainExplorer
     }
   ]
 })

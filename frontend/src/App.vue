@@ -33,6 +33,7 @@ export default {
         <router-link v-if="!isAuthenticated" to="/login" class="nav-link">Login</router-link>
         <router-link v-if="!isAuthenticated" to="/register" class="nav-link">Register</router-link>
         <router-link to="/voter-picker" class="nav-link">Institute Members</router-link>
+        <router-link to="/explorer" class="nav-link">⛓️ Explorer</router-link>
         <div v-if="isAuthenticated" class="nav-user">
           <span class="user-name">👤 {{ currentUser?.name || currentUser?.studentId }}</span>
           <button @click="logout" class="btn-logout">Logout</button>
