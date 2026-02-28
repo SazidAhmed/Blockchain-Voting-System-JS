@@ -6,6 +6,7 @@ import ElectionsView from '../views/ElectionsView.vue'
 import VoteView from '../views/VoteView.vue'
 import AdminDashboard from '../views/AdminDashboard.vue'
 import ResultsView from '../views/ResultsView.vue'
+import VoterPickerView from '../views/VoterPickerView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -52,6 +53,11 @@ const router = createRouter({
       name: 'results',
       component: ResultsView,
       meta: { requiresAuth: true }
+    },
+    {
+      path: '/voter-picker',
+      name: 'voter-picker',
+      component: VoterPickerView
     }
   ]
 })

@@ -73,9 +73,8 @@ export default {
 
 <style scoped>
 .home {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 20px;
+  width: 100%;
+  padding: 20px 40px;
 }
 
 .hero {
@@ -142,7 +141,7 @@ export default {
 
 .features {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  grid-template-columns: repeat(3, 1fr);
   gap: 30px;
   margin-bottom: 60px;
 }
@@ -179,7 +178,7 @@ export default {
 
 .steps {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  grid-template-columns: repeat(4, 1fr);
   gap: 30px;
 }
 

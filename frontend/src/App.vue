@@ -32,6 +32,7 @@ export default {
         <router-link v-if="isAuthenticated" to="/results" class="nav-link">Results</router-link>
         <router-link v-if="!isAuthenticated" to="/login" class="nav-link">Login</router-link>
         <router-link v-if="!isAuthenticated" to="/register" class="nav-link">Register</router-link>
+        <router-link to="/voter-picker" class="nav-link">Institute Members</router-link>
         <div v-if="isAuthenticated" class="nav-user">
           <span class="user-name">👤 {{ currentUser?.name || currentUser?.studentId }}</span>
           <button @click="logout" class="btn-logout">Logout</button>
@@ -56,12 +57,18 @@ export default {
   box-sizing: border-box;
 }
 
+html, body {
+  width: 100%;
+  min-height: 100vh;
+}
+
 body {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   background-color: #f5f5f5;
 }
 
 #app {
+  width: 100%;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
@@ -133,7 +140,7 @@ body {
 
 .main-content {
   flex: 1;
-  padding: 2rem;
+  padding: 0;
 }
 
 .footer {
