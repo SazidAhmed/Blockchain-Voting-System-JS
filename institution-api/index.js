@@ -172,7 +172,7 @@ app.get('/api/lookup/:institutionId', async (req, res) => {
     );
     if (!row) return res.status(404).json({ message: 'Institution ID not found. Please check your ID and try again.' });
     res.json({ institutionId: row.institution_id, fullName: row.full_name,
-      email: row.email, role: row.role, department: row.department, year: row.year_level });
+      email: row.email, role: row.role, department: row.department, year: row.year_level, isVoter: row.is_voter === 1 || row.is_voter === true });
   } catch (e) { res.status(500).json({ message: e.message }); }
 });
 

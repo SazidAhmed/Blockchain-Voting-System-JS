@@ -32,7 +32,7 @@
       </div>
 
       <!-- Step 2: Show auto-filled info + password -->
-      <form v-if="memberFound" @submit.prevent="handleRegister">
+      <div v-if="memberFound">
         <div class="member-info">
           <div class="info-row"><span class="info-label">Full Name</span><span class="info-value">{{ name }}</span></div>
           <div class="info-row"><span class="info-label">Email</span><span class="info-value">{{ email }}</span></div>
@@ -40,23 +40,35 @@
           <div class="info-row"><span class="info-label">Department</span><span class="info-value">{{ department }}</span></div>
         </div>
 
-        <div class="form-group">
-          <label for="password">Set Password</label>
-          <input type="password" id="password" v-model="password" required class="form-control" placeholder="Minimum 8 characters">
+        <!-- Already registered notice -->
+        <div v-if="alreadyRegistered" class="alert alert-warning">
+          ✅ You're already registered. Please <router-link to="/login">login</router-link> to your account.
         </div>
 
-        <div class="form-group">
-          <label for="confirmPassword">Confirm Password</label>
-          <input type="password" id="confirmPassword" v-model="confirmPassword" required class="form-control" placeholder="••••••••">
-          <p v-if="confirmPassword && password !== confirmPassword" class="field-error">Passwords do not match</p>
-        </div>
+        <!-- Password form (only if not already registered) -->
+        <form v-else @submit.prevent="handleRegister">
+          <div class="form-group">
+            <label for="password">Set Password</label>
+            <input type="password" id="password" v-model="password" required class="form-control" placeholder="Minimum 8 characters">
+          </div>
 
-        <button type="submit" class="btn btn-primary" :disabled="loading || !formValid">
-          {{ loading ? 'Registering...' : 'Complete Registration' }}
-        </button>
+          <div class="form-group">
+            <label for="confirmPassword">Confirm Password</label>
+            <input type="password" id="confirmPassword" v-model="confirmPassword" required class="form-control" placeholder="••••••••">
+            <p v-if="confirmPassword && password !== confirmPassword" class="field-error">Passwords do not match</p>
+          </div>
 
-        <button type="button" class="btn btn-secondary mt-8" @click="resetLookup">Use a different ID</button>
-      </form>
+          <button type="submit" class="btn btn-primary" :disabled="loading || !formValid">
+            {{ loading ? 'Registering...' : 'Complete Registration' }}
+          </button>
+
+          <div v-if="error || localError" class="alert alert-danger mt-8">{{ error || localError }}</div>
+
+          <button type="button" class="btn btn-secondary mt-8" @click="resetLookup">Use a different ID</button>
+        </form>
+
+        <button v-if="alreadyRegistered" type="button" class="btn btn-secondary mt-8" @click="resetLookup">Use a different ID</button>
+      </div>
 
       <div class="login-link">
         Already have an account?
@@ -87,7 +99,8 @@ export default {
       localError: '',
       generatingKeys: false,
       lookingUp: false,
-      memberFound: false
+      memberFound: false,
+      alreadyRegistered: false
     }
   },
   computed: {
@@ -116,6 +129,7 @@ export default {
         }
 
         // Check if already registered
+        this.alreadyRegistered = !!data.isVoter
         this.name = data.fullName
         this.email = data.email
         this.role = data.role
@@ -131,6 +145,7 @@ export default {
 
     resetLookup() {
       this.memberFound = false
+      this.alreadyRegistered = false
       this.studentId = ''
       this.name = ''
       this.email = ''
@@ -167,7 +182,7 @@ export default {
         this.$router.push('/elections')
       } catch (error) {
         console.error('Registration error:', error)
-        this.localError = error.message || 'Registration failed'
+        this.localError = error.response?.data?.message || error.message || 'Registration failed'
         this.generatingKeys = false
       }
     }
@@ -364,6 +379,18 @@ label {
   background-color: #f8d7da;
   color: #721c24;
   border: 1px solid #f5c6cb;
+}
+
+.alert-warning {
+  background-color: #fff3cd;
+  color: #856404;
+  border: 1px solid #ffc107;
+  border-radius: 4px;
+}
+
+.alert-warning a {
+  color: #856404;
+  font-weight: 600;
 }
 
 .alert-info {
