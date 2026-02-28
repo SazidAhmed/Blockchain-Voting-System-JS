@@ -605,25 +605,19 @@ export default {
 
     // Lifecycle
     onMounted(async () => {
-      // Check user role - try from store first, then localStorage as fallback
-      let user = authStore.currentUser
-      if (!user) {
-        // Fallback to localStorage if store not initialized
-        const storedUser = localStorage.getItem('user')
-        if (storedUser) {
-          try {
-            user = JSON.parse(storedUser)
-          } catch (e) {
-            console.error('Failed to parse stored user', e)
-          }
-        }
-      }
-      
-      if (!user || user.role !== 'admin') {
-        await router.push('/')
+      // Validate token with backend — if invalid/expired, logout and redirect
+      if (!authStore.token) {
+        await router.push('/login')
         return
       }
-      
+
+      await authStore.fetchCurrentUser()
+
+      if (!authStore.isAuthenticated || !authStore.currentUser || authStore.currentUser.role !== 'admin') {
+        await router.push('/login')
+        return
+      }
+
       // Fetch elections
       await electionsStore.fetchElections()
     })

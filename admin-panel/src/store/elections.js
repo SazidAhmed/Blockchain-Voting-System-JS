@@ -25,6 +25,11 @@ export const useElectionsStore = defineStore('elections', () => {
         }
       })
 
+      if (response.status === 401) {
+        authStore.logout()
+        return
+      }
+
       if (!response.ok) {
         throw new Error('Failed to fetch elections')
       }
