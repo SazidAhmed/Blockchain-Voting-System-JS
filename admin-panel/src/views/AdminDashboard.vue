@@ -343,6 +343,11 @@
         <section v-show="activeTab === 'audit'" class="tab-content">
           <AdminAuditLogs />
         </section>
+
+        <!-- Institute Members Tab -->
+        <section v-show="activeTab === 'members'" class="tab-content">
+          <AdminInstituteMembersTab />
+        </section>
       </div>
     </main>
 
@@ -367,11 +372,13 @@ import { useRouter } from 'vue-router'
 import { useAuthStore } from '../store/auth'
 import { useElectionsStore } from '../store/elections'
 import AdminAuditLogs from '../components/AdminAuditLogs.vue'
+import AdminInstituteMembersTab from '../components/AdminInstituteMembersTab.vue'
 
 export default {
   name: 'AdminDashboard',
   components: {
-    AdminAuditLogs
+    AdminAuditLogs,
+    AdminInstituteMembersTab
   },
   setup() {
     const router = useRouter()
@@ -394,7 +401,8 @@ export default {
       { id: 'create', label: 'Create Election', icon: '➕' },
       { id: 'candidates', label: 'Manage Candidates', icon: '👥' },
       { id: 'results', label: 'Results & Stats', icon: '📈' },
-      { id: 'audit', label: 'Audit Logs', icon: '🔐' }
+      { id: 'audit', label: 'Audit Logs', icon: '🔐' },
+      { id: 'members', label: 'Institute Members', icon: '🎓' }
     ]
 
     const newElection = ref({

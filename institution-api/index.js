@@ -164,6 +164,64 @@ app.patch('/api/members/:institutionId/voter', async (req, res) => {
   } catch (e) { res.status(500).json({ message: e.message }); }
 });
 
+// ─── Admin CRUD endpoints ────────────────────────────────────────────────────
+
+// POST /api/members — create a new member
+app.post('/api/members', async (req, res) => {
+  try {
+    const { institution_id, full_name, email, role, department, year_level } = req.body;
+    if (!institution_id || !full_name || !email || !role || !department) {
+      return res.status(400).json({ message: 'institution_id, full_name, email, role and department are required.' });
+    }
+    const validRoles = ['student', 'teacher', 'staff'];
+    if (!validRoles.includes(role)) return res.status(400).json({ message: 'role must be student, teacher or staff.' });
+    const db = getPool();
+    const [[exists]] = await db.query('SELECT 1 FROM institution_members WHERE institution_id = ? OR email = ?', [institution_id.toUpperCase(), email]);
+    if (exists) return res.status(409).json({ message: 'Institution ID or email already exists.' });
+    await db.query(
+      'INSERT INTO institution_members (institution_id, full_name, email, role, department, year_level, is_voter) VALUES (?, ?, ?, ?, ?, ?, FALSE)',
+      [institution_id.toUpperCase(), full_name, email, role, department, year_level || null]
+    );
+    const [[row]] = await db.query('SELECT * FROM institution_members WHERE institution_id = ?', [institution_id.toUpperCase()]);
+    res.status(201).json(row);
+  } catch (e) { res.status(500).json({ message: e.message }); }
+});
+
+// PUT /api/members/:institutionId — update a member
+app.put('/api/members/:institutionId', async (req, res) => {
+  try {
+    const id = req.params.institutionId.toUpperCase();
+    const { full_name, email, role, department, year_level } = req.body;
+    if (!full_name || !email || !role || !department) {
+      return res.status(400).json({ message: 'full_name, email, role and department are required.' });
+    }
+    const validRoles = ['student', 'teacher', 'staff'];
+    if (!validRoles.includes(role)) return res.status(400).json({ message: 'role must be student, teacher or staff.' });
+    const db = getPool();
+    const [r] = await db.query(
+      'UPDATE institution_members SET full_name=?, email=?, role=?, department=?, year_level=? WHERE institution_id=?',
+      [full_name, email, role, department, year_level || null, id]
+    );
+    if (r.affectedRows === 0) return res.status(404).json({ message: 'Member not found.' });
+    const [[row]] = await db.query('SELECT * FROM institution_members WHERE institution_id = ?', [id]);
+    res.json(row);
+  } catch (e) { res.status(500).json({ message: e.message }); }
+});
+
+// DELETE /api/members/:institutionId — delete a member
+app.delete('/api/members/:institutionId', async (req, res) => {
+  try {
+    const id = req.params.institutionId.toUpperCase();
+    const [[row]] = await getPool().query('SELECT is_voter FROM institution_members WHERE institution_id = ?', [id]);
+    if (!row) return res.status(404).json({ message: 'Member not found.' });
+    if (row.is_voter) return res.status(409).json({ message: 'Cannot delete a registered voter.' });
+    await getPool().query('DELETE FROM institution_members WHERE institution_id = ?', [id]);
+    res.json({ message: 'Member deleted.' });
+  } catch (e) { res.status(500).json({ message: e.message }); }
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 app.get('/api/lookup/:institutionId', async (req, res) => {
   try {
     const [[row]] = await getPool().query(
