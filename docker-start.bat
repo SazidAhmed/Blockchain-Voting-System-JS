@@ -83,9 +83,16 @@ echo [OK] All services started!
 echo.
 echo Services are now running:
 echo   - Frontend:     http://localhost:5173
+echo   - Admin Panel:  http://localhost:5174
 echo   - Backend API:  http://localhost:3000
 echo   - Blockchain:   http://localhost:3001
 echo   - phpMyAdmin:   http://localhost:8080
+echo.
+echo [INFO] Seeding database with test data...
+timeout /t 10 /nobreak >nul
+docker-compose exec backend npm run db:seed
+echo.
+echo [OK] Database seeded!
 echo.
 echo View logs with: docker-compose logs -f
 goto end
@@ -99,6 +106,7 @@ echo [OK] All services started!
 echo.
 echo Services are now running:
 echo   - Frontend:     http://localhost:5173
+echo   - Admin Panel:  http://localhost:5174
 echo   - Backend API:  http://localhost:3000
 echo   - Blockchain:   http://localhost:3001
 echo   - phpMyAdmin:   http://localhost:8080

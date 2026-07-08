@@ -3,6 +3,7 @@
 ## 🚀 Quick Start Commands
 
 ### Start Everything
+
 ```bash
 # First time (build images)
 docker-compose up --build -d
@@ -18,11 +19,13 @@ docker-start.bat
 ```
 
 ### Stop Everything
+
 ```bash
 docker-compose down
 ```
 
 ### View Logs
+
 ```bash
 # All services
 docker-compose logs -f
@@ -35,6 +38,7 @@ docker-compose logs -f blockchain-node
 ```
 
 ### Restart Services
+
 ```bash
 # All services
 docker-compose restart
@@ -46,11 +50,13 @@ docker-compose restart backend
 ## 🔍 Useful Commands
 
 ### Check Service Status
+
 ```bash
 docker-compose ps
 ```
 
 ### Execute Commands in Containers
+
 ```bash
 # Backend shell
 docker-compose exec backend sh
@@ -66,6 +72,7 @@ docker-compose exec backend node generate-election-keys.js 1
 ```
 
 ### Database Operations
+
 ```bash
 # Backup database
 docker-compose exec mysql mysqldump -u voting_user -p voting_db > backup.sql
@@ -78,6 +85,7 @@ docker-compose exec mysql mysql -u voting_user -p voting_db -e "SHOW TABLES;"
 ```
 
 ### Rebuild Services
+
 ```bash
 # Rebuild specific service
 docker-compose up --build backend
@@ -87,6 +95,7 @@ docker-compose up --build
 ```
 
 ### Clean Up
+
 ```bash
 # Remove containers only
 docker-compose down
@@ -101,17 +110,20 @@ docker-compose down -v --rmi all
 ## 📊 Monitoring
 
 ### Resource Usage
+
 ```bash
 docker stats
 ```
 
 ### View Networks
+
 ```bash
 docker network ls
 docker network inspect voting_voting-network
 ```
 
 ### View Volumes
+
 ```bash
 docker volume ls
 docker volume inspect voting_mysql_data
@@ -120,6 +132,7 @@ docker volume inspect voting_mysql_data
 ## 🐛 Troubleshooting
 
 ### Service won't start
+
 ```bash
 # Check logs
 docker-compose logs <service-name>
@@ -129,6 +142,7 @@ docker-compose build --no-cache <service-name>
 ```
 
 ### Port already in use
+
 ```bash
 # Find process using port (Linux/Mac)
 lsof -i :3000
@@ -140,6 +154,7 @@ taskkill /PID <PID> /F
 ```
 
 ### Database connection issues
+
 ```bash
 # Wait for MySQL to be ready
 docker-compose logs mysql | grep "ready for connections"
@@ -149,6 +164,7 @@ docker-compose restart backend
 ```
 
 ### Reset everything
+
 ```bash
 docker-compose down -v
 docker system prune -a --volumes
@@ -157,26 +173,30 @@ docker-compose up --build -d
 
 ## 🌐 Accessing Services
 
-| Service | URL | Credentials |
-|---------|-----|-------------|
-| Frontend | http://localhost:5173 | - |
-| Backend API | http://localhost:3000/api | - |
-| Blockchain | http://localhost:3001 | - |
-| phpMyAdmin | http://localhost:8080 | Server: `mysql`<br>User: `voting_user`<br>Pass: from `.env` |
-| MySQL | localhost:3306 | User: `voting_user`<br>Pass: from `.env` |
+| Service           | URL                         | Credentials                                                 |
+| ----------------- | --------------------------- | ----------------------------------------------------------- |
+| Frontend (Voters) | <http://localhost:5173>     | -                                                           |
+| Admin Panel       | <http://localhost:5174>     | -                                                           |
+| Backend API       | <http://localhost:3000/api> | -                                                           |
+| Blockchain        | <http://localhost:3001>     | -                                                           |
+| phpMyAdmin        | <http://localhost:8080>     | Server: `mysql`<br>User: `voting_user`<br>Pass: from `.env` |
+| MySQL             | <http://localhost:3306>     | User: `voting_user`<br>Pass: from `.env`                    |
 
 ## 📝 Development Workflow
 
 ### Making Code Changes
+
 1. Edit files in local directories
 2. Changes sync to containers via volumes
 3. Frontend auto-reloads
 4. Backend requires restart:
-   ```bash
+
+```bash
    docker-compose restart backend
-   ```
+```
 
 ### Adding npm Packages
+
 ```bash
 # Backend
 docker-compose exec backend npm install <package>
@@ -189,6 +209,7 @@ docker-compose build <service>
 ```
 
 ### Database Migrations
+
 ```bash
 # Run migrations
 docker-compose exec backend npm run migrate
@@ -206,6 +227,7 @@ docker-compose -f docker-compose.prod.yml up -d
 ```
 
 **Important for production:**
+
 1. Change all passwords in `.env`
 2. Use strong JWT_SECRET (minimum 32 characters)
 3. Enable SSL/TLS
@@ -217,5 +239,5 @@ docker-compose -f docker-compose.prod.yml up -d
 ## 📚 Additional Resources
 
 - Full setup guide: [DOCKER_SETUP.md](./DOCKER_SETUP.md)
-- Docker documentation: https://docs.docker.com/
-- Docker Compose docs: https://docs.docker.com/compose/
+- Docker documentation: <https://docs.docker.com>
+- Docker Compose docs: <https://docs.docker.com/compose>

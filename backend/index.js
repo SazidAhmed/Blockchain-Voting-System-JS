@@ -82,6 +82,20 @@ app.disable('x-powered-by');
 app.use('/api/users', userRoutes);
 app.use('/api/elections', electionRoutes);
 
+// Root route
+app.get('/', (req, res) => {
+  res.json({
+    service: 'Blockchain Voting System - Backend API',
+    version: '1.0.0',
+    status: 'running',
+    endpoints: {
+      health: '/health',
+      users: '/api/users',
+      elections: '/api/elections'
+    }
+  });
+});
+
 // Basic health check endpoint
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok', message: 'Server is running' });
