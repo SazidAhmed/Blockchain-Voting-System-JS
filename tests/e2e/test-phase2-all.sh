@@ -14,10 +14,10 @@ NC='\033[0m' # No Color
 
 # Test script paths
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-TEST_2_1="$SCRIPT_DIR/test-phase2-task2-1.sh"
-TEST_2_2="$SCRIPT_DIR/test-phase2-task2-2.sh"
-TEST_2_3="$SCRIPT_DIR/test-phase2-task2-3.sh"
-TEST_2_4="$SCRIPT_DIR/test-phase2-task2-4.sh"
+TEST_2_1="$SCRIPT_DIR/p2t2-1-test-transaction-propagation.sh"
+TEST_2_2="$SCRIPT_DIR/p2t2-2-test-block-mining-consensus.sh"
+TEST_2_3="$SCRIPT_DIR/p2t2-3-test-chain-synchronization.sh"
+TEST_2_4="$SCRIPT_DIR/p2t2-4-test-network-partition-recovery.sh"
 
 # Report file
 REPORT_FILE="$SCRIPT_DIR/PHASE2_TEST_RESULTS.md"

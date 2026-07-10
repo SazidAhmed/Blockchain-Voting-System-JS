@@ -28,6 +28,7 @@ data/voter_registrations.json
 keys/
 *.pem
 *.key
+keys/
 
 # Database
 *.sqlite

@@ -77,7 +77,7 @@ run_task_5_1() {
   
   local start_time=$(date +%s)
   
-  if bash "$SCRIPT_DIR/test-phase5-task5-1.sh"; then
+  if bash "$SCRIPT_DIR/p5t5-1-test-network-recovery.sh"; then
     TASK_RESULTS["5.1"]="PASS"
     log_task_complete "$task_name"
   else
@@ -95,7 +95,7 @@ run_task_5_2() {
   
   local start_time=$(date +%s)
   
-  if bash "$SCRIPT_DIR/test-phase5-task5-2.sh"; then
+  if bash "$SCRIPT_DIR/p5t5-2-test-byzantine-fault-tolerance.sh"; then
     TASK_RESULTS["5.2"]="PASS"
     log_task_complete "$task_name"
   else
@@ -113,7 +113,7 @@ run_task_5_3() {
   
   local start_time=$(date +%s)
   
-  if bash "$SCRIPT_DIR/test-phase5-task5-3.sh"; then
+  if bash "$SCRIPT_DIR/p5t5-3-test-disaster-recovery.sh"; then
     TASK_RESULTS["5.3"]="PASS"
     log_task_complete "$task_name"
   else

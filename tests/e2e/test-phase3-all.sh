@@ -115,23 +115,23 @@ main() {
     echo ""
     
     ((TOTAL_TASKS++))
-    run_task "3.1" "Tamper Detection Tests" "test-phase3-task3-1.sh" || true
+    run_task "3.1" "Tamper Detection Tests" "p3t3-1-test-block-tamper-detection.sh" || true
     echo ""
     
     ((TOTAL_TASKS++))
-    run_task "3.2" "Historical Block Tampering Tests" "test-phase3-task3-2.sh" || true
+    run_task "3.2" "Historical Block Tampering Tests" "p3t3-2-test-historical-block-tampering.sh" || true
     echo ""
     
     ((TOTAL_TASKS++))
-    run_task "3.3" "Double-Spend Attack Tests" "test-phase3-task3-3.sh" || true
+    run_task "3.3" "Double-Spend Attack Tests" "p3t3-3-test-double-spend-prevention.sh" || true
     echo ""
     
     ((TOTAL_TASKS++))
-    run_task "3.4" "51% Attack Tests" "test-phase3-task3-4.sh" || true
+    run_task "3.4" "51% Attack Tests" "p3t3-4-test-51-percent-attack-prevention.sh" || true
     echo ""
     
     ((TOTAL_TASKS++))
-    run_task "3.5" "Sybil Attack Tests" "test-phase3-task3-5.sh" || true
+    run_task "3.5" "Sybil Attack Tests" "p3t3-5-test-sybil-attack-prevention.sh" || true
     echo ""
     
     # Generate comprehensive report

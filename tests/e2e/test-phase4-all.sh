@@ -115,15 +115,15 @@ main() {
     echo ""
     
     ((TOTAL_TASKS++))
-    run_task "4.1" "Malicious Behavior Detection" "test-phase4-task4-1.sh" || true
+    run_task "4.1" "Malicious Behavior Detection" "p4t4-1-test-malicious-behavior-detection.sh" || true
     echo ""
     
     ((TOTAL_TASKS++))
-    run_task "4.2" "Quarantine Mechanism" "test-phase4-task4-2.sh" || true
+    run_task "4.2" "Quarantine Mechanism" "p4t4-2-test-quarantine-mechanism.sh" || true
     echo ""
     
     ((TOTAL_TASKS++))
-    run_task "4.3" "Evidence Collection & Forensics" "test-phase4-task4-3.sh" || true
+    run_task "4.3" "Evidence Collection & Forensics" "p4t4-3-test-evidence-collection-forensics.sh" || true
     echo ""
     
     # Generate comprehensive report

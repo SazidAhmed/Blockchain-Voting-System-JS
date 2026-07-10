@@ -85,11 +85,11 @@ infra\scripts\docker-start.bat
 
 **Access the application:**
 
-- 🖥️ **Frontend (Voters)**: <http://localhost:5173>
-- 🔧 **Admin Panel**: <http://localhost:5174>
-- 🔧 **Backend API**: <http://localhost:3000>
-- ⛓️ **Blockchain**: <http://localhost:3001>
-- 🗄️ **phpMyAdmin**: <http://localhost:8080>
+- 🖥️ **Frontend (Voters)**: [http://localhost:5173](http://localhost:5173)
+- 🔧 **Admin Panel**: [http://localhost:5174](http://localhost:5174)
+- 🔧 **Backend API**: [http://localhost:3000](http://localhost:3000)
+- ⛓️ **Blockchain**: [http://localhost:3001](http://localhost:3001)
+- 🗄️ **phpMyAdmin**: [http://localhost:8080](http://localhost:8080)
 
 **Done!** All 5 services running in Docker containers. See [DOCKER_SETUP.md](./docs/project-status/DOCKER_SETUP.md) for details.
 
@@ -107,9 +107,9 @@ docker-compose -f infra/docker/docker-compose.yml -f infra/docker/docker-compose
 
 **Access Monitoring Tools:**
 
-- 📈 **Grafana**: <http://localhost:3030> (admin/admin)
-- 📊 **Prometheus**: <http://localhost:9090>
-- 🐳 **cAdvisor**: <http://localhost:8081>
+- 📈 **Grafana**: [http://localhost:3030](http://localhost:3030) (admin/admin)
+- 📊 **Prometheus**: [http://localhost:9090](http://localhost:9090)
+- 🐳 **cAdvisor**: [http://localhost:8081](http://localhost:8081)
 
 **Features:**
 
