@@ -201,7 +201,7 @@ Registration → Key Generation → Vote → Encrypt → Sign → Verify → Sto
 
 **Detailed Flow:**
 
-1. User registers → ECDSA + RSA keypairs generated client-side
+1. User registers → ECDSA + RSA key pair generated client-side
 2. User selects candidate → Ballot encrypted with election public key
 3. Vote package signed with ECDSA private key
 4. Backend verifies signature → Checks nullifier for duplicates
