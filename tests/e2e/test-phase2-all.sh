@@ -33,7 +33,7 @@ echo "Checking prerequisites..."
 # Check if docker-compose network is running
 if ! docker ps | grep -q "voting-blockchain"; then
     echo -e "${RED}✗ Blockchain network not running${NC}"
-    echo "Start the network with: bash start-multi-node.sh"
+    echo "Start the network with: bash infra/scripts/start-multi-node.sh"
     exit 1
 fi
 

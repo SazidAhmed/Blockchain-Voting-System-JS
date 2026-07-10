@@ -7,6 +7,7 @@ Vue.js frontend for a secure, privacy-preserving blockchain voting system with *
 ## ✨ Features
 
 ### 🔐 Cryptographic Security
+
 - **ECDSA P-256** digital signatures for vote authentication
 - **RSA-OAEP 2048-bit** encryption for ballot confidentiality
 - **SHA-256** hashing for privacy-preserving nullifiers
@@ -15,6 +16,7 @@ Vue.js frontend for a secure, privacy-preserving blockchain voting system with *
 - **End-to-end encryption** - server cannot read votes
 
 ### 🗳️ Voting Features
+
 - User registration with automatic key generation
 - Secure login with key loading
 - Encrypted ballot submission
@@ -23,6 +25,7 @@ Vue.js frontend for a secure, privacy-preserving blockchain voting system with *
 - Download/print receipts
 
 ### 🎨 User Interface
+
 - Modern Vue 3 with Composition API
 - Responsive design
 - Real-time crypto status indicators
@@ -32,6 +35,7 @@ Vue.js frontend for a secure, privacy-preserving blockchain voting system with *
 ## 🚀 Quick Start
 
 ### Prerequisites
+
 - Node.js 20.19.0+ or 22.12.0+
 - Modern browser with Web Crypto API support
 
@@ -71,8 +75,8 @@ http://localhost:5173
 
 ## 📁 Project Structure
 
-```
-frontend/
+```text
+services/frontend/
 ├── src/
 │   ├── services/
 │   │   ├── crypto.js          # Core cryptography (600+ lines)
@@ -104,30 +108,36 @@ frontend/
 ### Core Services
 
 #### `crypto.js` - Cryptographic Operations
+
 ```javascript
 // Generate keypairs
-const keys = await cryptoService.generateUserKeypairs()
+const keys = await cryptoService.generateUserKeypairs();
 
 // Encrypt ballot
-const encrypted = await cryptoService.encryptBallot(ballot, publicKey)
+const encrypted = await cryptoService.encryptBallot(ballot, publicKey);
 
 // Sign data
-const signature = await cryptoService.signData(data, privateKey)
+const signature = await cryptoService.signData(data, privateKey);
 
 // Generate nullifier
-const nullifier = await cryptoService.generateNullifier(privateKey, electionId)
+const nullifier = await cryptoService.generateNullifier(privateKey, electionId);
 ```
 
 #### `keyManager.js` - Key Management
+
 ```javascript
 // Initialize keys during registration
-const { publicKeys } = await keyManager.initializeUserKeys(userId, password)
+const { publicKeys } = await keyManager.initializeUserKeys(userId, password);
 
 // Load keys during login
-const keys = await keyManager.loadUserKeys(userId, password)
+const keys = await keyManager.loadUserKeys(userId, password);
 
 // Generate encrypted vote
-const votePackage = await keyManager.generateVote(voteData, electionId, electionKey)
+const votePackage = await keyManager.generateVote(
+  voteData,
+  electionId,
+  electionKey,
+);
 ```
 
 ### Security Features
@@ -137,7 +147,7 @@ const votePackage = await keyManager.generateVote(voteData, electionId, election
 ✅ **Vote Privacy** - Unlinkable nullifiers preserve anonymity  
 ✅ **Double-Vote Prevention** - Deterministic nullifiers per voter+election  
 ✅ **Non-Repudiation** - Digital signatures prove vote authenticity  
-✅ **Coercion Resistance** - Receipts don't reveal voting choices  
+✅ **Coercion Resistance** - Receipts don't reveal voting choices
 
 ## 📚 Documentation
 
@@ -198,12 +208,14 @@ npm run preview
 ## 🛡️ Security Considerations
 
 ### ✅ Current Implementation (Development)
+
 - Client-side key generation using Web Crypto API
 - localStorage for key storage (basic encryption)
 - Session-based key management
 - Memory cleanup on logout
 
 ### 🔜 Production Recommendations
+
 - Implement PBKDF2 key derivation
 - Add AES-GCM encryption for localStorage
 - Integrate WebAuthn for hardware tokens
@@ -216,13 +228,13 @@ See `CRYPTO_IMPLEMENTATION.md` for detailed production checklist.
 
 ## 📊 Browser Compatibility
 
-| Browser | Version | Status |
-|---------|---------|--------|
-| Chrome | 37+ | ✅ Full Support |
-| Firefox | 34+ | ✅ Full Support |
-| Safari | 11+ | ✅ Full Support |
-| Edge | 79+ | ✅ Full Support |
-| Opera | 24+ | ✅ Full Support |
+| Browser | Version | Status          |
+| ------- | ------- | --------------- |
+| Chrome  | 37+     | ✅ Full Support |
+| Firefox | 34+     | ✅ Full Support |
+| Safari  | 11+     | ✅ Full Support |
+| Edge    | 79+     | ✅ Full Support |
+| Opera   | 24+     | ✅ Full Support |
 
 **Web Crypto API is supported in all modern browsers.**
 
@@ -254,6 +266,7 @@ POST /api/elections/:id/vote
 ## 🎯 Roadmap
 
 ### ✅ Phase 1: Complete (Current)
+
 - [x] Client-side key generation
 - [x] Ballot encryption
 - [x] Digital signatures
@@ -262,12 +275,14 @@ POST /api/elections/:id/vote
 - [x] Key storage
 
 ### 🔜 Phase 2: Security Hardening
+
 - [ ] PBKDF2 key derivation
 - [ ] AES-GCM encryption
 - [ ] MFA integration
 - [ ] Key rotation
 
 ### 🔜 Phase 3: Advanced Features
+
 - [ ] Blind signatures
 - [ ] Zero-knowledge proofs
 - [ ] Threshold encryption
@@ -285,21 +300,25 @@ Copyright © 2025
 ## 🆘 Troubleshooting
 
 ### Keys not generating
+
 - Check browser console for errors
 - Verify browser supports Web Crypto API
 - Clear cache and try again
 
 ### Keys not loading on login
+
 - Check if keys exist in localStorage
 - Try re-registering
 - Verify password is correct
 
 ### Encryption fails
+
 - Ensure election has valid public key
 - Check console for detailed error
 - Verify keys are loaded (check crypto status)
 
 ### Tests failing
+
 - Ensure you're in a secure context (HTTPS or localhost)
 - Check browser compatibility
 - Clear localStorage and retry
@@ -307,6 +326,7 @@ Copyright © 2025
 ## 📞 Support
 
 For detailed troubleshooting, see:
+
 - `CRYPTO_QUICK_START.md` - Testing guide
 - `CRYPTO_IMPLEMENTATION.md` - Technical details
 - Browser console logs (F12)

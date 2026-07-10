@@ -11,5 +11,5 @@ dist
 build
 logs
 *.log
-Project_Status
+docs/project-status
 .github

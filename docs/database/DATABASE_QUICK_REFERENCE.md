@@ -40,32 +40,36 @@ npm run dev                 # Start development server with nodemon
 
 ## Default Credentials (Development Only)
 
-| Role | Institution ID | Password |
-|------|---------------|----------|
-| Admin | ADMIN001 | admin123 |
-| Student | STU001 | password123 |
-| Teacher | TEACH001 | password123 |
-| Staff | STAFF001 | password123 |
+| Role    | Institution ID | Password    |
+| ------- | -------------- | ----------- |
+| Admin   | ADMIN001       | admin123    |
+| Student | STU001         | password123 |
+| Teacher | TEACH001       | password123 |
+| Staff   | STAFF001       | password123 |
 
 ## Database Tables Summary
 
 ### User Management
+
 - `users` - Voter accounts (7 sample users)
 - `blind_tokens` - Anonymous eligibility tokens
 - `voter_registrations` - Registration tracking
 
 ### Elections
+
 - `elections` - Election configs (3 sample elections)
 - `candidates` - Candidates (8 total candidates)
 - `votes_meta` - Vote records and nullifiers
 - `vote_receipts` - Cryptographic receipts
 
 ### Blockchain Network
+
 - `nodes` - Validator nodes (4 sample nodes)
 - `threshold_key_shares` - Key share metadata
 - `tally_partial_decryptions` - Decryption shares
 
 ### System
+
 - `audit_logs` - Tamper-evident audit trail
 - `system_config` - Global configuration
 - `schema_migrations` - Migration tracking
@@ -73,6 +77,7 @@ npm run dev                 # Start development server with nodemon
 ## Sample Data Overview
 
 ### Users (7 total)
+
 1. Admin User (admin)
 2. Alice Student (student)
 3. Bob Student (student)
@@ -82,6 +87,7 @@ npm run dev                 # Start development server with nodemon
 7. Board Member Johnson (board_member)
 
 ### Elections (3 total)
+
 1. **Student Union President Election 2025** (active)
    - 3 candidates
    - Students registered
@@ -95,6 +101,7 @@ npm run dev                 # Start development server with nodemon
    - Already has votes
 
 ### Nodes (4 total)
+
 - validator-node-1 (active)
 - validator-node-2 (active)
 - validator-node-3 (active)
@@ -103,15 +110,17 @@ npm run dev                 # Start development server with nodemon
 ## Useful SQL Queries
 
 ### Check active elections
+
 ```sql
-SELECT id, title, status, start_date, end_date 
-FROM elections 
+SELECT id, title, status, start_date, end_date
+FROM elections
 WHERE status = 'active';
 ```
 
 ### Count votes by election
+
 ```sql
-SELECT 
+SELECT
     e.title,
     COUNT(vr.id) as registered,
     SUM(CASE WHEN vr.status = 'voted' THEN 1 ELSE 0 END) as voted
@@ -121,6 +130,7 @@ GROUP BY e.id, e.title;
 ```
 
 ### Check node health
+
 ```sql
 SELECT node_id, status, node_type, last_seen
 FROM nodes
@@ -129,6 +139,7 @@ ORDER BY last_seen DESC;
 ```
 
 ### Recent audit events
+
 ```sql
 SELECT event_type, user_id, timestamp, severity
 FROM audit_logs
@@ -139,11 +150,13 @@ LIMIT 20;
 ## API Endpoints (After Server Start)
 
 ### Health Check
+
 ```bash
 curl http://localhost:3000/health
 ```
 
 ### User Registration
+
 ```bash
 curl -X POST http://localhost:3000/api/users/register \
   -H "Content-Type: application/json" \
@@ -157,6 +170,7 @@ curl -X POST http://localhost:3000/api/users/register \
 ```
 
 ### User Login
+
 ```bash
 curl -X POST http://localhost:3000/api/users/login \
   -H "Content-Type: application/json" \
@@ -167,6 +181,7 @@ curl -X POST http://localhost:3000/api/users/login \
 ```
 
 ### Get Elections
+
 ```bash
 curl http://localhost:3000/api/elections
 ```
@@ -174,6 +189,7 @@ curl http://localhost:3000/api/elections
 ## Troubleshooting
 
 ### "Database does not exist"
+
 ```bash
 # Create database manually
 mysql -u root -p -e "CREATE DATABASE voting;"
@@ -183,6 +199,7 @@ npm run migrate
 ```
 
 ### "Table already exists"
+
 ```bash
 # Check migration status
 npm run migrate:status
@@ -193,6 +210,7 @@ npm run migrate
 ```
 
 ### "Connection refused"
+
 ```bash
 # Check MySQL is running
 sudo systemctl status mysql  # Linux
@@ -202,6 +220,7 @@ net start MySQL80           # Windows
 ```
 
 ### Reset everything (DANGER!)
+
 ```bash
 # This will DELETE ALL DATA
 mysql -u root -p -e "DROP DATABASE IF EXISTS voting; CREATE DATABASE voting;"
@@ -210,8 +229,8 @@ npm run db:reset
 
 ## File Locations
 
-```
-backend/
+```text
+services/backend/
 ├── migrate.js              # Migration runner
 ├── seed.js                 # Sample data seeder
 ├── DATABASE_SETUP.md       # Detailed setup guide
@@ -248,6 +267,7 @@ PORT=3000
 ## Production Notes
 
 **DO NOT use in production without:**
+
 - [ ] Changing all default passwords
 - [ ] Enabling MFA
 - [ ] Setting up SSL/TLS for database
@@ -260,5 +280,6 @@ PORT=3000
 ---
 
 **For detailed documentation, see:**
+
 - [DATABASE_SETUP.md](./DATABASE_SETUP.md) - Complete setup guide
 - [DATABASE_SCHEMA.md](./DATABASE_SCHEMA.md) - Schema documentation

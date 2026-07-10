@@ -144,7 +144,7 @@ else
     echo -e "${RED}  Failed checks: ${UNHEALTHY}${NC}"
     echo ""
     echo -e "${YELLOW}Troubleshooting:${NC}"
-    echo -e "  1. Check logs: ./docker-logs.sh"
+    echo -e "  1. Check logs: bash $(dirname "$0")/docker-logs.sh"
     echo -e "  2. Restart services: docker-compose -f $COMPOSE_FILE restart"
     echo -e "  3. View container status: docker-compose -f $COMPOSE_FILE ps"
     exit 1

@@ -8,7 +8,7 @@
 
 ## Environment Configuration
 
-Create a `.env` file in the `backend/` directory:
+Create a `.env` file in the `services/backend/` directory:
 
 ```env
 # Database Configuration
@@ -55,7 +55,8 @@ node migrate.js run
 ```
 
 **Expected Output:**
-```
+
+```text
 ========================================
 Database Migration Runner
 ========================================
@@ -92,7 +93,8 @@ node migrate.js status
 ```
 
 **Expected Output:**
-```
+
+```text
 ========================================
 Migration Status
 ========================================
@@ -115,6 +117,7 @@ SHOW TABLES;
 ```
 
 **Expected Tables:**
+
 - users
 - elections
 - candidates
@@ -133,31 +136,31 @@ SHOW TABLES;
 
 ### Core Tables
 
-| Table | Purpose |
-|-------|---------|
-| `users` | Registered voters and administrators |
-| `elections` | Election configurations and threshold keys |
-| `candidates` | Candidates for each election |
-| `blind_tokens` | Blind-signed eligibility tokens |
-| `voter_registrations` | Voter registration tracking |
-| `votes_meta` | On-chain vote metadata and nullifiers |
-| `vote_receipts` | Cryptographic receipts for voters |
+| Table                 | Purpose                                    |
+| --------------------- | ------------------------------------------ |
+| `users`               | Registered voters and administrators       |
+| `elections`           | Election configurations and threshold keys |
+| `candidates`          | Candidates for each election               |
+| `blind_tokens`        | Blind-signed eligibility tokens            |
+| `voter_registrations` | Voter registration tracking                |
+| `votes_meta`          | On-chain vote metadata and nullifiers      |
+| `vote_receipts`       | Cryptographic receipts for voters          |
 
 ### Blockchain Network Tables
 
-| Table | Purpose |
-|-------|---------|
-| `nodes` | Validator and observer nodes |
-| `threshold_key_shares` | Key share metadata (shares in HSM) |
-| `tally_partial_decryptions` | Partial decryptions for tallying |
+| Table                       | Purpose                            |
+| --------------------------- | ---------------------------------- |
+| `nodes`                     | Validator and observer nodes       |
+| `threshold_key_shares`      | Key share metadata (shares in HSM) |
+| `tally_partial_decryptions` | Partial decryptions for tallying   |
 
 ### System Tables
 
-| Table | Purpose |
-|-------|---------|
-| `audit_logs` | Tamper-evident audit trail |
-| `system_config` | Global configuration |
-| `schema_migrations` | Migration tracking |
+| Table               | Purpose                    |
+| ------------------- | -------------------------- |
+| `audit_logs`        | Tamper-evident audit trail |
+| `system_config`     | Global configuration       |
+| `schema_migrations` | Migration tracking         |
 
 ## Common Operations
 
@@ -175,10 +178,10 @@ npm run migrate
 Create a sample admin user:
 
 ```sql
-INSERT INTO users 
+INSERT INTO users
   (institution_id, username, password, role, email, pseudonym_id, registration_status)
 VALUES
-  ('ADMIN001', 'admin', '$2a$10$XQHb5nJmYYKPQfWzMdYFyOQw3MxJYHk.zYhZ9yYd5xVvQzKgGFyZq', 
+  ('ADMIN001', 'admin', '$2a$10$XQHb5nJmYYKPQfWzMdYFyOQw3MxJYHk.zYhZ9yYd5xVvQzKgGFyZq',
    'admin', 'admin@university.edu', SHA2('ADMIN001', 256), 'verified');
 ```
 
@@ -199,9 +202,9 @@ mysql -u root -p voting -e "SELECT * FROM v_node_health;"
 
 # Recent audit events
 mysql -u root -p voting -e "
-SELECT event_type, user_id, timestamp 
-FROM audit_logs 
-ORDER BY timestamp DESC 
+SELECT event_type, user_id, timestamp
+FROM audit_logs
+ORDER BY timestamp DESC
 LIMIT 10;"
 ```
 
@@ -209,14 +212,16 @@ LIMIT 10;"
 
 ### Creating New Migrations
 
-1. Create a new SQL file in `backend/migrations/`:
-   ```
+1. Create a new SQL file in `services/backend/migrations/`:
+
+   ```text
    002_add_feature.sql
    ```
 
 2. Use sequential numbering (002, 003, etc.)
 
 3. Make migrations idempotent:
+
    ```sql
    CREATE TABLE IF NOT EXISTS new_table (...);
    ALTER TABLE existing_table ADD COLUMN IF NOT EXISTS new_column ...;
@@ -225,6 +230,7 @@ LIMIT 10;"
 4. Test on staging first!
 
 5. Run migration:
+
    ```bash
    npm run migrate
    ```
@@ -241,7 +247,7 @@ LIMIT 10;"
 -- Your SQL statements here
 
 -- Record migration (optional, automatic)
-INSERT INTO schema_migrations (migration_name, checksum) 
+INSERT INTO schema_migrations (migration_name, checksum)
 VALUES ('002_add_feature', SHA2('002_add_feature.sql', 256));
 ```
 
@@ -298,6 +304,7 @@ FLUSH PRIVILEGES;
 ```
 
 Update `.env`:
+
 ```env
 DB_USER=voting_app
 DB_PASSWORD=strong_password_here
@@ -326,9 +333,9 @@ const pool = mysql.createPool({
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
   ssl: {
-    ca: fs.readFileSync('/path/to/ca.pem'),
-    rejectUnauthorized: true
-  }
+    ca: fs.readFileSync("/path/to/ca.pem"),
+    rejectUnauthorized: true,
+  },
 });
 ```
 
@@ -339,37 +346,43 @@ const pool = mysql.createPool({
 The migration is idempotent and should handle existing tables. If it fails:
 
 1. Check which tables exist:
+
    ```bash
    mysql -u root -p voting -e "SHOW TABLES;"
    ```
 
 2. Drop specific problematic table:
+
    ```sql
    DROP TABLE IF EXISTS problematic_table;
    ```
 
 3. Re-run migration:
+
    ```bash
    npm run migrate
    ```
 
 ### Connection Refused Error
 
-```
+```text
 Error: connect ECONNREFUSED 127.0.0.1:3306
 ```
 
 **Solutions:**
+
 1. Check MySQL is running:
+
    ```bash
    # Linux/Mac
    sudo systemctl status mysql
-   
+
    # Windows
    net start MySQL80
    ```
 
 2. Check MySQL port:
+
    ```bash
    mysql -u root -p -e "SHOW VARIABLES LIKE 'port';"
    ```
@@ -381,27 +394,31 @@ Error: connect ECONNREFUSED 127.0.0.1:3306
 If you see garbled text:
 
 1. Set database charset:
+
    ```sql
    ALTER DATABASE voting CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
    ```
 
 2. Update connection settings in `config/db.js`:
+
    ```javascript
    const pool = mysql.createPool({
      // ... other settings
-     charset: 'utf8mb4'
+     charset: "utf8mb4",
    });
    ```
 
 ### Slow Queries
 
 1. Enable slow query log:
+
    ```sql
    SET GLOBAL slow_query_log = 'ON';
    SET GLOBAL long_query_time = 2; -- Log queries taking > 2 seconds
    ```
 
 2. Analyze slow queries:
+
    ```bash
    mysqldumpslow /var/log/mysql/slow-query.log
    ```
@@ -446,9 +463,9 @@ The application uses connection pooling. Adjust in `config/db.js`:
 ```javascript
 const pool = mysql.createPool({
   // ... other settings
-  connectionLimit: 10,    // Increase for high load
-  queueLimit: 0,          // No limit on queued connections
-  waitForConnections: true
+  connectionLimit: 10, // Increase for high load
+  queueLimit: 0, // No limit on queued connections
+  waitForConnections: true,
 });
 ```
 
@@ -457,7 +474,7 @@ const pool = mysql.createPool({
 ### Check Table Sizes
 
 ```sql
-SELECT 
+SELECT
     table_name AS 'Table',
     ROUND(((data_length + index_length) / 1024 / 1024), 2) AS 'Size (MB)'
 FROM information_schema.TABLES
@@ -506,4 +523,4 @@ WHERE db = 'voting';
 ---
 
 **Questions or Issues?**  
-Check the troubleshooting section or review logs in `backend/logs/`
+Check the troubleshooting section or review logs in `services/backend/logs/`

@@ -95,7 +95,7 @@ echo -e "Backup file: ${BACKUP_DIR}/${BACKUP_NAME}.tar.gz"
 echo -e "Backup size: ${BACKUP_SIZE}"
 echo ""
 echo -e "${YELLOW}To restore this backup, run:${NC}"
-echo -e "  ./docker-restore.sh ${BACKUP_DIR}/${BACKUP_NAME}.tar.gz"
+echo -e "  bash $(dirname "$0")/docker-restore.sh ${BACKUP_DIR}/${BACKUP_NAME}.tar.gz"
 echo ""
 
 # List all backups

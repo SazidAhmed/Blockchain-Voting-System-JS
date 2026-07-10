@@ -18,7 +18,7 @@ NC='\033[0m' # No Color
 TEST_DIR="$(cd "$(dirname "$0")" && pwd)/results"
 RESULTS_DIR="$TEST_DIR"
 LOGS_DIR="$TEST_DIR/logs"
-DOCKER_COMPOSE_FILE="docker-compose.multi-node.yml"
+DOCKER_COMPOSE_FILE="infra/docker/docker-compose.multi-node.yml"
 API_BASE_URL="http://localhost:3000/api"
 BLOCKCHAIN_BASE_URL="http://localhost:3001"
 

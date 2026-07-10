@@ -11,13 +11,13 @@ echo ""
 # Phase 1 Test 1: Container Status
 echo "📋 PHASE 1 TEST 1: Container Status"
 echo "-----------------------------------"
-docker-compose ps 2>&1 | grep -E "CONTAINER|voting" | head -20
+docker-compose -f infra/docker/docker-compose.yml ps 2>&1 | grep -E "CONTAINER|voting" | head -20
 echo ""
 
 # Phase 1 Test 2: Database
 echo "📋 PHASE 1 TEST 2: Database Connection"
 echo "---------------------------------------"
-docker-compose exec -T mysql mysql -u root -pvoting_root_pass -e "SELECT 'Database Connected' as Status;" 2>&1 | grep -v "Warning"
+docker-compose -f infra/docker/docker-compose.yml exec -T mysql mysql -u root -pvoting_root_pass -e "SELECT 'Database Connected' as Status;" 2>&1 | grep -v "Warning"
 echo ""
 
 # Phase 1 Test 3: Blockchain Node

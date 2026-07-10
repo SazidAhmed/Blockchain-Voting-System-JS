@@ -19,9 +19,9 @@ MAGENTA='\033[0;35m'
 NC='\033[0m'
 
 # Make all test scripts executable
-chmod +x test-phase3-attack-simulation.sh
-chmod +x test-phase4-malicious-detection.sh
-chmod +x test-phase5-recovery-resilience.sh
+chmod +x e2e/test-phase3-attack-simulation.sh
+chmod +x e2e/test-phase4-malicious-detection.sh
+chmod +x e2e/test-phase5-recovery-resilience.sh
 
 echo ""
 echo "╔════════════════════════════════════════════╗"
@@ -43,7 +43,7 @@ echo -e "${MAGENTA}════════════════════�
 echo ""
 
 PHASE3_START=$(date +%s)
-bash test-phase3-attack-simulation.sh
+bash e2e/test-phase3-attack-simulation.sh
 PHASE3_EXIT=$?
 PHASE3_END=$(date +%s)
 PHASE3_DURATION=$((PHASE3_END - PHASE3_START))
@@ -67,7 +67,7 @@ echo -e "${MAGENTA}════════════════════�
 echo ""
 
 PHASE4_START=$(date +%s)
-bash test-phase4-malicious-detection.sh
+bash e2e/test-phase4-malicious-detection.sh
 PHASE4_EXIT=$?
 PHASE4_END=$(date +%s)
 PHASE4_DURATION=$((PHASE4_END - PHASE4_START))
@@ -91,7 +91,7 @@ echo -e "${MAGENTA}════════════════════�
 echo ""
 
 PHASE5_START=$(date +%s)
-bash test-phase5-recovery-resilience.sh
+bash e2e/test-phase5-recovery-resilience.sh
 PHASE5_EXIT=$?
 PHASE5_END=$(date +%s)
 PHASE5_DURATION=$((PHASE5_END - PHASE5_START))

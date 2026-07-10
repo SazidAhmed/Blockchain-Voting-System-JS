@@ -53,7 +53,7 @@ else
     echo -e "${YELLOW}Running manual seed commands instead...${NC}"
     
     # Alternative: Use seed data from data directory
-    if [ -f "backend/data/users.json" ]; then
+    if [ -f "services/backend/data/users.json" ]; then
         echo -e "${BLUE}Importing users...${NC}"
         # Add your import logic here
     fi

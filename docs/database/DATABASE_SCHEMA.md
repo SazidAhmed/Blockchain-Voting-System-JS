@@ -17,9 +17,11 @@ The University Blockchain Voting System uses MySQL as its relational database fo
 ### Core Tables
 
 #### `users`
+
 Stores registered voters and administrators.
 
 **Key Fields:**
+
 - `institution_id` - University student/employee ID (unique)
 - `pseudonym_id` - SHA256 hash used for on-chain identity (unlinkable to institution_id)
 - `public_key` - User's public key for signing votes
@@ -28,12 +30,15 @@ Stores registered voters and administrators.
 - `registration_status` - Account verification status
 
 **Indexes:**
+
 - `institution_id`, `email`, `pseudonym_id`, `role`, `registration_status`
 
 #### `elections`
+
 Election configurations and cryptographic parameters.
 
 **Key Fields:**
+
 - `title`, `description` - Election metadata
 - `start_date`, `end_date` - Voting window
 - `status` - pending | active | completed | cancelled | tallying
@@ -43,18 +48,22 @@ Election configurations and cryptographic parameters.
 - `results_hash` - SHA256 of final tally for verification
 
 #### `candidates`
+
 Candidates for each election.
 
 **Key Fields:**
+
 - `election_id` - Foreign key to elections
 - `name`, `description` - Candidate information
 - `metadata` - JSON for additional data
 - `display_order` - Sort order for UI
 
 #### `blind_tokens`
+
 Blind-signed eligibility tokens (privacy-preserving).
 
 **Key Fields:**
+
 - `token_id_hash` - SHA256 of token (not the actual token)
 - `pseudonym_id` - Links to user's pseudonymous ID
 - `election_id` - Token valid for this election
@@ -64,18 +73,22 @@ Blind-signed eligibility tokens (privacy-preserving).
 **Privacy Note:** The server never sees the unblinded token, ensuring voter anonymity.
 
 #### `voter_registrations`
+
 Tracks voter registration status.
 
 **Key Fields:**
+
 - `user_id`, `election_id` - Unique constraint
 - `status` - registered | voted | revoked
 - `registration_token` - Legacy token (prefer blind_tokens)
 - `voted_at` - Timestamp when vote was cast
 
 #### `votes_meta`
+
 On-chain vote metadata and nullifiers (no ballot content).
 
 **Key Fields:**
+
 - `tx_hash` - Blockchain transaction hash (unique)
 - `block_index` - Block number where included
 - `election_id` - Election reference
@@ -86,9 +99,11 @@ On-chain vote metadata and nullifiers (no ballot content).
 **Privacy Note:** Nullifier prevents double voting without revealing voter identity.
 
 #### `vote_receipts`
+
 Cryptographic receipts issued to voters.
 
 **Key Fields:**
+
 - `election_id` - Election reference
 - `nullifier_hash` - Allows voter to verify their vote
 - `transaction_hash`, `block_height`, `block_hash` - Blockchain proof
@@ -100,9 +115,11 @@ Cryptographic receipts issued to voters.
 ### Blockchain Network Tables
 
 #### `nodes`
+
 Validator and observer nodes in the permissioned network.
 
 **Key Fields:**
+
 - `node_id` - Unique node identifier
 - `pubkey` - Node public key for validation
 - `endpoint` - API endpoint (host:port)
@@ -114,9 +131,11 @@ Validator and observer nodes in the permissioned network.
 **Governance:** Nodes can be quarantined or removed based on evidence and quorum votes.
 
 #### `threshold_key_shares`
+
 Metadata about distributed key shares (actual shares in HSM/Vault).
 
 **Key Fields:**
+
 - `election_id` - Election this key is for
 - `node_id` - Node holding this share
 - `share_index` - Index (1 to n)
@@ -126,9 +145,11 @@ Metadata about distributed key shares (actual shares in HSM/Vault).
 **Security Note:** Actual key shares are NEVER stored in this database. Only metadata.
 
 #### `tally_partial_decryptions`
+
 Partial decryptions from validators during tallying.
 
 **Key Fields:**
+
 - `election_id`, `vote_meta_id` - Vote reference
 - `node_id` - Validator providing decryption
 - `partial_decryption` - Base64 encoded partial decryption
@@ -140,9 +161,11 @@ Partial decryptions from validators during tallying.
 ### Audit and Configuration Tables
 
 #### `audit_logs`
+
 Tamper-evident audit trail using hash chaining.
 
 **Key Fields:**
+
 - `event_type` - e.g., USER_REGISTERED, VOTE_CAST
 - `event_category` - auth | vote | election | node | admin | security
 - `user_id`, `ip_address`, `user_agent` - Actor information
@@ -153,23 +176,28 @@ Tamper-evident audit trail using hash chaining.
 **Tamper Evidence:** Each log entry includes the hash of the previous entry, creating a chain.
 
 #### `system_config`
+
 Global system configuration.
 
 **Key Fields:**
+
 - `config_key` - Configuration parameter name
 - `config_value` - Value (potentially encrypted)
 - `config_type` - string | number | boolean | json
 - `is_encrypted` - Whether value is encrypted
 
 **Examples:**
+
 - `consensus_type`: pbft | tendermint | raft
 - `min_validators`: Minimum validator count
 - `threshold_t`, `threshold_n`: Threshold parameters
 
 #### `schema_migrations`
+
 Tracks applied database migrations.
 
 **Key Fields:**
+
 - `migration_name` - Migration file name
 - `applied_at` - Timestamp
 - `checksum` - SHA256 of migration file
@@ -177,18 +205,22 @@ Tracks applied database migrations.
 ## Views
 
 ### `v_active_elections`
+
 Convenient view for active/pending elections with counts.
 
 **Columns:**
+
 - Basic election info
 - `candidate_count` - Number of candidates
 - `registered_voters` - Number of registered voters
 - `votes_cast` - Number of votes received
 
 ### `v_node_health`
+
 Node health monitoring view.
 
 **Columns:**
+
 - Node identification and status
 - `minutes_since_last_seen` - Time since last heartbeat
 - `health_status` - healthy | degraded | offline | quarantined | removed
@@ -199,7 +231,7 @@ Node health monitoring view.
 
 ```sql
 -- 1. Create user
-INSERT INTO users (institution_id, username, password, role, email, 
+INSERT INTO users (institution_id, username, password, role, email,
                    pseudonym_id, public_key, registration_status)
 VALUES (?, ?, ?, ?, ?, ?, ?, 'pending');
 
@@ -215,14 +247,14 @@ VALUES (?, ?, ?, ?);
 
 ```sql
 -- 1. Check if user is registered for election
-SELECT * FROM voter_registrations 
+SELECT * FROM voter_registrations
 WHERE user_id = ? AND election_id = ? AND status = 'registered';
 
 -- 2. Check nullifier hasn't been used
 SELECT * FROM votes_meta WHERE nullifier_hash = ?;
 
 -- 3. Store vote metadata (after blockchain inclusion)
-INSERT INTO votes_meta (tx_hash, block_index, election_id, nullifier_hash, 
+INSERT INTO votes_meta (tx_hash, block_index, election_id, nullifier_hash,
                         encrypted_ballot, merkle_proof)
 VALUES (?, ?, ?, ?, ?, ?);
 
@@ -231,12 +263,12 @@ UPDATE voter_registrations SET status = 'voted', voted_at = NOW()
 WHERE user_id = ? AND election_id = ?;
 
 -- 5. Issue receipt
-INSERT INTO vote_receipts (election_id, nullifier_hash, transaction_hash, 
+INSERT INTO vote_receipts (election_id, nullifier_hash, transaction_hash,
                            block_height, merkle_proof, validator_signatures)
 VALUES (?, ?, ?, ?, ?, ?);
 
 -- 6. Log event
-INSERT INTO audit_logs (event_type, event_category, user_id, target_type, 
+INSERT INTO audit_logs (event_type, event_category, user_id, target_type,
                         target_id, details, previous_hash, log_hash)
 VALUES ('VOTE_CAST', 'vote', ?, 'election', ?, ?, ?, ?);
 ```
@@ -248,14 +280,14 @@ VALUES ('VOTE_CAST', 'vote', ?, 'election', ?, ?, ?, ?);
 SELECT * FROM votes_meta WHERE election_id = ?;
 
 -- 2. Collect partial decryptions from validators
-INSERT INTO tally_partial_decryptions 
+INSERT INTO tally_partial_decryptions
   (election_id, vote_meta_id, node_id, partial_decryption, proof_of_correctness)
 VALUES (?, ?, ?, ?, ?);
 
 -- 3. After combining t-of-n shares, update election
-UPDATE elections 
-SET status = 'completed', 
-    tally_completed_at = NOW(), 
+UPDATE elections
+SET status = 'completed',
+    tally_completed_at = NOW(),
     results_hash = ?
 WHERE id = ?;
 ```
@@ -263,6 +295,7 @@ WHERE id = ?;
 ## Indexes and Performance
 
 ### Critical Indexes
+
 - `votes_meta.nullifier_hash` - Fast double-vote prevention
 - `votes_meta.tx_hash` - Receipt verification
 - `votes_meta.election_id` - Tallying queries
@@ -270,24 +303,28 @@ WHERE id = ?;
 - `nodes.last_seen` - Health monitoring
 
 ### Composite Indexes
+
 - `voter_registrations(user_id, election_id)` - Unique constraint
 - `threshold_key_shares(election_id, node_id, share_index)` - Unique constraint
 
 ## Security Considerations
 
 ### Encryption
+
 - User passwords: bcrypt (hash only)
 - `encrypted_profile_blob`: AES-256-GCM
 - `mfa_secret`: AES-256-GCM
 - Key shares: Stored in HSM/Vault, NOT in database
 
 ### Access Control
+
 - Application uses connection pool with limited privileges
 - No direct database access for users
 - Prepared statements prevent SQL injection
 - Audit logs track all data access
 
 ### Privacy Protection
+
 1. **Pseudonymity**: `pseudonym_id` used on-chain, unlinkable to `institution_id`
 2. **Blind Tokens**: Server never sees unblinded tokens
 3. **Nullifiers**: Prevent double voting without revealing identity
@@ -296,18 +333,21 @@ WHERE id = ?;
 ## Backup and Recovery
 
 ### Backup Strategy
+
 - Daily full backups of entire database
 - Transaction log backups every hour
 - Backup retention: 90 days
 - Encrypted backups stored in multiple regions
 
 ### Critical Tables (Priority 1)
+
 - `votes_meta` - Vote records
 - `vote_receipts` - Voter receipts
 - `audit_logs` - Audit trail
 - `elections` - Election config
 
 ### Recoverable Tables (Priority 2)
+
 - `users` - Can be recreated from IdP
 - `candidates` - Can be recreated from admin input
 
@@ -317,18 +357,18 @@ WHERE id = ?;
 
 ```bash
 # Run all pending migrations
-node backend/migrate.js run
+node services/backend/migrate.js run
 
 # Check migration status
-node backend/migrate.js status
+node services/backend/migrate.js status
 
 # Rollback last migration (when implemented)
-node backend/migrate.js rollback
+node services/backend/migrate.js rollback
 ```
 
 ### Creating New Migrations
 
-1. Create file: `backend/migrations/00X_description.sql`
+1. Create file: `services/backend/migrations/00X_description.sql`
 2. Use sequential numbering: 001, 002, 003...
 3. Include idempotent statements (CREATE TABLE IF NOT EXISTS)
 4. Test migration on staging database first
@@ -336,8 +376,9 @@ node backend/migrate.js rollback
 ## Monitoring Queries
 
 ### Check vote counts by election
+
 ```sql
-SELECT 
+SELECT
     e.id, e.title, e.status,
     COUNT(vm.id) as vote_count
 FROM elections e
@@ -346,11 +387,13 @@ GROUP BY e.id, e.title, e.status;
 ```
 
 ### Check validator health
+
 ```sql
 SELECT * FROM v_node_health WHERE health_status != 'healthy';
 ```
 
 ### Recent audit events
+
 ```sql
 SELECT event_type, event_category, user_id, timestamp, details
 FROM audit_logs
@@ -360,6 +403,7 @@ LIMIT 50;
 ```
 
 ### Detect potential double voting attempts
+
 ```sql
 SELECT nullifier_hash, COUNT(*) as attempts
 FROM audit_logs

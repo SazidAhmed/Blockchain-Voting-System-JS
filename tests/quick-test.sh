@@ -160,7 +160,7 @@ fi
 
 # 9. Check Database
 echo -e "\n${BLUE}[9] Verifying vote in database...${NC}"
-VOTE_COUNT=$(docker exec voting-mysql mysql -u root -proot voting -N -e \
+VOTE_COUNT=$(docker exec voting-mysql mysql -u root -proot voting_db -N -e \
   "SELECT COUNT(*) FROM votes_meta WHERE election_id=$ELECTION_ID;" 2>/dev/null)
 
 if [ ! -z "$VOTE_COUNT" ] && [ "$VOTE_COUNT" -gt 0 ]; then

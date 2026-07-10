@@ -11,7 +11,7 @@ const WAIT_TIME = 3000; // ms to wait for services to start
 function startBackend() {
   console.log('Starting backend server...');
   const backend = spawn('node', ['index.js'], {
-    cwd: path.join(__dirname, 'backend'),
+    cwd: path.join(__dirname, '..', '..', 'services', 'backend'),
     stdio: 'inherit'
   });
   
@@ -26,7 +26,7 @@ function startBackend() {
 function startBlockchainNode() {
   console.log('Starting blockchain node...');
   const node = spawn('node', ['index.js'], {
-    cwd: path.join(__dirname, 'blockchain-node'),
+    cwd: path.join(__dirname, '..', '..', 'services', 'blockchain-node'),
     stdio: 'inherit'
   });
   
