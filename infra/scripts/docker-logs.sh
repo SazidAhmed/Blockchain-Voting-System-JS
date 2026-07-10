@@ -5,6 +5,9 @@
 # ==========================================
 # Advanced log viewing with filtering and following
 
+# Docker Compose file location (relative to project root)
+COMPOSE_FILE="infra/docker/docker-compose.yml"
+
 # Colors for output
 GREEN='\033[0;32m'
 BLUE='\033[0;34m'
@@ -33,18 +36,18 @@ show_menu() {
 
 view_all_logs() {
     echo -e "${BLUE}Following all logs (Ctrl+C to stop)...${NC}"
-    docker-compose logs -f
+    docker-compose -f $COMPOSE_FILE logs -f
 }
 
 view_service_logs() {
     local service=$1
     echo -e "${BLUE}Following ${service} logs (Ctrl+C to stop)...${NC}"
-    docker-compose logs -f ${service}
+    docker-compose -f $COMPOSE_FILE logs -f ${service}
 }
 
 view_last_lines() {
     echo -e "${BLUE}Last 50 lines from all services:${NC}"
-    docker-compose logs --tail=50
+    docker-compose -f $COMPOSE_FILE logs --tail=50
     echo ""
     read -p "Press Enter to continue..."
 }
@@ -57,12 +60,12 @@ search_logs() {
         return
     fi
     echo -e "${BLUE}Searching for '${search_term}'...${NC}"
-    docker-compose logs | grep -i "$search_term" --color=always | less -R
+    docker-compose -f $COMPOSE_FILE logs | grep -i "$search_term" --color=always | less -R
 }
 
 view_errors() {
     echo -e "${BLUE}Viewing error logs...${NC}"
-    docker-compose logs | grep -iE "error|exception|fatal|fail" --color=always | less -R
+    docker-compose -f $COMPOSE_FILE logs | grep -iE "error|exception|fatal|fail" --color=always | less -R
 }
 
 # Main loop

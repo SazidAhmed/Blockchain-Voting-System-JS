@@ -14,7 +14,7 @@ services:
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
     volumes:
       - mysql_data:/var/lib/mysql
-      - ./backend/migrations:/docker-entrypoint-initdb.d:ro
+      - ../../services/backend/migrations:/docker-entrypoint-initdb.d:ro
     networks:
       - voting-network
     healthcheck:
@@ -37,7 +37,7 @@ services:
   # Blockchain Node
   blockchain-node:
     build:
-      context: ./blockchain-node
+      context: ../../services/blockchain-node
       dockerfile: Dockerfile
     container_name: voting-blockchain-prod
     restart: always
@@ -67,7 +67,7 @@ services:
   # Backend API
   backend:
     build:
-      context: ./backend
+      context: ../../services/backend
       dockerfile: Dockerfile
     container_name: voting-backend-prod
     restart: always
@@ -83,7 +83,7 @@ services:
       BLOCKCHAIN_NODE_URL: http://blockchain-node:3001
       FRONTEND_URL: ${FRONTEND_URL}
     volumes:
-      - ./backend/keys:/app/keys:ro
+      - ../../services/backend/keys:/app/keys:ro
     depends_on:
       mysql:
         condition: service_healthy
@@ -110,7 +110,7 @@ services:
   # Frontend (Production build with Nginx)
   frontend:
     build:
-      context: ./frontend
+      context: ../../services/frontend
       dockerfile: Dockerfile.prod
       args:
         VITE_API_BASE_URL: ${VITE_API_BASE_URL}
@@ -132,9 +132,9 @@ services:
       - "80:80"
       - "443:443"
     volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./nginx/ssl:/etc/nginx/ssl:ro
-      - ./nginx/logs:/var/log/nginx
+      - ../../infra/docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ../../infra/docker/nginx/ssl:/etc/nginx/ssl:ro
+      - ../../infra/docker/nginx/logs:/var/log/nginx
     depends_on:
       - frontend
       - backend

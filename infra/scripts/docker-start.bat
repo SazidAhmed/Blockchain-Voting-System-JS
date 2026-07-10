@@ -2,6 +2,9 @@
 REM Docker Start Script for Voting System (Windows)
 REM This script helps you start the entire voting system with Docker
 
+REM Docker Compose file location (relative to project root)
+set COMPOSE_FILE=infra\docker\docker-compose.yml
+
 echo ==========================================
 echo University Blockchain Voting System
 echo Docker Quick Start Script (Windows)
@@ -77,7 +80,7 @@ echo.
 echo [INFO] Building and starting all services...
 echo This may take 5-10 minutes on first run...
 echo.
-docker-compose up --build -d
+docker-compose -f %COMPOSE_FILE% up --build -d
 echo.
 echo [OK] All services started!
 echo.
@@ -90,17 +93,17 @@ echo   - phpMyAdmin:   http://localhost:8080
 echo.
 echo [INFO] Seeding database with test data...
 timeout /t 10 /nobreak >nul
-docker-compose exec backend npm run db:seed
+docker-compose -f %COMPOSE_FILE% exec backend npm run db:seed
 echo.
 echo [OK] Database seeded!
 echo.
-echo View logs with: docker-compose logs -f
+echo View logs with: docker-compose -f %COMPOSE_FILE% logs -f
 goto end
 
 :start
 echo.
 echo [INFO] Starting all services...
-docker-compose up -d
+docker-compose -f %COMPOSE_FILE% up -d
 echo.
 echo [OK] All services started!
 echo.
@@ -115,7 +118,7 @@ goto end
 :stop
 echo.
 echo [INFO] Stopping all services...
-docker-compose down
+docker-compose -f %COMPOSE_FILE% down
 echo [OK] All services stopped!
 goto end
 
@@ -123,13 +126,13 @@ goto end
 echo.
 echo [INFO] Viewing logs (Ctrl+C to exit)...
 echo.
-docker-compose logs -f
+docker-compose -f %COMPOSE_FILE% logs -f
 goto end
 
 :restart
 echo.
 echo [INFO] Restarting all services...
-docker-compose restart
+docker-compose -f %COMPOSE_FILE% restart
 echo [OK] All services restarted!
 goto end
 
@@ -140,7 +143,7 @@ set /p confirm="Are you sure? (yes/no): "
 if "%confirm%"=="yes" (
     echo.
     echo [INFO] Cleaning up...
-    docker-compose down -v
+    docker-compose -f %COMPOSE_FILE% down -v
     echo [OK] Cleanup complete!
 ) else (
     echo Cancelled.

@@ -3,6 +3,9 @@ REM ==========================================
 REM Docker Health Check for Voting System (Windows)
 REM ==========================================
 
+REM Docker Compose file location (relative to project root)
+set COMPOSE_FILE=infra\docker\docker-compose.yml
+
 echo =========================================== 
 echo   Voting System Health Check
 echo ===========================================
@@ -18,7 +21,7 @@ echo [OK] Docker is running
 echo.
 
 echo Checking container status...
-docker-compose ps
+docker-compose -f %COMPOSE_FILE% ps
 echo.
 
 echo Checking service endpoints...

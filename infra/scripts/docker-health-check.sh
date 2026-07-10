@@ -7,6 +7,9 @@
 
 set -e
 
+# Docker Compose file location (relative to project root)
+COMPOSE_FILE="infra/docker/docker-compose.yml"
+
 # Colors for output
 GREEN='\033[0;32m'
 BLUE='\033[0;34m'
@@ -33,11 +36,11 @@ echo ""
 
 # Check container status
 echo -e "${BLUE}Checking container status...${NC}"
-containers=$(docker-compose ps --format json 2>/dev/null | jq -r '. | "\(.Service)|\(.State)|\(.Health)"' 2>/dev/null || echo "")
+containers=$(docker-compose -f $COMPOSE_FILE ps --format json 2>/dev/null | jq -r '. | "\(.Service)|\(.State)|\(.Health)"' 2>/dev/null || echo "")
 
 if [ -z "$containers" ]; then
     echo -e "${RED}✗ No containers are running!${NC}"
-    echo -e "${YELLOW}Run 'docker-compose up -d' to start services${NC}"
+    echo -e "${YELLOW}Run 'docker-compose -f $COMPOSE_FILE up -d' to start services${NC}"
     exit 1
 fi
 
@@ -110,7 +113,7 @@ echo ""
 
 # Check database connectivity
 echo -e "${BLUE}Checking database connectivity...${NC}"
-if docker-compose exec -T mysql mysql -u voting_user -pvoting_pass -e "SELECT 1" > /dev/null 2>&1; then
+if docker-compose -f $COMPOSE_FILE exec -T mysql mysql -u voting_user -pvoting_pass -e "SELECT 1" > /dev/null 2>&1; then
     echo -e "${GREEN}✓ MySQL database accessible${NC}"
     HEALTHY=$((HEALTHY + 1))
 else
@@ -142,7 +145,7 @@ else
     echo ""
     echo -e "${YELLOW}Troubleshooting:${NC}"
     echo -e "  1. Check logs: ./docker-logs.sh"
-    echo -e "  2. Restart services: docker-compose restart"
-    echo -e "  3. View container status: docker-compose ps"
+    echo -e "  2. Restart services: docker-compose -f $COMPOSE_FILE restart"
+    echo -e "  3. View container status: docker-compose -f $COMPOSE_FILE ps"
     exit 1
 fi

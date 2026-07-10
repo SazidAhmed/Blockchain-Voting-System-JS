@@ -6,6 +6,10 @@
 
 set -e
 
+# Docker Compose file locations (relative to project root)
+COMPOSE_FILE="infra/docker/docker-compose.yml"
+COMPOSE_MONITORING_FILE="infra/docker/docker-compose.monitoring.yml"
+
 # Colors
 GREEN='\033[0;32m'
 BLUE='\033[0;34m'
@@ -20,9 +24,9 @@ echo ""
 
 # Check if main services are running
 echo -e "${YELLOW}Checking if voting system services are running...${NC}"
-if ! docker-compose ps | grep -q "voting-mysql.*Up"; then
+if ! docker-compose -f $COMPOSE_FILE ps | grep -q "voting-mysql.*Up"; then
     echo -e "${YELLOW}Main services are not running. Starting them first...${NC}"
-    docker-compose up -d
+    docker-compose -f $COMPOSE_FILE up -d
     echo "Waiting for services to be ready..."
     sleep 10
 fi
@@ -32,7 +36,7 @@ echo ""
 
 # Start monitoring stack
 echo -e "${BLUE}Starting monitoring services...${NC}"
-docker-compose -f docker-compose.yml -f docker-compose.monitoring.yml up -d
+docker-compose -f $COMPOSE_FILE -f $COMPOSE_MONITORING_FILE up -d
 
 echo ""
 echo -e "${BLUE}Waiting for services to initialize...${NC}"
@@ -41,7 +45,7 @@ sleep 5
 # Check status
 echo ""
 echo -e "${BLUE}Monitoring stack status:${NC}"
-docker-compose -f docker-compose.monitoring.yml ps
+docker-compose -f $COMPOSE_MONITORING_FILE ps
 
 echo ""
 echo -e "${GREEN}===========================================${NC}"
@@ -54,9 +58,9 @@ echo -e "  📈 Prometheus: http://localhost:9090"
 echo -e "  🐳 cAdvisor:   http://localhost:8081"
 echo ""
 echo -e "${YELLOW}Useful commands:${NC}"
-echo -e "  View logs:      docker-compose -f docker-compose.monitoring.yml logs -f"
-echo -e "  Stop monitoring: docker-compose -f docker-compose.monitoring.yml down"
-echo -e "  Restart:        docker-compose -f docker-compose.monitoring.yml restart"
+echo -e "  View logs:      docker-compose -f $COMPOSE_MONITORING_FILE logs -f"
+echo -e "  Stop monitoring: docker-compose -f $COMPOSE_MONITORING_FILE down"
+echo -e "  Restart:        docker-compose -f $COMPOSE_MONITORING_FILE restart"
 echo ""
 echo -e "${BLUE}Dashboard Info:${NC}"
 echo -e "  • Pre-configured dashboards are available in Grafana"

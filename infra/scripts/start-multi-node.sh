@@ -5,6 +5,9 @@
 
 set -e
 
+# Docker Compose file location (relative to project root)
+COMPOSE_FILE_MULTI="infra/docker/docker-compose.multi-node.yml"
+
 echo "╔════════════════════════════════════════════╗"
 echo "║  Starting Multi-Node Blockchain Network    ║"
 echo "╚════════════════════════════════════════════╝"
@@ -16,8 +19,8 @@ if ! command -v docker-compose &> /dev/null; then
 fi
 
 # Check if docker-compose.multi-node.yml exists
-if [ ! -f "docker-compose.multi-node.yml" ]; then
-    echo "Error: docker-compose.multi-node.yml not found in current directory"
+if [ ! -f "$COMPOSE_FILE_MULTI" ]; then
+    echo "Error: $COMPOSE_FILE_MULTI not found in project root"
     exit 1
 fi
 
@@ -31,7 +34,7 @@ echo "  - Node 5 (Observer) - Port 3005"
 echo ""
 
 # Start the multi-node network
-docker-compose -f docker-compose.multi-node.yml up -d
+docker-compose -f $COMPOSE_FILE_MULTI up -d
 
 echo ""
 echo "✓ Starting nodes..."
@@ -73,8 +76,8 @@ echo "To check network status:"
 echo "  curl http://localhost:3001/network/status"
 echo ""
 echo "To view logs:"
-echo "  docker-compose -f docker-compose.multi-node.yml logs -f"
+echo "  docker-compose -f $COMPOSE_FILE_MULTI logs -f"
 echo ""
 echo "To stop the network:"
-echo "  docker-compose -f docker-compose.multi-node.yml down"
+echo "  docker-compose -f $COMPOSE_FILE_MULTI down"
 echo ""

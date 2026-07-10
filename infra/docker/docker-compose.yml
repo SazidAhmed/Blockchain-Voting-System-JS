@@ -13,7 +13,7 @@ services:
       - "3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
-      - ./backend/migrations:/docker-entrypoint-initdb.d
+      - ../../services/backend/migrations:/docker-entrypoint-initdb.d
     networks:
       - voting-network
     healthcheck:
@@ -54,7 +54,7 @@ services:
   # Blockchain Node
   blockchain-node:
     build:
-      context: ./blockchain-node
+      context: ../../services/blockchain-node
       dockerfile: Dockerfile
     container_name: voting-blockchain
     restart: always
@@ -67,7 +67,7 @@ services:
       - "3001:3001"
     volumes:
       - blockchain_data:/app/data
-      - ./blockchain-node:/app
+      - ../../services/blockchain-node:/app
       - /app/node_modules
     networks:
       - voting-network
@@ -89,7 +89,7 @@ services:
   # Blockchain Node 2
   blockchain-node-2:
     build:
-      context: ./blockchain-node
+      context: ../../services/blockchain-node
       dockerfile: Dockerfile
     container_name: voting-blockchain-node-2
     restart: always
@@ -102,7 +102,7 @@ services:
       - "3002:3002"
     volumes:
       - blockchain_data_2:/app/data
-      - ./blockchain-node:/app
+      - ../../services/blockchain-node:/app
       - /app/node_modules
     networks:
       - voting-network
@@ -124,7 +124,7 @@ services:
   # Blockchain Node 3
   blockchain-node-3:
     build:
-      context: ./blockchain-node
+      context: ../../services/blockchain-node
       dockerfile: Dockerfile
     container_name: voting-blockchain-node-3
     restart: always
@@ -137,7 +137,7 @@ services:
       - "3003:3003"
     volumes:
       - blockchain_data_3:/app/data
-      - ./blockchain-node:/app
+      - ../../services/blockchain-node:/app
       - /app/node_modules
     networks:
       - voting-network
@@ -159,7 +159,7 @@ services:
   # Blockchain Node 4
   blockchain-node-4:
     build:
-      context: ./blockchain-node
+      context: ../../services/blockchain-node
       dockerfile: Dockerfile
     container_name: voting-blockchain-node-4
     restart: always
@@ -172,7 +172,7 @@ services:
       - "3004:3004"
     volumes:
       - blockchain_data_4:/app/data
-      - ./blockchain-node:/app
+      - ../../services/blockchain-node:/app
       - /app/node_modules
     networks:
       - voting-network
@@ -194,7 +194,7 @@ services:
   # Backend API
   backend:
     build:
-      context: ./backend
+      context: ../../services/backend
       dockerfile: Dockerfile
     container_name: voting-backend
     restart: always
@@ -213,9 +213,9 @@ services:
     ports:
       - "3000:3000"
     volumes:
-      - ./backend:/app
+      - ../../services/backend:/app
       - /app/node_modules
-      - ./backend/keys:/app/keys
+      - ../../services/backend/keys:/app/keys
     depends_on:
       mysql:
         condition: service_healthy
@@ -243,7 +243,7 @@ services:
   # Frontend
   frontend:
     build:
-      context: ./frontend
+      context: ../../services/frontend
       dockerfile: Dockerfile
     container_name: voting-frontend
     restart: always
@@ -254,7 +254,7 @@ services:
     ports:
       - "5173:5173"
     volumes:
-      - ./frontend:/app
+      - ../../services/frontend:/app
       - /app/node_modules
     depends_on:
       - backend
@@ -265,7 +265,7 @@ services:
   # Admin Panel (Separate Vue App)
   admin-panel:
     build:
-      context: ./admin-panel
+      context: ../../services/admin-panel
       dockerfile: Dockerfile
     container_name: voting-admin-panel
     restart: always
@@ -274,7 +274,7 @@ services:
     ports:
       - "5174:5174"
     volumes:
-      - ./admin-panel:/app
+      - ../../services/admin-panel:/app
       - /app/node_modules
     depends_on:
       - backend
@@ -285,7 +285,7 @@ services:
   # Mock Institutional Directory API
   institution-api:
     build:
-      context: ./institution-api
+      context: ../../services/institution-api
       dockerfile: Dockerfile
     container_name: voting-institution-api
     restart: always

@@ -7,6 +7,9 @@
 
 set -e
 
+# Docker Compose file location (relative to project root)
+COMPOSE_FILE="infra/docker/docker-compose.yml"
+
 # Colors for output
 GREEN='\033[0;32m'
 BLUE='\033[0;34m'
@@ -20,9 +23,9 @@ echo -e "${BLUE}===========================================${NC}"
 echo ""
 
 # Check if containers are running
-if ! docker-compose ps | grep -q "voting-backend.*Up"; then
+if ! docker-compose -f $COMPOSE_FILE ps | grep -q "voting-backend.*Up"; then
     echo -e "${RED}Error: Backend container is not running!${NC}"
-    echo "Please start the services first: docker-compose up -d"
+    echo "Please start the services first: docker-compose -f $COMPOSE_FILE up -d"
     exit 1
 fi
 
@@ -43,8 +46,8 @@ echo ""
 echo -e "${BLUE}Seeding database...${NC}"
 
 # Check if seed script exists in backend
-if docker-compose exec backend test -f seed.js; then
-    docker-compose exec backend npm run seed
+if docker-compose -f $COMPOSE_FILE exec backend test -f seed.js; then
+    docker-compose -f $COMPOSE_FILE exec backend npm run seed
 else
     echo -e "${RED}Error: seed.js not found in backend container${NC}"
     echo -e "${YELLOW}Running manual seed commands instead...${NC}"

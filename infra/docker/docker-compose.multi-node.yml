@@ -13,7 +13,7 @@ services:
       - "3306:3306"
     volumes:
       - mysql_data_multinode:/var/lib/mysql
-      - ./backend/migrations:/docker-entrypoint-initdb.d
+      - ../../services/backend/migrations:/docker-entrypoint-initdb.d
     networks:
       - voting-blockchain-network
     healthcheck:
@@ -35,7 +35,7 @@ services:
   # Blockchain Node 1 (Validator)
   blockchain-node-1:
     build:
-      context: ./blockchain-node
+      context: ../../services/blockchain-node
       dockerfile: Dockerfile
     container_name: voting-blockchain-node-1
     restart: always
@@ -49,7 +49,7 @@ services:
       - "3001:3001"
     volumes:
       - blockchain_data_node1:/app/data
-      - ./blockchain-node:/app
+      - ../../services/blockchain-node:/app
       - /app/node_modules
     networks:
       - voting-blockchain-network
@@ -73,7 +73,7 @@ services:
   # Blockchain Node 2 (Validator)
   blockchain-node-2:
     build:
-      context: ./blockchain-node
+      context: ../../services/blockchain-node
       dockerfile: Dockerfile
     container_name: voting-blockchain-node-2
     restart: always
@@ -87,7 +87,7 @@ services:
       - "3002:3002"
     volumes:
       - blockchain_data_node2:/app/data
-      - ./blockchain-node:/app
+      - ../../services/blockchain-node:/app
       - /app/node_modules
     networks:
       - voting-blockchain-network
@@ -111,7 +111,7 @@ services:
   # Blockchain Node 3 (Validator)
   blockchain-node-3:
     build:
-      context: ./blockchain-node
+      context: ../../services/blockchain-node
       dockerfile: Dockerfile
     container_name: voting-blockchain-node-3
     restart: always
@@ -125,7 +125,7 @@ services:
       - "3003:3003"
     volumes:
       - blockchain_data_node3:/app/data
-      - ./blockchain-node:/app
+      - ../../services/blockchain-node:/app
       - /app/node_modules
     networks:
       - voting-blockchain-network
@@ -149,7 +149,7 @@ services:
   # Blockchain Node 4 (Observer)
   blockchain-node-4:
     build:
-      context: ./blockchain-node
+      context: ../../services/blockchain-node
       dockerfile: Dockerfile
     container_name: voting-blockchain-node-4
     restart: always
@@ -163,7 +163,7 @@ services:
       - "3004:3004"
     volumes:
       - blockchain_data_node4:/app/data
-      - ./blockchain-node:/app
+      - ../../services/blockchain-node:/app
       - /app/node_modules
     networks:
       - voting-blockchain-network
@@ -187,7 +187,7 @@ services:
   # Blockchain Node 5 (Observer)
   blockchain-node-5:
     build:
-      context: ./blockchain-node
+      context: ../../services/blockchain-node
       dockerfile: Dockerfile
     container_name: voting-blockchain-node-5
     restart: always
@@ -201,7 +201,7 @@ services:
       - "3005:3005"
     volumes:
       - blockchain_data_node5:/app/data
-      - ./blockchain-node:/app
+      - ../../services/blockchain-node:/app
       - /app/node_modules
     networks:
       - voting-blockchain-network

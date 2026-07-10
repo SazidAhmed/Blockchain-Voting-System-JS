@@ -1,0 +1,2 @@
+# This file ensures the blockchain data directory is tracked by Git
+# Actual blockchain data files are ignored

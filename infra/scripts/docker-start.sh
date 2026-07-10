@@ -5,6 +5,9 @@
 
 set -e
 
+# Docker Compose file location (relative to project root)
+COMPOSE_FILE="infra/docker/docker-compose.yml"
+
 echo "=========================================="
 echo "🗳️  University Blockchain Voting System"
 echo "🐳 Docker Quick Start Script"
@@ -72,7 +75,7 @@ case $choice in
         echo -e "${GREEN}🚀 Building and starting all services...${NC}"
         echo "This may take 5-10 minutes on first run..."
         echo ""
-        docker-compose up --build -d
+        docker-compose -f $COMPOSE_FILE up --build -d
         echo ""
         echo -e "${GREEN}✅ All services started!${NC}"
         echo ""
@@ -85,15 +88,15 @@ case $choice in
         echo ""
         echo -e "${BLUE}🌱 Seeding database with test data...${NC}"
         sleep 10
-        docker-compose exec backend npm run db:seed
+        docker-compose -f $COMPOSE_FILE exec backend npm run db:seed
         echo -e "${GREEN}✅ Database seeded!${NC}"
         echo ""
-        echo "View logs with: docker-compose logs -f"
+        echo "View logs with: docker-compose -f $COMPOSE_FILE logs -f"
         ;;
     2)
         echo ""
         echo -e "${GREEN}🚀 Starting all services...${NC}"
-        docker-compose up -d
+        docker-compose -f $COMPOSE_FILE up -d
         echo ""
         echo -e "${GREEN}✅ All services started!${NC}"
         echo ""
@@ -107,19 +110,19 @@ case $choice in
     3)
         echo ""
         echo -e "${YELLOW}🛑 Stopping all services...${NC}"
-        docker-compose down
+        docker-compose -f $COMPOSE_FILE down
         echo -e "${GREEN}✅ All services stopped!${NC}"
         ;;
     4)
         echo ""
         echo -e "${GREEN}📋 Viewing logs (Ctrl+C to exit)...${NC}"
         echo ""
-        docker-compose logs -f
+        docker-compose -f $COMPOSE_FILE logs -f
         ;;
     5)
         echo ""
         echo -e "${YELLOW}🔄 Restarting all services...${NC}"
-        docker-compose restart
+        docker-compose -f $COMPOSE_FILE restart
         echo -e "${GREEN}✅ All services restarted!${NC}"
         ;;
     6)
@@ -129,7 +132,7 @@ case $choice in
         if [ "$confirm" = "yes" ]; then
             echo ""
             echo -e "${YELLOW}🧹 Cleaning up...${NC}"
-            docker-compose down -v
+            docker-compose -f $COMPOSE_FILE down -v
             echo -e "${GREEN}✅ Cleanup complete!${NC}"
         else
             echo "Cancelled."
