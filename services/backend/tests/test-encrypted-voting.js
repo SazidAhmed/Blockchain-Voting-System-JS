@@ -1,5 +1,5 @@
 const axios = require('axios');
-const { pool } = require('./config/db');
+const { pool } = require('../config/db');
 
 const API_BASE = 'http://localhost:3000/api';
 

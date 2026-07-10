@@ -70,7 +70,7 @@ git clone https://github.com/SazidAhmed/Blockchain-Voting-System-JS.git
 cd Blockchain-Voting-System-JS
 
 # Copy environment file
-cp config/.env.example .env
+cp .env.example .env
 
 # Start all services (MySQL, phpMyAdmin, Backend, Blockchain, Frontend)
 docker-compose -f infra/docker/docker-compose.yml up --build -d

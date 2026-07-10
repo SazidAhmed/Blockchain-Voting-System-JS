@@ -9,7 +9,7 @@
  * - Integration with blockchain
  */
 
-const { MerkleTree, MerkleTreeUtils } = require('../merkleTree');
+const { MerkleTree, MerkleTreeUtils } = require('../src/core/merkleTree');
 
 console.log('='.repeat(70));
 console.log('MERKLE TREE IMPLEMENTATION TEST');

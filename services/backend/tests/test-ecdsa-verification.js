@@ -1,6 +1,6 @@
 const axios = require('axios');
 const crypto = require('crypto');
-const { pool } = require('./config/db');
+const { pool } = require('../config/db');
 
 const API_BASE = 'http://localhost:3000/api';
 
@@ -62,7 +62,7 @@ async function testECDSAVerification() {
     // Since we can't easily generate Web Crypto signatures in Node.js,
     // we'll test that the verification function exists and has proper structure
     
-    const { verifyECDSASignature } = require('./utils/crypto');
+    const { verifyECDSASignature } = require('../utils/crypto');
     
     // Create a test JWK public key (valid format but arbitrary values)
     const testJWK = {

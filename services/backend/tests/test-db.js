@@ -1,4 +1,4 @@
-const { testConnection, initializeDatabase } = require('./config/db');
+const { testConnection, initializeDatabase } = require('../config/db');
 
 async function runTests() {
   try {

@@ -5,10 +5,10 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "migrate": "node migrate.js run",
-    "migrate:status": "node migrate.js status",
+    "migrate": "node scripts/migrate.js run",
+    "migrate:status": "node scripts/migrate.js status",
     "db:init": "node -e \"require('./config/db').initializeDatabase()\"",
-    "db:seed": "node seed.js",
+    "db:seed": "node scripts/seed.js",
     "db:reset": "npm run migrate && npm run db:seed",
     "start": "node index.js",
     "dev": "nodemon index.js"

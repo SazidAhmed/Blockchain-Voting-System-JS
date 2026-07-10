@@ -4,12 +4,12 @@ const cors = require('cors');
 const crypto = require('crypto-js');
 const http = require('http');
 const socketIo = require('socket.io');
-const Blockchain = require('./blockchain');
-const Block = require('./block');
-const { MerkleTree, MerkleTreeUtils } = require('./merkleTree');
-const { PeerManager, MessageTypes } = require('./peerManager');
-const NodeMonitor = require('./nodeMonitor');
-const PrometheusMetrics = require('./prometheusMetrics');
+const Blockchain = require('./src/core/blockchain');
+const Block = require('./src/core/block');
+const { MerkleTree, MerkleTreeUtils } = require('./src/core/merkleTree');
+const { PeerManager, MessageTypes } = require('./src/network/peerManager');
+const NodeMonitor = require('./src/monitoring/nodeMonitor');
+const PrometheusMetrics = require('./src/monitoring/prometheusMetrics');
 
 // Get node ID from environment or use default
 const nodeId = process.env.NODE_ID || 'node1';

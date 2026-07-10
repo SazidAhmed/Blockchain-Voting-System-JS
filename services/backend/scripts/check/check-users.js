@@ -1,4 +1,4 @@
-const { pool } = require('./config/db');
+const { pool } = require('../../config/db');
 
 function pad(str, len) {
   return String(str ?? '').padEnd(len);

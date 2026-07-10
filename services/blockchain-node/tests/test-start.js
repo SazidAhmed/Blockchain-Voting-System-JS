@@ -9,8 +9,8 @@ try {
     const crypto = require('crypto-js');
     const http = require('http');
     const socketIo = require('socket.io');
-    const Blockchain = require('../blockchain');
-    const Block = require('../block');
+    const Blockchain = require('../src/core/blockchain');
+    const Block = require('../src/core/block');
     
     console.log('Dependencies loaded successfully');
     

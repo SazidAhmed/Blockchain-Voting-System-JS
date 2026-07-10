@@ -1,7 +1,7 @@
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
-const { pool } = require('./config/db');
+const { pool } = require('../config/db');
 
 // Create keys directory if it doesn't exist
 const KEYS_DIR = path.join(__dirname, 'keys');

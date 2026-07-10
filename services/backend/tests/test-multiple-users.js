@@ -1,6 +1,6 @@
 const axios = require('axios');
 const crypto = require('crypto');
-const { pool } = require('./config/db');
+const { pool } = require('../config/db');
 
 const API_BASE = 'http://localhost:3000/api';
 

@@ -219,7 +219,7 @@ async function testBackendCryptoIntegration() {
     log('\n💾 Test 5: Database Contains Crypto Fields', 'cyan');
     log('-'.repeat(60));
     
-    const { pool } = require('./config/db');
+    const { pool } = require('../config/db');
     
     try {
       // Check user has keys

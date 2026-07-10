@@ -1,6 +1,6 @@
 const axios = require('axios');
-const { pool } = require('./config/db');
-const auditLogger = require('./utils/auditLogger');
+const { pool } = require('../config/db');
+const auditLogger = require('../utils/auditLogger');
 
 const API_BASE = 'http://localhost:3000/api';
 

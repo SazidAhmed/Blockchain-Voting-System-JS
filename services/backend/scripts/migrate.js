@@ -10,7 +10,7 @@ require('dotenv').config();
 
 class MigrationRunner {
   constructor() {
-    this.migrationsDir = path.join(__dirname, 'migrations');
+    this.migrationsDir = path.join(__dirname, '..', 'migrations');
     this.connection = null;
   }
 
