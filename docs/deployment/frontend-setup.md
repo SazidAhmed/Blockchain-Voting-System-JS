@@ -62,7 +62,7 @@ http://localhost:5173
 
 2. **Test cryptography:**
    - Open browser console (F12)
-   - Copy contents of `src/services/crypto.test.js`
+   - Copy contents of `services/frontend/src/__tests__/crypto.test.js`
    - Run: `await cryptoTests.runAllTests()`
    - Verify: 8/8 tests pass
 
@@ -151,11 +151,11 @@ const votePackage = await keyManager.generateVote(
 
 ## 📚 Documentation
 
-- **[CRYPTO_IMPLEMENTATION.md](./CRYPTO_IMPLEMENTATION.md)** - Complete technical reference
-- **[../CRYPTO_IMPLEMENTATION_SUMMARY.md](../CRYPTO_IMPLEMENTATION_SUMMARY.md)** - High-level overview
-- **[../CRYPTO_QUICK_START.md](../CRYPTO_QUICK_START.md)** - Testing guide
-- **[../CRYPTO_VISUAL_GUIDE.md](../CRYPTO_VISUAL_GUIDE.md)** - Architecture diagrams
-- **[../CRYPTO_COMPLETE.md](../CRYPTO_COMPLETE.md)** - Implementation summary
+- **[CRYPTO_IMPLEMENTATION.md](../development/CRYPTO_IMPLEMENTATION.md)** - Complete technical reference
+- **[CRYPTO_IMPLEMENTATION_SUMMARY.md](../project-status/guides/CRYPTO_IMPLEMENTATION_SUMMARY.md)** - High-level overview
+- **[CRYPTO_QUICK_START.md](../project-status/crypto/CRYPTO_QUICK_START.md)** - Testing guide
+- **[CRYPTO_VISUAL_GUIDE.md](../project-status/crypto/CRYPTO_VISUAL_GUIDE.md)** - Architecture diagrams
+- **[CRYPTO_COMPLETE.md](../project-status/guides/CRYPTO_COMPLETE.md)** - Implementation summary
 
 ## 🧪 Testing
 
@@ -224,7 +224,7 @@ npm run preview
 - Implement key rotation
 - HSM integration for sensitive keys
 
-See `CRYPTO_IMPLEMENTATION.md` for detailed production checklist.
+See [`CRYPTO_IMPLEMENTATION.md`](../development/CRYPTO_IMPLEMENTATION.md) for detailed production checklist.
 
 ## 📊 Browser Compatibility
 
@@ -327,8 +327,8 @@ Copyright © 2025
 
 For detailed troubleshooting, see:
 
-- `CRYPTO_QUICK_START.md` - Testing guide
-- `CRYPTO_IMPLEMENTATION.md` - Technical details
+- [`CRYPTO_QUICK_START.md`](../project-status/crypto/CRYPTO_QUICK_START.md) - Testing guide
+- [`CRYPTO_IMPLEMENTATION.md`](../development/CRYPTO_IMPLEMENTATION.md) - Technical details
 - Browser console logs (F12)
 
 ---

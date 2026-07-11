@@ -18,25 +18,28 @@ curl http://localhost:3001/recovery/status | jq
 ## 📋 What's New in Phase 5
 
 ### New Files Created
-- `blockchain-node/recoveryManager.js` - Recovery coordination module
-- `blockchain-node/byzantineValidator.js` - Byzantine fault tolerance validator
+
+- `services/blockchain-node/src/security/recoveryManager.js` - Recovery coordination module
+- `services/blockchain-node/src/security/byzantineValidator.js` - Byzantine fault tolerance validator
 - `test-phase5-task5-1.sh` - Network recovery tests
 - `test-phase5-task5-2.sh` - Byzantine fault tolerance tests
 - `test-phase5-task5-3.sh` - Disaster recovery tests
 - `test-phase5-all.sh` - Master test runner
 
 ### New Capabilities
+
 ✅ Network recovery after attacks  
 ✅ Byzantine fault tolerance validation  
 ✅ Disaster recovery procedures  
 ✅ State synchronization  
-✅ Consensus restoration  
+✅ Consensus restoration
 
 ---
 
 ## ⚡ Quick Commands
 
 ### Run Tests
+
 ```bash
 # All Phase 5 tests (18 tests)
 bash test-phase5-all.sh
@@ -48,6 +51,7 @@ bash test-phase5-task5-3.sh    # Disaster recovery
 ```
 
 ### Check Recovery Status
+
 ```bash
 # Recovery progress
 curl http://localhost:3001/recovery/status | jq
@@ -63,6 +67,7 @@ curl http://localhost:3001/recovery/report | jq
 ```
 
 ### Test Individual Scenarios
+
 ```bash
 # Simulate attack and recovery
 curl -X POST http://localhost:3001/security/quarantine \
@@ -85,6 +90,7 @@ curl -X POST http://localhost:3001/disaster/simulate \
 ## 🎯 Test Overview
 
 ### Task 5.1: Network Recovery After Attack (6 tests)
+
 - Affected node detection
 - Healthy peer isolation
 - State synchronization
@@ -93,6 +99,7 @@ curl -X POST http://localhost:3001/disaster/simulate \
 - Recovered state verification
 
 ### Task 5.2: Byzantine Fault Tolerance (6 tests)
+
 - Consensus with 1 faulty node (pass)
 - Consensus with 2 faulty nodes (fail)
 - Byzantine behavior detection
@@ -101,6 +108,7 @@ curl -X POST http://localhost:3001/disaster/simulate \
 - Safety & liveness properties
 
 ### Task 5.3: Disaster Recovery (6 tests)
+
 - Backup integrity
 - Data restoration
 - Chain reconstruction
@@ -112,7 +120,7 @@ curl -X POST http://localhost:3001/disaster/simulate \
 
 ## 📊 Expected Results
 
-```
+```text
 Phase 5 Test Summary
 ====================
 Task 5.1: Network Recovery
@@ -147,6 +155,7 @@ Total: 18 tests - ALL PASS ✅
 ## 🔍 Troubleshooting
 
 **Tests failing to connect?**
+
 ```bash
 # Check if all 5 nodes are running
 docker ps | grep voting
@@ -162,6 +171,7 @@ bash test-phase5-all.sh
 ```
 
 **Recovery not responding?**
+
 ```bash
 # Check node health
 curl http://localhost:3001/health | jq
@@ -171,6 +181,7 @@ docker logs voting-node1 | grep -i recovery
 ```
 
 **Byzantine tests timing out?**
+
 ```bash
 # Check node performance
 curl http://localhost:3001/metrics | jq
@@ -183,13 +194,13 @@ curl http://localhost:3001/metrics | jq
 
 ## 📈 Key Metrics
 
-| Metric | Value |
-|--------|-------|
-| Network Recovery Time | <5 minutes |
-| Byzantine Detection | <50ms |
+| Metric                | Value       |
+| --------------------- | ----------- |
+| Network Recovery Time | <5 minutes  |
+| Byzantine Detection   | <50ms       |
 | Consensus Restoration | <30 seconds |
-| Test Success Rate | 100% |
-| Phase 5 Completion | 100% |
+| Test Success Rate     | 100%        |
+| Phase 5 Completion    | 100%        |
 
 ---
 

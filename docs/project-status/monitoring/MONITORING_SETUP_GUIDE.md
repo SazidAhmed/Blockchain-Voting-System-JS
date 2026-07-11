@@ -19,6 +19,7 @@ The blockchain voting system now includes comprehensive monitoring across three 
 Each blockchain node exposes metrics at: `http://localhost:300X/metrics`
 
 **Counter Metrics:**
+
 - `blockchain_blocks_created_total` - Total blocks created by this node
 - `blockchain_blocks_received_total` - Total blocks received
 - `blockchain_transactions_processed_total` - Total transactions processed
@@ -27,6 +28,7 @@ Each blockchain node exposes metrics at: `http://localhost:300X/metrics`
 - `blockchain_invalid_transactions_rejected_total` - Total invalid transactions rejected
 
 **Gauge Metrics:**
+
 - `blockchain_chain_height` - Current chain height
 - `blockchain_transaction_pool_size` - Pending transactions
 - `blockchain_connected_peers` - Number of connected peers
@@ -36,6 +38,7 @@ Each blockchain node exposes metrics at: `http://localhost:300X/metrics`
 - `blockchain_peer_latency_ms{peer_id="..."}` - Per-peer latency
 
 **Other Metrics:**
+
 - `blockchain_uptime_seconds` - Node uptime
 - `blockchain_node_info` - Node metadata (id, type, version)
 
@@ -46,21 +49,21 @@ The `prometheusMetrics.js` module needs to be integrated into `blockchain-node/i
 ```javascript
 // In blockchain-node/index.js
 
-const PrometheusMetrics = require('./prometheusMetrics');
+const PrometheusMetrics = require("./src/monitoring/prometheusMetrics");
 
 // Initialize metrics
 const metrics = new PrometheusMetrics(nodeId, nodeType);
 
 // Add /metrics endpoint
-app.get('/metrics', (req, res) => {
-    res.set('Content-Type', 'text/plain; charset=utf-8');
-    res.send(metrics.generateMetrics());
+app.get("/metrics", (req, res) => {
+  res.set("Content-Type", "text/plain; charset=utf-8");
+  res.send(metrics.generateMetrics());
 });
 
 // Record events
 metrics.recordBlockCreated(block);
 metrics.recordTransactionProcessed(latency);
-metrics.recordByzantineAttack('double_voting');
+metrics.recordByzantineAttack("double_voting");
 metrics.updatePeerMetrics(peers, healthy, unhealthy);
 ```
 
@@ -71,28 +74,33 @@ metrics.updatePeerMetrics(peers, healthy, unhealthy);
 ### Components
 
 **Prometheus**
+
 - Port: `9090`
 - Role: Metrics collection and time-series database
 - Data retention: 30 days
-- URL: http://localhost:9090
+- URL: <http://localhost:9090>
 
 **Grafana**
+
 - Port: `3030`
 - Role: Visualization and dashboards
 - Default credentials: admin/admin
-- URL: http://localhost:3030
+- URL: <http://localhost:3030>
 
 **cAdvisor**
+
 - Port: `8081`
 - Role: Container metrics
-- URL: http://localhost:8081
+- URL: <http://localhost:8081>
 
 **Node Exporter**
+
 - Port: `9100`
 - Role: Host system metrics
-- URL: http://localhost:9100
+- URL: <http://localhost:9100>
 
 **MySQL Exporter**
+
 - Port: `9104`
 - Role: Database metrics
 - Connects to: mysql:3306
@@ -109,7 +117,7 @@ docker-compose -f docker-compose.monitoring.yml up -d
 
 ### Access Monitoring UIs
 
-```
+```text
 Prometheus:    http://localhost:9090
 Grafana:       http://localhost:3030 (admin/admin)
 cAdvisor:      http://localhost:8081
@@ -128,36 +136,42 @@ Located at: `frontend/src/views/BlockchainMonitor.vue`
 **Features:**
 
 ✅ **Network Status**
+
 - Active nodes counter
 - Consensus threshold indicator
 - Byzantine tolerance display
 - Transaction metrics
 
 ✅ **Node Details**
+
 - Per-node status (validator/observer)
 - Chain height tracking
 - Peer connectivity
 - Block production statistics
 
 ✅ **Transaction Metrics**
+
 - Average block time
 - Transaction pool size
 - Network latency
 - Votes processed
 
 ✅ **Security Monitoring**
+
 - Byzantine attacks detected
 - Invalid transactions rejected
 - Quarantined peers
 - Chain fork detection (0 forks)
 
 ✅ **Performance Metrics**
+
 - Node reconnection time
 - Peer re-establishment time
 - Chain synchronization time
 - Full recovery time
 
 ✅ **System Health**
+
 - Consensus status
 - Peer discovery status
 - Byzantine FT validation
@@ -166,6 +180,7 @@ Located at: `frontend/src/views/BlockchainMonitor.vue`
 ### Integration Steps
 
 1. **Add to Router** (`frontend/src/router/index.js`):
+
 ```javascript
 {
   path: '/monitor',
@@ -174,12 +189,14 @@ Located at: `frontend/src/views/BlockchainMonitor.vue`
 }
 ```
 
-2. **Add Navigation Link** (`frontend/src/App.vue`):
+1. **Add Navigation Link** (`frontend/src/App.vue`):
+
 ```html
 <router-link to="/monitor">🔗 Network Monitor</router-link>
 ```
 
-3. **Connect API Calls** (in mounted/methods):
+1. **Connect API Calls** (in mounted/methods):
+
 ```javascript
 async fetchNodeMetrics() {
   const promises = [];
@@ -203,32 +220,38 @@ async fetchNodeMetrics() {
 ### Prometheus Query Examples
 
 **Block Production Rate:**
-```
+
+```text
 rate(blockchain_blocks_created_total[5m])
 ```
 
 **Network Connectivity:**
-```
+
+```text
 blockchain_connected_peers
 ```
 
 **Byzantine Attack Detection:**
-```
+
+```text
 rate(blockchain_byzantine_attacks_detected_total[1m])
 ```
 
 **Transaction Throughput:**
-```
+
+```text
 rate(blockchain_transactions_processed_total[1m])
 ```
 
 **Chain Height Consistency:**
-```
+
+```text
 blockchain_chain_height
 ```
 
 **Peer Latency:**
-```
+
+```text
 blockchain_peer_latency_ms
 ```
 
@@ -267,7 +290,7 @@ blockchain_peer_latency_ms
 
 ### Creating Dashboards
 
-1. Login to Grafana: http://localhost:3030 (admin/admin)
+1. Login to Grafana: <http://localhost:3030> (admin/admin)
 2. Click "+" → "Dashboard"
 3. Add panels with Prometheus queries
 4. Save dashboard
@@ -376,21 +399,25 @@ groups:
 ### Common Issues & Solutions
 
 **Prometheus not scraping metrics:**
+
 - Check `/metrics` endpoint is responding
 - Verify firewall allows 9090
 - Check prometheus.yml config
 
 **Grafana dashboards empty:**
+
 - Verify Prometheus data source
 - Check Prometheus has data
 - Refresh Grafana
 
 **Missing node metrics:**
+
 - Verify prometheusMetrics.js imported
 - Check `/metrics` endpoint returns data
 - Verify port is accessible
 
 **High latency alerts:**
+
 - Check network connectivity
 - Monitor container resources
 - Check peer connections
@@ -399,7 +426,7 @@ groups:
 
 ## 10. Access Quickstart
 
-### Monitor Everything:
+### Monitor Everything
 
 ```bash
 # Start full monitoring stack
@@ -413,7 +440,7 @@ docker-compose -f docker-compose.multi-node.yml -f docker-compose.monitoring.yml
 # Web Dashboard:     http://localhost:5173/monitor
 ```
 
-### Quick Health Check:
+### Quick Health Check
 
 ```bash
 # Check all nodes
@@ -428,11 +455,13 @@ done
 ## Summary
 
 **Three-Layer Monitoring:**
+
 1. 📊 **Application Metrics** - Prometheus format at `/metrics`
 2. 🔍 **Infrastructure** - Prometheus + Grafana dashboards
 3. 🎨 **Real-Time UI** - BlockchainMonitor Vue component
 
 **All 5 nodes monitored continuously with:**
+
 - ✅ Byzantine attack detection
 - ✅ Real-time peer tracking
 - ✅ Chain consistency verification

@@ -240,7 +240,7 @@ mysql -h 127.0.0.1 -P 3306 -u voting_user -p voting_db
 
 The database is automatically initialized on first run with:
 
-1. Schema creation (from `backend/migrations/*.sql`)
+1. Schema creation (from `services/backend/migrations/*.sql`)
 2. Tables for users, elections, votes, etc.
 
 ### Manual Database Initialization
@@ -431,13 +431,13 @@ docker-compose up -d blockchain-node
 
 All services support hot reload:
 
-- **Frontend**: Changes to `frontend/` files reload automatically
+- **Frontend**: Changes to `services/frontend/` files reload automatically
 - **Backend**: Restart required (or use nodemon)
 - **Blockchain**: Restart required
 
 ### Making Changes
 
-1. Edit files in your local directories (`backend/`, `frontend/`, etc.)
+1. Edit files in your local directories (`services/backend/`, `services/frontend/`, etc.)
 2. Changes are synced to containers via volumes
 3. Frontend auto-reloads; backend requires restart
 
@@ -578,9 +578,8 @@ Once your Docker setup is running:
 
 - [Docker Documentation](https://docs.docker.com/)
 - [Docker Compose Documentation](https://docs.docker.com/compose/)
-- [Project README](./README.md)
-- [API Documentation](./docs/API.md)
-- [Crypto Implementation](./Project_Status/CRYPTO_IMPLEMENTATION_SUMMARY.md)
+- [Project README](../../../../README.md)
+- [Crypto Implementation](../CRYPTO_IMPLEMENTATION_SUMMARY.md)
 
 ## 🛠️ Helper Scripts
 
@@ -615,14 +614,14 @@ Backup MySQL database and blockchain data:
 ./docker-backup.sh
 ```
 
-Creates timestamped backup in `./backups/` directory.
+Creates timestamped backup in `infra/scripts/backups/` directory.
 
 #### 3. `docker-restore.sh`
 
 Restore from backup:
 
 ```bash
-./docker-restore.sh ./backups/voting_backup_TIMESTAMP.tar.gz
+./docker-restore.sh infra/scripts/backups/voting_backup_TIMESTAMP.tar.gz
 ```
 
 #### 4. `docker-logs.sh`

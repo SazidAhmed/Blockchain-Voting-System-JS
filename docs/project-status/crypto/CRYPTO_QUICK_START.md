@@ -3,13 +3,15 @@
 ## 🚀 Quick Test (5 minutes)
 
 ### Prerequisites
-- Frontend server running (`npm run dev` in `/frontend`)
+
+- Frontend server running (`npm run dev` in `/services/frontend`)
 - Modern browser (Chrome, Firefox, Safari, Edge)
 
 ### Test 1: Registration with Key Generation (2 min)
 
 1. **Open the application:**
-   ```
+
+   ```text
    http://localhost:5173
    ```
 
@@ -17,7 +19,8 @@
    - Click "Register" link or go to `/register`
 
 3. **Fill the form:**
-   ```
+
+   ```text
    Name: Test User
    Email: test@university.edu
    Student ID: S12345
@@ -28,7 +31,8 @@
 4. **Submit and observe:**
    - Watch for "🔐 Generating cryptographic keys..." message
    - Check browser console (F12) for:
-     ```
+
+     ```text
      Generating cryptographic keypairs...
      Keypairs generated successfully
      Keys stored securely
@@ -48,15 +52,16 @@
 1. **Open browser console (F12)**
 
 2. **Load the test suite:**
-   - Copy contents of `frontend/src/services/crypto.test.js`
+   - Copy contents of `services/frontend/src/__tests__/crypto.test.js`
    - Paste into console
    - Press Enter
 
 3. **Run tests:**
+
    ```javascript
    // Run all tests
-   await cryptoTests.runAllTests()
-   
+   await cryptoTests.runAllTests();
+
    // Should see:
    // 🧪 Test 1: Key Generation
    // ✅ Key generation: PASSED
@@ -67,9 +72,10 @@
    ```
 
 4. **Run individual test:**
+
    ```javascript
    // Test ballot encryption
-   await cryptoTests.testBallotEncryption()
+   await cryptoTests.testBallotEncryption();
    ```
 
 ✅ **Expected:** All 8 tests pass
@@ -81,13 +87,15 @@
 ⚠️ **Note:** Requires backend to be updated with crypto support
 
 1. **Login with test account:**
-   ```
+
+   ```text
    Username: test@university.edu
    Password: TestPass123!
    ```
 
 2. **Check console for:**
-   ```
+
+   ```text
    User keys loaded successfully
    ```
 
@@ -123,86 +131,107 @@
 Open browser console on any page:
 
 #### Test Key Generation
+
 ```javascript
 // Import crypto service (if available globally)
-const crypto = await import('./src/services/crypto.js')
-const cryptoService = crypto.default
+const crypto = await import("services/frontend/src/services/crypto.js");
+const cryptoService = crypto.default;
 
 // Generate keys
-const keys = await cryptoService.generateUserKeypairs()
-console.log('Keys generated:', keys)
+const keys = await cryptoService.generateUserKeypairs();
+console.log("Keys generated:", keys);
 ```
 
 #### Test Encryption
+
 ```javascript
 // Generate keys
-const keys = await cryptoService.generateUserKeypairs()
+const keys = await cryptoService.generateUserKeypairs();
 
 // Test data
-const ballot = { candidateId: 123, electionId: 'test-election' }
+const ballot = { candidateId: 123, electionId: "test-election" };
 
 // Encrypt
-const encrypted = await cryptoService.encryptBallot(ballot, keys.encryption.publicKey)
-console.log('Encrypted ballot:', encrypted)
-console.log('Length:', encrypted.length, 'characters')
+const encrypted = await cryptoService.encryptBallot(
+  ballot,
+  keys.encryption.publicKey,
+);
+console.log("Encrypted ballot:", encrypted);
+console.log("Length:", encrypted.length, "characters");
 ```
 
 #### Test Signatures
+
 ```javascript
 // Generate keys
-const keys = await cryptoService.generateUserKeypairs()
+const keys = await cryptoService.generateUserKeypairs();
 
 // Test data
-const data = { test: 'vote data' }
+const data = { test: "vote data" };
 
 // Sign
-const signature = await cryptoService.signData(data, keys.signing.privateKey)
-console.log('Signature:', signature)
+const signature = await cryptoService.signData(data, keys.signing.privateKey);
+console.log("Signature:", signature);
 
 // Verify
-const valid = await cryptoService.verifySignature(signature, data, keys.signing.publicKey)
-console.log('Signature valid:', valid) // Should be true
+const valid = await cryptoService.verifySignature(
+  signature,
+  data,
+  keys.signing.publicKey,
+);
+console.log("Signature valid:", valid); // Should be true
 ```
 
 #### Test Nullifier
+
 ```javascript
 // Generate keys
-const keys = await cryptoService.generateUserKeypairs()
+const keys = await cryptoService.generateUserKeypairs();
 
 // Generate nullifier
-const nullifier1 = await cryptoService.generateNullifier(keys.signing.privateKey, 'election-1')
-const nullifier2 = await cryptoService.generateNullifier(keys.signing.privateKey, 'election-1')
-const nullifier3 = await cryptoService.generateNullifier(keys.signing.privateKey, 'election-2')
+const nullifier1 = await cryptoService.generateNullifier(
+  keys.signing.privateKey,
+  "election-1",
+);
+const nullifier2 = await cryptoService.generateNullifier(
+  keys.signing.privateKey,
+  "election-1",
+);
+const nullifier3 = await cryptoService.generateNullifier(
+  keys.signing.privateKey,
+  "election-2",
+);
 
-console.log('Nullifier 1:', nullifier1)
-console.log('Nullifier 2:', nullifier2)
-console.log('Same?', nullifier1 === nullifier2) // Should be true (deterministic)
-console.log('Nullifier 3:', nullifier3)
-console.log('Different?', nullifier1 !== nullifier3) // Should be true
+console.log("Nullifier 1:", nullifier1);
+console.log("Nullifier 2:", nullifier2);
+console.log("Same?", nullifier1 === nullifier2); // Should be true (deterministic)
+console.log("Nullifier 3:", nullifier3);
+console.log("Different?", nullifier1 !== nullifier3); // Should be true
 ```
 
 #### Test Complete Vote Package
+
 ```javascript
 // Generate voter keys
-const voterKeys = await cryptoService.generateUserKeypairs()
+const voterKeys = await cryptoService.generateUserKeypairs();
 
 // Generate election keys
-const electionKeys = await cryptoService.generateUserKeypairs()
+const electionKeys = await cryptoService.generateUserKeypairs();
 
 // Create vote package
 const votePackage = await cryptoService.createVotePackage(
   { candidateId: 42 },
-  'election-test',
+  "election-test",
   voterKeys,
-  electionKeys.encryption.publicKey
-)
+  electionKeys.encryption.publicKey,
+);
 
-console.log('Vote Package:', {
-  encryptedBallot: votePackage.encryptedBallot.substring(0, 50) + '...',
+console.log("Vote Package:", {
+  encryptedBallot: votePackage.encryptedBallot.substring(0, 50) + "...",
   nullifier: votePackage.nullifier,
-  signature: votePackage.signature.substring(0, 50) + '...',
-  timestamp: new Date(votePackage.timestamp).toISOString()
-})
+  signature: votePackage.signature.substring(0, 50) + "...",
+  timestamp: new Date(votePackage.timestamp).toISOString(),
+});
 ```
 
 ---
@@ -210,19 +239,22 @@ console.log('Vote Package:', {
 ## 🔍 Verification Checklist
 
 ### ✅ Registration Phase
+
 - [ ] Key generation message appears
 - [ ] Console shows "Keys generated successfully"
-- [ ] localStorage contains voting_keys_{userId}
+- [ ] localStorage contains voting*keys*{userId}
 - [ ] Registration completes successfully
 - [ ] No errors in console
 
 ### ✅ Login Phase
+
 - [ ] Console shows "Loading user keys..."
 - [ ] Console shows "User keys loaded successfully"
 - [ ] No key-related errors
 - [ ] Login completes successfully
 
 ### ✅ Voting Phase
+
 - [ ] "✓ Cryptographic Keys Loaded" status shows
 - [ ] Can select candidate
 - [ ] "Submit Vote" button is enabled
@@ -231,6 +263,7 @@ console.log('Vote Package:', {
 - [ ] Console shows "Vote encrypted successfully"
 
 ### ✅ Receipt Display
+
 - [ ] Vote receipt component renders
 - [ ] Transaction hash displays
 - [ ] Nullifier displays (64 hex characters)
@@ -240,6 +273,7 @@ console.log('Vote Package:', {
 - [ ] Print button works (opens print dialog)
 
 ### ✅ Security Checks
+
 - [ ] Encrypted ballot is not readable plaintext
 - [ ] Private keys are not visible in UI
 - [ ] Keys are cleared from memory on logout
@@ -251,30 +285,37 @@ console.log('Vote Package:', {
 ## 🐛 Troubleshooting
 
 ### Issue: "Failed to generate signing keypair"
+
 **Cause:** Browser doesn't support Web Crypto API  
 **Solution:** Use modern browser (Chrome 37+, Firefox 34+, Safari 11+)
 
 ### Issue: "No keys found for user"
+
 **Cause:** Keys not generated during registration  
 **Solution:** Re-register or check console for errors
 
 ### Issue: "Cryptographic keys not loaded"
+
 **Cause:** Keys not loaded on login  
 **Solution:** Check if keys exist in localStorage, try re-login
 
 ### Issue: "Failed to encrypt ballot"
+
 **Cause:** Invalid public key format  
 **Solution:** Ensure election has valid RSA public key
 
 ### Issue: Test suite not found
+
 **Cause:** Test file not loaded  
 **Solution:** Copy entire crypto.test.js content into console
 
 ### Issue: localStorage keys corrupted
+
 **Cause:** Manual editing or browser issue  
 **Solution:** Clear localStorage and re-register
+
 ```javascript
-localStorage.clear()
+localStorage.clear();
 ```
 
 ---
@@ -285,27 +326,33 @@ Run performance tests in console:
 
 ```javascript
 // Benchmark key generation
-console.time('Key Generation')
-const keys = await cryptoService.generateUserKeypairs()
-console.timeEnd('Key Generation')
+console.time("Key Generation");
+const keys = await cryptoService.generateUserKeypairs();
+console.timeEnd("Key Generation");
 // Expected: 50-200ms
 
 // Benchmark encryption
-console.time('Ballot Encryption')
-const encrypted = await cryptoService.encryptBallot({test: 'data'}, keys.encryption.publicKey)
-console.timeEnd('Ballot Encryption')
+console.time("Ballot Encryption");
+const encrypted = await cryptoService.encryptBallot(
+  { test: "data" },
+  keys.encryption.publicKey,
+);
+console.timeEnd("Ballot Encryption");
 // Expected: 5-20ms
 
 // Benchmark signing
-console.time('Digital Signature')
-const signature = await cryptoService.signData('test', keys.signing.privateKey)
-console.timeEnd('Digital Signature')
+console.time("Digital Signature");
+const signature = await cryptoService.signData("test", keys.signing.privateKey);
+console.timeEnd("Digital Signature");
 // Expected: 5-15ms
 
 // Benchmark nullifier
-console.time('Nullifier Generation')
-const nullifier = await cryptoService.generateNullifier(keys.signing.privateKey, 'test')
-console.timeEnd('Nullifier Generation')
+console.time("Nullifier Generation");
+const nullifier = await cryptoService.generateNullifier(
+  keys.signing.privateKey,
+  "test",
+);
+console.timeEnd("Nullifier Generation");
 // Expected: 2-10ms
 ```
 
@@ -333,12 +380,14 @@ Your implementation is working correctly if:
 ### ✅ Current Status: Development/Demo Ready
 
 **Safe to use for:**
+
 - Development testing
 - Demos
 - Proof of concept
 - Academic research
 
 **NOT ready for production until:**
+
 - [ ] PBKDF2 key derivation implemented
 - [ ] AES-GCM key encryption added
 - [ ] HSM integration complete
@@ -354,6 +403,7 @@ See `CRYPTO_IMPLEMENTATION.md` for production checklist.
 ## 📞 Support
 
 **Documentation:**
+
 - `CRYPTO_IMPLEMENTATION.md` - Full technical guide
 - `CRYPTO_IMPLEMENTATION_SUMMARY.md` - High-level overview
 - `crypto.test.js` - Test examples

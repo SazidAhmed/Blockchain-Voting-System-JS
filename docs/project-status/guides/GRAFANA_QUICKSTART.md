@@ -1,6 +1,6 @@
 # 🎯 Grafana Setup Guide - Next Steps
 
-**Status:** ✅ You're logged into Grafana at http://localhost:3030
+**Status:** ✅ You're logged into Grafana at <http://localhost:3030>
 
 ---
 
@@ -13,7 +13,7 @@
 3. Select **Prometheus**
 4. Fill in:
    - **Name:** Prometheus
-   - **URL:** http://prometheus:9090
+   - **URL:** <http://prometheus:9090>
    - Click **Save & Test**
 5. Should show: ✅ "Data source is working"
 
@@ -29,19 +29,22 @@
 ### Step 3: Add Container Metrics (5 minutes)
 
 **Panel 1: CPU Usage**
-```
+
+```text
 Query: container_cpu_usage_seconds_total
 Title: Container CPU Usage
 ```
 
 **Panel 2: Memory Usage**
-```
+
+```text
 Query: container_memory_usage_bytes
 Title: Memory Usage (Bytes)
 ```
 
 **Panel 3: Network I/O**
-```
+
+```text
 Query: rate(container_network_receive_bytes_total[5m])
 Title: Network Receive Rate
 ```
@@ -51,7 +54,8 @@ Title: Network Receive Rate
 ## 📊 Example Queries to Try
 
 ### System Metrics
-```
+
+```text
 # CPU usage
 100 - (avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100)
 
@@ -63,7 +67,8 @@ Title: Network Receive Rate
 ```
 
 ### Container Metrics
-```
+
+```text
 # Container CPU
 container_cpu_usage_seconds_total
 
@@ -80,18 +85,21 @@ container_network_transmit_bytes_total
 ## 🎨 Dashboard Ideas
 
 ### Dashboard 1: Infrastructure Overview
+
 - Container CPU usage
 - Container Memory usage
 - Network I/O
 - Container restart count
 
 ### Dashboard 2: System Health
+
 - CPU utilization
 - Memory utilization
 - Disk usage
 - Load average
 
 ### Dashboard 3: Network Performance
+
 - Bytes received/sent
 - Packets received/sent
 - Network errors
@@ -101,19 +109,23 @@ container_network_transmit_bytes_total
 ## 💡 Quick Tips
 
 **Save your dashboard:**
+
 - After adding panels, click the **Save** button (top right)
 - Give it a name like "Voting System Overview"
 
 **Refresh data:**
+
 - Use the refresh button (top right) or set auto-refresh interval
 - Recommended: 5 second refresh for live monitoring
 
 **View specific container:**
+
 - Filter by container name in queries
 - Example: `container_cpu_usage_seconds_total{name="voting-blockchain-node-1"}`
 
 **Check available metrics:**
-- Go to Prometheus at http://localhost:9090
+
+- Go to Prometheus at <http://localhost:9090>
 - Type metric name and hit Ctrl+Space for autocomplete
 
 ---
@@ -121,7 +133,8 @@ container_network_transmit_bytes_total
 ## 📋 Available Metrics (Sample)
 
 ### From cAdvisor
-```
+
+```text
 container_cpu_usage_seconds_total
 container_memory_usage_bytes
 container_memory_limit_bytes
@@ -134,7 +147,8 @@ container_fs_limit_bytes
 ```
 
 ### From Node Exporter
-```
+
+```text
 node_cpu_seconds_total
 node_memory_MemTotal_bytes
 node_memory_MemAvailable_bytes
@@ -154,7 +168,7 @@ node_network_transmit_bytes_total
 
 To add blockchain-specific metrics to your dashboards:
 
-1. Integrate `prometheusMetrics.js` into `blockchain-node/index.js`
+1. Integrate `prometheusMetrics.js` into `services/blockchain-node/index.js`
 2. Add `/metrics` endpoint to expose blockchain metrics
 3. Rebuild and restart blockchain nodes
 4. Then you can query:
@@ -169,6 +183,7 @@ To add blockchain-specific metrics to your dashboards:
 ## 🎯 Try This Now
 
 **Quick test in Grafana:**
+
 1. Create new dashboard
 2. Add a panel
 3. Try query: `up`

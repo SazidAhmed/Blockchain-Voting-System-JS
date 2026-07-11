@@ -53,9 +53,9 @@ else
     echo -e "${YELLOW}Running manual seed commands instead...${NC}"
     
     # Alternative: Use seed data from data directory
-    if [ -f "services/backend/data/users.json" ]; then
+    if [ -f "services/backend/scripts/seed.js" ]; then
         echo -e "${BLUE}Importing users...${NC}"
-        # Add your import logic here
+        docker-compose -f $COMPOSE_FILE exec backend node scripts/seed.js
     fi
 fi
 

@@ -10,14 +10,14 @@
 
 ### Automated Backend Tests: **4/4 PASSED** ✓
 
-| Test | Status | Details |
-|------|--------|---------|
+| Test                                 | Status  | Details                                 |
+| ------------------------------------ | ------- | --------------------------------------- |
 | **1. Registration with Crypto Keys** | ✅ PASS | User registered with public keys stored |
-| **2. Login Returns Crypto Keys** | ✅ PASS | Both signing & encryption keys returned |
-| **3. User Profile Includes Keys** | ✅ PASS | Keys match what was registered |
-| **4. Database Crypto Fields** | ✅ PASS | All columns present and populated |
+| **2. Login Returns Crypto Keys**     | ✅ PASS | Both signing & encryption keys returned |
+| **3. User Profile Includes Keys**    | ✅ PASS | Keys match what was registered          |
+| **4. Database Crypto Fields**        | ✅ PASS | All columns present and populated       |
 
-**Test Script:** `backend/test-crypto-integration.js`  
+**Test Script:** `services/backend/tests/test-crypto-integration.js`  
 **Execution Time:** ~2 seconds  
 **Warnings:** 2 (expected - no votes cast yet)
 
@@ -26,6 +26,7 @@
 ## 🎯 What's Verified & Working
 
 ### ✅ Database Schema
+
 ```sql
 Users table:
   ✓ public_key (TEXT)              - ECDSA P-256 signing key
@@ -39,6 +40,7 @@ Votes_meta table:
 ### ✅ API Endpoints
 
 **POST /api/users/register**
+
 - ✓ Accepts `publicKey` parameter
 - ✓ Accepts `encryptionPublicKey` parameter
 - ✓ Stores both keys in database
@@ -46,17 +48,20 @@ Votes_meta table:
 - ✓ Backward compatible (generates keys if not provided)
 
 **POST /api/users/login**
+
 - ✓ Returns user profile
 - ✓ Includes `publicKey` in response
 - ✓ Includes `encryptionPublicKey` in response
 - ✓ Issues JWT token
 
 **GET /api/users/me**
+
 - ✓ Returns full user profile
 - ✓ Includes both crypto keys
 - ✓ Requires authentication (x-auth-token header)
 
 **POST /api/elections/:id/vote**
+
 - ✓ Accepts `encryptedBallot` parameter
 - ✓ Accepts `nullifier` parameter
 - ✓ Accepts `signature` parameter
@@ -68,25 +73,27 @@ Votes_meta table:
 
 ### ✅ Security Features
 
-| Feature | Status | Verification Method |
-|---------|--------|---------------------|
-| Client key storage | ✅ Working | Keys saved in database |
-| Signature acceptance | ✅ Working | Vote endpoint accepts signatures |
-| Nullifier checking | ✅ Working | Duplicate prevention logic |
-| Encrypted ballot storage | ✅ Working | Database field populated |
-| Receipt generation | ✅ Working | Transaction hash returned |
-| Backward compatibility | ✅ Working | Legacy mode still functions |
+| Feature                  | Status     | Verification Method              |
+| ------------------------ | ---------- | -------------------------------- |
+| Client key storage       | ✅ Working | Keys saved in database           |
+| Signature acceptance     | ✅ Working | Vote endpoint accepts signatures |
+| Nullifier checking       | ✅ Working | Duplicate prevention logic       |
+| Encrypted ballot storage | ✅ Working | Database field populated         |
+| Receipt generation       | ✅ Working | Transaction hash returned        |
+| Backward compatibility   | ✅ Working | Legacy mode still functions      |
 
 ---
 
 ## 📊 Current System Status
 
 ### Running Services
+
 - **MySQL:** ✅ Running (localhost:3306)
-- **Backend:** ✅ Running (http://localhost:3000)
-- **Frontend:** ✅ Running (http://localhost:5174)
+- **Backend:** ✅ Running (<http://localhost:3000>)
+- **Frontend:** ✅ Running (<http://localhost:5174>)
 
 ### Test Data Created
+
 - **Elections:** 1 active test election (ID: 4)
 - **Candidates:** 3 candidates (Alice, Bob, Carol)
 - **Registered Users:** 2 users registered for election
@@ -98,9 +105,10 @@ Votes_meta table:
 
 ### Frontend Testing (Manual)
 
-**URL:** http://localhost:5174
+**URL:** <http://localhost:5174>
 
 **Test Flow:**
+
 1. **Registration:**
    - Open registration page
    - Fill in form
@@ -131,37 +139,40 @@ Votes_meta table:
      - Timestamp
 
 4. **Verification:**
-   - Run: `node check-vote.js`
+   - Run: `node services/backend/scripts/check/check-vote.js`
    - **Expected:** Shows encrypted vote in database
 
 ---
 
 ## 📁 Files Created/Modified Today
 
-### Created (10 files):
-1. `backend/migrations/002_add_crypto_fields.sql` - Database schema
-2. `backend/check-schema.js` - Schema verification
-3. `backend/create-test-election.js` - Test data generator
-4. `backend/check-vote.js` - Vote verification
-5. `backend/test-crypto-integration.js` - Automated tests
+### Created (10 files)
+
+1. `services/backend/migrations/002_add_crypto_fields.sql` - Database schema
+2. `services/backend/scripts/check/check-schema.js` - Schema verification
+3. `services/backend/scripts/create-test-election.js` - Test data generator
+4. `services/backend/scripts/check/check-vote.js` - Vote verification
+5. `services/backend/tests/test-crypto-integration.js` - Automated tests
 6. `Project_Status/20_10_21.md` - Session report
 7. `Project_Status/READY_TO_TEST.md` - Testing guide
 8. `Project_Status/TESTING_GUIDE.md` - Detailed instructions
 9. `Project_Status/SUCCESS.md` - Quick reference
 10. `Project_Status/TEST_RESULTS.md` - This file
 
-### Modified (4 files):
-1. `backend/models/user.js` - Added encryption_public_key support
-2. `backend/routes/users.js` - Enhanced registration/login
-3. `backend/utils/crypto.js` - Added signature verification
-4. `backend/routes/elections.js` - Dual-mode voting
+### Modified (4 files)
+
+1. `services/backend/models/user.js` - Added encryption_public_key support
+2. `services/backend/routes/users.js` - Enhanced registration/login
+3. `services/backend/utils/crypto.js` - Added signature verification
+4. `services/backend/routes/elections.js` - Dual-mode voting
 
 ---
 
 ## 🔍 Detailed Test Output
 
 ### Test 1: Registration with Crypto Keys ✅
-```
+
+```text
 ℹ Registering user: cryptotest
 ℹ Institution ID: TEST1761055354773
 ✓ Registration successful with crypto keys
@@ -169,33 +180,40 @@ Votes_meta table:
 ✓ Public key present: eyJrdHkiOiJFQyIsImNy...
 ✓ Encryption key present: eyJrdHkiOiJSU0EiLCJu...
 ```
+
 **Result:** PASS - Backend accepts and stores crypto keys
 
 ### Test 2: Login Returns Crypto Keys ✅
-```
+
+```text
 ℹ Logging in as: TEST1761055354773
 ✓ Login successful - crypto keys returned
 ✓ Token received: eyJhbGciOiJIUzI1NiIs...
 ✓ Public key: eyJrdHkiOiJFQyIsImNy...
 ✓ Encryption key: eyJrdHkiOiJSU0EiLCJu...
 ```
+
 **Result:** PASS - Login returns both crypto keys
 
 ### Test 3: User Profile Includes Keys ✅
-```
+
+```text
 ℹ Fetching user profile...
 ✓ Profile includes crypto keys
 ✓ Public key matches: Yes
 ✓ Encryption key matches: Yes
 ```
+
 **Result:** PASS - Profile endpoint returns correct keys
 
 ### Test 4: Database Contains Crypto Fields ✅
-```
+
+```text
 ✓ User crypto keys stored in database
 ✓ Public key in DB: eyJrdHkiOiJFQyIsImNy...
 ✓ Encryption key in DB: eyJrdHkiOiJSU0EiLCJu...
 ```
+
 **Result:** PASS - Database properly stores crypto data
 
 ---
@@ -203,6 +221,7 @@ Votes_meta table:
 ## 🎯 Key Achievements
 
 ### Code Quality
+
 - ✅ **400+ lines of production code** written
 - ✅ **300+ lines of test code** written
 - ✅ **Zero syntax errors** in implementation
@@ -210,6 +229,7 @@ Votes_meta table:
 - ✅ **Backward compatible** with existing code
 
 ### Security Implementation
+
 - ✅ **Client-side key generation** supported
 - ✅ **Public key storage** in database
 - ✅ **Signature verification** implemented
@@ -218,6 +238,7 @@ Votes_meta table:
 - ✅ **Cryptographic receipts** generated
 
 ### Documentation
+
 - ✅ **5 comprehensive documentation** files
 - ✅ **Step-by-step testing guides** created
 - ✅ **Troubleshooting instructions** included
@@ -228,22 +249,22 @@ Votes_meta table:
 
 ## 📈 Project Progress
 
-### Component Completion:
+### Component Completion
 
-| Component | Before | After | Improvement |
-|-----------|--------|-------|-------------|
-| Frontend | 90% | 90% | - |
-| **Backend** | 60% | **90%** | **+30%** ✅ |
-| Database | 70% | 85% | +15% ✅ |
-| Cryptography | 90% | 95% | +5% ✅ |
-| **Testing** | 30% | **50%** | **+20%** ✅ |
-| **Overall** | **45%** | **60%** | **+15%** ✅ |
+| Component    | Before  | After   | Improvement |
+| ------------ | ------- | ------- | ----------- |
+| Frontend     | 90%     | 90%     | -           |
+| **Backend**  | 60%     | **90%** | **+30%** ✅ |
+| Database     | 70%     | 85%     | +15% ✅     |
+| Cryptography | 90%     | 95%     | +5% ✅      |
+| **Testing**  | 30%     | **50%** | **+20%** ✅ |
+| **Overall**  | **45%** | **60%** | **+15%** ✅ |
 
 ---
 
 ## 🚀 What Works End-to-End
 
-```
+```text
 ┌────────────────────────────────────────────────────────┐
 │                  WORKING CRYPTO FLOW                   │
 └────────────────────────────────────────────────────────┘
@@ -277,7 +298,8 @@ Votes_meta table:
 
 ## ⚠️ Known Limitations & Notes
 
-### Current State:
+### Current State
+
 1. **Simplified signature verification** - Using development mode
    - Current: Validates signature format
    - Production: Needs full ECDSA cryptographic verification
@@ -299,25 +321,28 @@ Votes_meta table:
 
 ## 📝 Next Steps
 
-### Immediate (This Session):
+### Immediate (This Session)
+
 1. **Manual frontend testing** (10 minutes)
-   - Open http://localhost:5174
+   - Open <http://localhost:5174>
    - Test registration with key generation
    - Test login with key loading
    - Test voting with encryption
 
 2. **Verify encrypted vote** (2 minutes)
    - Cast a vote through frontend
-   - Run `node check-vote.js`
+   - Run `node services/backend/scripts/check/check-vote.js`
    - Confirm encrypted data in database
 
-### Short-Term (Next Session):
+### Short-Term (Next Session)
+
 1. **Enable full ECDSA verification** (1 hour)
 2. **Add rate limiting** (1 hour)
 3. **Implement PBKDF2** for localStorage encryption (2 hours)
 4. **Add audit logging** (2 hours)
 
-### Medium-Term (This Week):
+### Medium-Term (This Week)
+
 1. **Blockchain node integration** (4 hours)
 2. **Merkle tree implementation** (4 hours)
 3. **Threshold encryption** (1 week)
@@ -350,6 +375,7 @@ Votes_meta table:
 ### **Backend Crypto Integration: 100% COMPLETE** ✅
 
 All backend systems are now fully operational and tested:
+
 - ✅ Database schema updated and verified
 - ✅ API endpoints enhanced for crypto
 - ✅ Signature verification implemented
@@ -360,8 +386,9 @@ All backend systems are now fully operational and tested:
 ### **Ready for Frontend Testing** 🚀
 
 The system is now ready for end-to-end frontend testing:
-- Frontend: http://localhost:5174
-- Backend: http://localhost:3000
+
+- Frontend: <http://localhost:5174>
+- Backend: <http://localhost:3000>
 - All services running
 - Test election ready
 
@@ -377,4 +404,4 @@ With 60% overall completion and all crypto integration complete, the project is 
 
 ---
 
-**Next: Open http://localhost:5174 and test the complete encrypted voting flow!** 🗳️
+**Next: Open <http://localhost:5174> and test the complete encrypted voting flow!** 🗳️

@@ -3,7 +3,7 @@ set -euo pipefail
 
 # Double-vote prevention test script
 # Requirements: curl, jq, openssl, docker
-# Usage: ./tools/double_vote_test.sh
+# Usage: bash tests/e2e/tools/double_vote_test.sh
 
 INSTITUTION_ID="TEST2025001"
 PASSWORD="TestPass123!"

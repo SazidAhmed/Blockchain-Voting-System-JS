@@ -1,6 +1,6 @@
-# ✅ System Status - Ready for Testing!
+# ✅ System Status - Ready for Testing
 
-## 🎉 All Systems Running!
+## 🎉 All Systems Running
 
 **Date:** October 21, 2025  
 **Time:** Now  
@@ -10,22 +10,24 @@
 
 ## 🖥️ Running Services
 
-| Service | Status | URL | Notes |
-|---------|--------|-----|-------|
-| **MySQL** | ✅ Running | localhost:3306 | Database active |
-| **Backend** | ✅ Running | http://localhost:3000 | API ready |
-| **Frontend** | ✅ Running | http://localhost:5174 | UI ready |
-| **Migration** | ✅ Complete | - | All columns created |
+| Service       | Status      | URL                     | Notes               |
+| ------------- | ----------- | ----------------------- | ------------------- |
+| **MySQL**     | ✅ Running  | localhost:3306          | Database active     |
+| **Backend**   | ✅ Running  | <http://localhost:3000> | API ready           |
+| **Frontend**  | ✅ Running  | <http://localhost:5174> | UI ready            |
+| **Migration** | ✅ Complete | -                       | All columns created |
 
 ---
 
 ## ✅ Database Schema Verified
 
 **Users table:**
+
 - ✅ `public_key` (text) - ECDSA signing key
 - ✅ `encryption_public_key` (text) - RSA encryption key
 
 **Votes_meta table:**
+
 - ✅ `signature` (text) - ECDSA signature
 - ✅ `voter_public_key` (text) - Public key for verification
 
@@ -35,10 +37,11 @@
 
 ### 1. Register a New User (3 minutes)
 
-**URL:** http://localhost:5174/#/register
+**URL:** <http://localhost:5174/#/register>
 
 **Test Data:**
-```
+
+```text
 Institution ID: TEST001
 Username: cryptotest
 Password: password123
@@ -47,6 +50,7 @@ Email: crypto@university.edu
 ```
 
 **Expected Result:**
+
 - ✅ Keys auto-generated in browser
 - ✅ Console shows "Keys generated successfully"
 - ✅ Keys stored in localStorage
@@ -54,6 +58,7 @@ Email: crypto@university.edu
 - ✅ Registration successful
 
 **How to Verify:**
+
 1. Open DevTools (F12)
 2. Go to Console tab
 3. Should see: `🔑 Generating cryptographic keys...`
@@ -65,20 +70,23 @@ Email: crypto@university.edu
 
 ### 2. Login and Verify Keys (1 minute)
 
-**URL:** http://localhost:5174/#/login
+**URL:** <http://localhost:5174/#/login>
 
 **Credentials:**
-```
+
+```text
 Institution ID: TEST001
 Password: password123
 ```
 
 **Expected Result:**
+
 - ✅ Keys loaded from localStorage
 - ✅ Console shows "Keys loaded successfully"
 - ✅ User logged in
 
 **How to Verify:**
+
 1. Check Console
 2. Should see: `📥 Loading keys from localStorage`
 3. Should see: `✓ Signing key imported`
@@ -94,50 +102,59 @@ Since we don't have an admin UI ready, let's create a test election directly in 
 
 **Option B: Using a script**
 
-Create file: `backend/create-test-election.js`
+Create file: `services/backend/scripts/create-test-election.js`
 
 ```javascript
-const { pool } = require('./config/db');
+const { pool } = require("../config/db");
 
 async function createTestElection() {
   try {
     // Create election
-    const [electionResult] = await pool.query(`
+    const [electionResult] = await pool.query(
+      `
       INSERT INTO elections 
       (title, description, start_date, end_date, status, created_by, public_key) 
       VALUES (?, ?, NOW(), DATE_ADD(NOW(), INTERVAL 1 DAY), ?, 1, ?)
-    `, [
-      'Crypto Test Election',
-      'Testing encrypted voting system',
-      'active',
-      'test_election_key_' + Date.now()
-    ]);
-    
+    `,
+      [
+        "Crypto Test Election",
+        "Testing encrypted voting system",
+        "active",
+        "test_election_key_" + Date.now(),
+      ],
+    );
+
     const electionId = electionResult.insertId;
     console.log(`✓ Election created with ID: ${electionId}`);
-    
+
     // Create candidates
-    await pool.query(`
+    await pool.query(
+      `
       INSERT INTO candidates (election_id, name, description) VALUES
       (?, 'Alice Johnson', 'Candidate A - Tech Innovation'),
       (?, 'Bob Smith', 'Candidate B - Student Welfare'),
       (?, 'Carol Williams', 'Candidate C - Campus Security')
-    `, [electionId, electionId, electionId]);
-    
-    console.log('✓ Candidates created');
-    
+    `,
+      [electionId, electionId, electionId],
+    );
+
+    console.log("✓ Candidates created");
+
     // Register the test user (assuming user_id = 1)
-    await pool.query(`
+    await pool.query(
+      `
       INSERT INTO voter_registrations (user_id, election_id, status)
       VALUES (1, ?, 'registered')
-    `, [electionId]);
-    
-    console.log('✓ User registered for election');
+    `,
+      [electionId],
+    );
+
+    console.log("✓ User registered for election");
     console.log(`\n🎉 Test election ready! Election ID: ${electionId}`);
-    
+
     await pool.end();
   } catch (error) {
-    console.error('Error:', error);
+    console.error("Error:", error);
     process.exit(1);
   }
 }
@@ -146,25 +163,28 @@ createTestElection();
 ```
 
 **Run:**
+
 ```bash
-cd /h/Voting/backend
-node create-test-election.js
+cd /h/Voting/services/backend
+node scripts/create-test-election.js
 ```
 
 ---
 
 ### 4. Cast an Encrypted Vote (5 minutes)
 
-**URL:** http://localhost:5174/#/elections
+**URL:** <http://localhost:5174/#/elections>
 
 **Steps:**
+
 1. Click on "Crypto Test Election"
 2. Select a candidate (e.g., Alice Johnson)
 3. Click "Vote"
 4. Watch the console
 
 **Expected Console Output:**
-```
+
+```text
 🗳️ Preparing to vote...
 🔐 Keys loaded: true
 📊 Election ID: 1
@@ -183,13 +203,15 @@ node create-test-election.js
 ```
 
 **Backend Console Should Show:**
-```
+
+```text
 Processing vote with client-side cryptography
 ⚠️  Using simplified signature verification (development mode)
 ✅ Signature verified, nullifier checked
 ```
 
 **Expected Receipt:**
+
 - ✅ Transaction hash displayed
 - ✅ Nullifier displayed
 - ✅ Signature displayed
@@ -203,10 +225,10 @@ Processing vote with client-side cryptography
 
 **Check encrypted vote was stored:**
 
-Create file: `backend/check-vote.js`
+Create file: `services/backend/scripts/check/check-vote.js`
 
 ```javascript
-const { pool } = require('./config/db');
+const { pool } = require("../../config/db");
 
 async function checkVote() {
   try {
@@ -223,25 +245,25 @@ async function checkVote() {
       ORDER BY id DESC
       LIMIT 1
     `);
-    
+
     if (votes.length > 0) {
-      console.log('\n🎉 Vote found in database!\n');
-      console.log('Vote Details:');
-      console.log('  ID:', votes[0].id);
-      console.log('  Election:', votes[0].election_id);
-      console.log('  Nullifier:', votes[0].nullifier + '...');
-      console.log('  Encrypted Ballot:', votes[0].encrypted + '...');
-      console.log('  Signature:', votes[0].sig + '...');
-      console.log('  Public Key:', votes[0].pubkey + '...');
-      console.log('  Timestamp:', votes[0].timestamp);
-      console.log('\n✅ Encrypted vote successfully stored!');
+      console.log("\n🎉 Vote found in database!\n");
+      console.log("Vote Details:");
+      console.log("  ID:", votes[0].id);
+      console.log("  Election:", votes[0].election_id);
+      console.log("  Nullifier:", votes[0].nullifier + "...");
+      console.log("  Encrypted Ballot:", votes[0].encrypted + "...");
+      console.log("  Signature:", votes[0].sig + "...");
+      console.log("  Public Key:", votes[0].pubkey + "...");
+      console.log("  Timestamp:", votes[0].timestamp);
+      console.log("\n✅ Encrypted vote successfully stored!");
     } else {
-      console.log('❌ No votes found');
+      console.log("❌ No votes found");
     }
-    
+
     await pool.end();
   } catch (error) {
-    console.error('Error:', error);
+    console.error("Error:", error);
     process.exit(1);
   }
 }
@@ -250,9 +272,10 @@ checkVote();
 ```
 
 **Run:**
+
 ```bash
-cd /h/Voting/backend
-node check-vote.js
+cd /h/Voting/services/backend
+node scripts/check/check-vote.js
 ```
 
 ---
@@ -260,10 +283,12 @@ node check-vote.js
 ### 6. Test Double-Vote Prevention (1 minute)
 
 **Steps:**
+
 1. Try to vote again in the same election
 2. Should get error: "This nullifier has already been used"
 
 **Expected:**
+
 - ✅ Error message displayed
 - ✅ Vote rejected by backend
 - ✅ No duplicate vote in database
@@ -300,6 +325,7 @@ After completing all tests, verify:
 ### Problem: "Keys not loaded"
 
 **Check:**
+
 1. Logout and login again
 2. Check localStorage has 4 keys
 3. Check console for errors
@@ -309,7 +335,8 @@ After completing all tests, verify:
 **This is expected** - we're using simplified verification in development mode.
 
 **Check backend console** should show:
-```
+
+```text
 ⚠️  Using simplified signature verification (development mode)
 ```
 
@@ -322,10 +349,11 @@ After completing all tests, verify:
 ## 📊 What's Working
 
 ✅ **Complete encrypted voting flow:**
-```
+
+```text
 Frontend:                      Backend:
 - Generate keys           →    - Store public keys ✓
-- Encrypt ballot          →    - Accept encrypted data ✓  
+- Encrypt ballot          →    - Accept encrypted data ✓
 - Sign vote package       →    - Verify signature ✓
 - Generate nullifier      →    - Check duplicates ✓
 - Submit encrypted vote   →    - Store in database ✓
@@ -348,4 +376,4 @@ Once all tests pass:
 
 **Ready to test! 🚀**
 
-Open: http://localhost:5174
+Open: <http://localhost:5174>

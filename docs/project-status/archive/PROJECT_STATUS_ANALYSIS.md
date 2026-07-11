@@ -13,6 +13,7 @@ The project has a **basic functional prototype** with core features implemented 
 ### Overall Completion: ~35%
 
 **What Works:**
+
 - ✅ Basic user registration and authentication
 - ✅ Election creation and management
 - ✅ Simple blockchain with block creation
@@ -20,6 +21,7 @@ The project has a **basic functional prototype** with core features implemented 
 - ✅ Basic frontend UI
 
 **Critical Gaps:**
+
 - ❌ No blind signature implementation (currently mocked)
 - ❌ No threshold encryption (using simple hashing)
 - ❌ No real BFT consensus (using basic PoW)
@@ -33,9 +35,10 @@ The project has a **basic functional prototype** with core features implemented 
 
 ## Detailed Component Analysis
 
-### 1. **Backend API** (`backend/`) - 60% Complete
+### 1. **Backend API** (`services/backend/`) - 60% Complete
 
 #### ✅ **Implemented:**
+
 - Express.js server with CORS and body parsing
 - User registration and login endpoints
 - JWT-based authentication middleware
@@ -46,6 +49,7 @@ The project has a **basic functional prototype** with core features implemented 
 - Basic password hashing with bcrypt
 
 #### ❌ **Missing:**
+
 - IdP integration (OAuth2/SAML/OpenID Connect)
 - Multi-factor authentication (MFA)
 - Blind signature token issuance
@@ -58,13 +62,15 @@ The project has a **basic functional prototype** with core features implemented 
 - Session management with Redis
 
 #### 🟡 **Needs Improvement:**
-- **Crypto utilities are mocked:** `utils/crypto.js` uses placeholders
+
+- **Crypto utilities are mocked:** `services/backend/utils/crypto.js` uses placeholders
   - `generateKeypair()` - not using real Ed25519/ECDSA
   - `encryptBallot()` - not using threshold ElGamal
   - `generateNullifier()` - deterministic but not privacy-preserving
   - `signData()` - using HMAC instead of digital signatures
 
 **Priority Actions:**
+
 1. Implement real blind signature library (Chaum signatures)
 2. Add proper Ed25519 keypair generation
 3. Integrate OAuth2/SAML for institutional authentication
@@ -72,9 +78,10 @@ The project has a **basic functional prototype** with core features implemented 
 
 ---
 
-### 2. **Blockchain Node** (`blockchain-node/`) - 40% Complete
+### 2. **Blockchain Node** (`services/blockchain-node/`) - 40% Complete
 
 #### ✅ **Implemented:**
+
 - Basic blockchain data structure with blocks
 - P2P communication using Socket.io
 - Simple validator registration
@@ -85,6 +92,7 @@ The project has a **basic functional prototype** with core features implemented 
 - REST API for chain access
 
 #### ❌ **Missing:**
+
 - **BFT consensus** (Tendermint/PBFT/HotStuff)
 - Threshold key generation (DKG)
 - Merkle tree for inclusion proofs
@@ -97,12 +105,14 @@ The project has a **basic functional prototype** with core features implemented 
 - Chain synchronization protocol
 
 #### 🟡 **Needs Improvement:**
+
 - **Currently using PoW** instead of BFT consensus
 - **No cryptographic signature verification** (mocked)
 - **Simple longest-chain rule** instead of finality
 - **No threshold decryption** for tallying
 
 **Priority Actions:**
+
 1. Replace PoW with Tendermint or implement PBFT
 2. Implement Merkle tree for inclusion proofs
 3. Add proper validator signature verification
@@ -110,9 +120,10 @@ The project has a **basic functional prototype** with core features implemented 
 
 ---
 
-### 3. **Frontend (Vue.js)** (`frontend/`) - 45% Complete
+### 3. **Frontend (Vue.js)** (`services/frontend/`) - 45% Complete
 
 #### ✅ **Implemented:**
+
 - Vue 3 with Composition API
 - Vuex store for state management
 - Vue Router for navigation
@@ -123,6 +134,7 @@ The project has a **basic functional prototype** with core features implemented 
 - Axios API client with interceptors
 
 #### ❌ **Missing:**
+
 - **Client-side key generation** (WebCrypto API)
 - **Client-side ballot encryption**
 - **Nullifier generation in browser**
@@ -135,6 +147,7 @@ The project has a **basic functional prototype** with core features implemented 
 - Accessibility features (WCAG compliance)
 
 **Priority Actions:**
+
 1. Implement WebCrypto key generation (Ed25519)
 2. Add client-side ballot encryption
 3. Build vote receipt verification component
@@ -145,6 +158,7 @@ The project has a **basic functional prototype** with core features implemented 
 ### 4. **Database Schema** - 70% Complete
 
 #### ✅ **Implemented Tables:**
+
 ```sql
 ✅ users (institution_id, username, password, role, email, public_key)
 ✅ elections (title, description, dates, status, public_key)
@@ -153,6 +167,7 @@ The project has a **basic functional prototype** with core features implemented 
 ```
 
 #### ❌ **Missing Tables:**
+
 ```sql
 ❌ blind_tokens (token_id_hash, pseudonym_id, issued_at, revoked)
 ❌ votes_meta (tx_hash, election_id, nullifier_hash, cipher_ref, inclusion_block)
@@ -162,12 +177,14 @@ The project has a **basic functional prototype** with core features implemented 
 ```
 
 #### 🟡 **Needs Improvement:**
+
 - Add encryption for PII fields
 - Implement pseudonymous voter identifiers
 - Add proper foreign key constraints
 - Create indexes for performance
 
 **Priority Actions:**
+
 1. Create missing tables
 2. Add encrypted profile blob for sensitive data
 3. Implement audit logging table
@@ -178,11 +195,13 @@ The project has a **basic functional prototype** with core features implemented 
 ### 5. **Cryptography** - 15% Complete
 
 #### ✅ **Implemented:**
+
 - Password hashing (bcrypt)
 - Basic token generation
 - Simple hash-based signatures
 
 #### ❌ **Missing (CRITICAL):**
+
 - **Blind signatures (Chaum)** for anonymous tokens
 - **Threshold ElGamal encryption** for ballots
 - **Zero-knowledge proofs** for eligibility
@@ -193,6 +212,7 @@ The project has a **basic functional prototype** with core features implemented 
 - **Homomorphic encryption** for aggregation
 
 **Recommended Libraries:**
+
 ```javascript
 // Suggested npm packages
 - elliptic: ^6.5.4           // Elliptic curve cryptography
@@ -203,6 +223,7 @@ The project has a **basic functional prototype** with core features implemented 
 ```
 
 **Priority Actions:**
+
 1. Research and select blind signature library
 2. Implement threshold encryption (ElGamal variant)
 3. Add Ed25519 keypair generation
@@ -213,12 +234,14 @@ The project has a **basic functional prototype** with core features implemented 
 ### 6. **Security Features** - 20% Complete
 
 #### ✅ **Implemented:**
+
 - JWT authentication
 - Password hashing
 - CORS configuration
 - Role-based access control (basic)
 
 #### ❌ **Missing (HIGH PRIORITY):**
+
 - Multi-factor authentication (MFA)
 - Rate limiting
 - DDoS protection
@@ -233,6 +256,7 @@ The project has a **basic functional prototype** with core features implemented 
 - CSRF protection
 
 **Priority Actions:**
+
 1. Add MFA using speakeasy/authenticator
 2. Implement rate limiting (express-rate-limit)
 3. Add input validation (joi/yup)
@@ -243,6 +267,7 @@ The project has a **basic functional prototype** with core features implemented 
 ### 7. **Testing** - 10% Complete
 
 #### ❌ **Missing:**
+
 - Unit tests for crypto functions
 - Integration tests for API endpoints
 - E2E tests for voting flow
@@ -253,6 +278,7 @@ The project has a **basic functional prototype** with core features implemented 
 - Double-vote prevention tests
 
 **Recommended Tools:**
+
 ```json
 {
   "unit": "jest/mocha + chai",
@@ -264,6 +290,7 @@ The project has a **basic functional prototype** with core features implemented 
 ```
 
 **Priority Actions:**
+
 1. Set up Jest for unit testing
 2. Write crypto function tests
 3. Add API integration tests
@@ -274,53 +301,62 @@ The project has a **basic functional prototype** with core features implemented 
 ## Gap Analysis by Sprint (vs. Specification)
 
 ### Sprint 0: Foundations - 50% Complete
+
 - ✅ Repository structure exists
 - ❌ CI/CD pipeline not configured
 - ❌ Docker/K8s deployment not set up
 - ❌ Secrets management not implemented
 
 ### Sprint 1: Identity & Registration - 30% Complete
+
 - ❌ IdP integration missing
 - ✅ Basic user registration works
 - ❌ Client-side keygen not in frontend
 - ❌ Blind token issuance not implemented
 
 ### Sprint 2: Vote UI & Encryption - 40% Complete
+
 - ✅ Ballot UI exists
 - ❌ Client-side encryption missing
 - ❌ Nullifier generation in browser missing
 - ✅ Backend vote submission works
 
 ### Sprint 3: Backend Validation - 50% Complete
+
 - ✅ Basic validation exists
 - ❌ Blind token proof verification missing
 - ✅ Nullifier uniqueness check works (basic)
 - ✅ Transaction broadcasting works
 
 ### Sprint 4: BFT Consensus - 30% Complete
+
 - ✅ Basic blockchain exists
 - ❌ BFT consensus not implemented (using PoW)
 - ❌ Merkle inclusion proofs missing
 - ✅ Block creation works
 
 ### Sprint 5: Threshold Crypto - 0% Complete
+
 - ❌ DKG ceremony not implemented
 - ❌ Threshold encryption not implemented
 - ❌ No aggregation service
 
 ### Sprint 6: Results & Auditing - 20% Complete
+
 - ✅ Basic results endpoint exists
 - ❌ Cryptographic proofs missing
 - ❌ Auditor tools not built
 - ❌ Live dashboard incomplete
 
 ### Sprint 7: Node Governance - 10% Complete
+
 - ✅ Validator registration exists (basic)
 - ❌ Misbehavior detection missing
 - ❌ Governance UI missing
 - ❌ Evidence posting not implemented
 
 ### Sprint 8: Testing & Hardening - 5% Complete
+
 - ❌ Performance testing not done
 - ❌ Security audit not completed
 - ❌ Load testing not set up
@@ -358,16 +394,16 @@ The project has a **basic functional prototype** with core features implemented 
 
 ### 🟡 **MEDIUM SEVERITY:**
 
-6. **No Rate Limiting**
+1. **No Rate Limiting**
    - Vulnerable to brute force and DDoS
    - **Impact:** Service availability risk
 
-7. **No Input Validation**
+2. **No Input Validation**
    - SQL injection risk (using parameterized queries helps)
    - XSS vulnerabilities possible
    - **Impact:** Data integrity risk
 
-8. **Mock IdP**
+3. **Mock IdP**
    - No institutional authentication
    - **Impact:** Cannot verify voter eligibility
 
@@ -375,7 +411,8 @@ The project has a **basic functional prototype** with core features implemented 
 
 ## Technology Stack Assessment
 
-### Current Stack:
+### Current Stack
+
 ```javascript
 Backend:     Node.js + Express ✅
 Database:    MySQL ✅
@@ -386,7 +423,8 @@ Crypto:      crypto-js 🟡 (needs proper libs)
 Storage:     LevelDB ✅
 ```
 
-### Recommended Additions:
+### Recommended Additions
+
 ```javascript
 Consensus:   Tendermint / Hyperledger Fabric
 Crypto:      noble-curves, tweetnacl, elliptic
@@ -405,6 +443,7 @@ Secrets:     HashiCorp Vault / AWS Secrets Manager
 ## Immediate Next Steps (Priority Order)
 
 ### Phase 1: Critical Security (Weeks 1-3)
+
 1. ✅ **Implement blind signature library**
    - Research options: blind-signatures.js, jsrsasign
    - Build token issuance flow
@@ -425,61 +464,65 @@ Secrets:     HashiCorp Vault / AWS Secrets Manager
    - Add ZKP or blind signature proof
 
 ### Phase 2: Consensus Upgrade (Weeks 4-6)
-5. ✅ **Integrate Tendermint or PBFT**
+
+1. ✅ **Integrate Tendermint or PBFT**
    - Evaluate: Tendermint vs custom PBFT
    - Replace PoW mining
    - Implement validator quorum
 
-6. ✅ **Add Merkle trees**
+2. ✅ **Add Merkle trees**
    - Build inclusion proof generation
    - Provide verification API
    - Update receipt format
 
 ### Phase 3: Threshold Crypto (Weeks 7-9)
-7. ✅ **Distributed Key Generation**
+
+1. ✅ **Distributed Key Generation**
    - Research threshold crypto libraries
    - Implement DKG ceremony
    - Store key shares securely
 
-8. ✅ **Threshold Encryption**
+2. ✅ **Threshold Encryption**
    - Implement threshold ElGamal
    - Add partial decryption
    - Build aggregation service
 
 ### Phase 4: Infrastructure (Weeks 10-12)
-9. ✅ **Add MFA**
+
+1. ✅ **Add MFA**
    - Implement TOTP
    - Add WebAuthn support
    - Update auth flow
 
-10. ✅ **Set up testing**
-    - Unit tests for crypto
-    - Integration tests for API
-    - Load testing setup
+2. ✅ **Set up testing**
+   - Unit tests for crypto
+   - Integration tests for API
+   - Load testing setup
 
-11. ✅ **IdP Integration**
-    - Mock OAuth2 server for dev
-    - Production SAML integration
-    - Map institutional IDs
+3. ✅ **IdP Integration**
+   - Mock OAuth2 server for dev
+   - Production SAML integration
+   - Map institutional IDs
 
-12. ✅ **Database enhancements**
-    - Add missing tables
-    - Implement encryption at rest
-    - Set up migrations
+4. ✅ **Database enhancements**
+   - Add missing tables
+   - Implement encryption at rest
+   - Set up migrations
 
 ---
 
 ## Performance Targets vs. Current State
 
-| Metric | Target (Spec) | Current | Status |
-|--------|---------------|---------|--------|
-| Throughput | 3500 votes/sec | ~10 votes/sec | 🔴 0.3% |
-| Latency | < 2 seconds | ~5-10 seconds | 🟡 50% |
-| Availability | 99.95% | Unknown | ❌ Not measured |
-| Consensus | BFT (f < N/3) | PoW (centralized) | 🔴 Not BFT |
-| Vote Privacy | 100% unlinkable | Linkable (mocked) | 🔴 0% |
+| Metric       | Target (Spec)   | Current           | Status          |
+| ------------ | --------------- | ----------------- | --------------- |
+| Throughput   | 3500 votes/sec  | ~10 votes/sec     | 🔴 0.3%         |
+| Latency      | < 2 seconds     | ~5-10 seconds     | 🟡 50%          |
+| Availability | 99.95%          | Unknown           | ❌ Not measured |
+| Consensus    | BFT (f < N/3)   | PoW (centralized) | 🔴 Not BFT      |
+| Vote Privacy | 100% unlinkable | Linkable (mocked) | 🔴 0%           |
 
 **Bottlenecks:**
+
 - PoW mining is slow (need BFT)
 - Single-node operation (need cluster)
 - No transaction batching
@@ -489,7 +532,8 @@ Secrets:     HashiCorp Vault / AWS Secrets Manager
 
 ## Resource Requirements for Completion
 
-### Development Time Estimate:
+### Development Time Estimate
+
 - **Phase 1 (Security):** 3 weeks (2 developers)
 - **Phase 2 (Consensus):** 3 weeks (1 blockchain specialist)
 - **Phase 3 (Threshold Crypto):** 3 weeks (1 cryptography specialist)
@@ -497,7 +541,8 @@ Secrets:     HashiCorp Vault / AWS Secrets Manager
 
 **Total: ~12 weeks with 3-4 developers**
 
-### Specialized Skills Needed:
+### Specialized Skills Needed
+
 - Cryptography engineer (blind signatures, threshold crypto)
 - Blockchain engineer (BFT consensus)
 - Security engineer (penetration testing, auditing)
@@ -508,7 +553,8 @@ Secrets:     HashiCorp Vault / AWS Secrets Manager
 
 ## Risk Assessment
 
-### Technical Risks:
+### Technical Risks
+
 1. **Cryptography Implementation** (HIGH)
    - Risk: Implementing threshold crypto incorrectly
    - Mitigation: Use audited libraries, external audit
@@ -521,12 +567,13 @@ Secrets:     HashiCorp Vault / AWS Secrets Manager
    - Risk: IdP integration complexity
    - Mitigation: Mock first, phased rollout
 
-### Operational Risks:
-4. **Key Management** (HIGH)
+### Operational Risks
+
+1. **Key Management** (HIGH)
    - Risk: Key compromise or loss
    - Mitigation: HSM, proper ceremonies, backups
 
-5. **Node Governance** (MEDIUM)
+2. **Node Governance** (MEDIUM)
    - Risk: Validator misbehavior
    - Mitigation: Evidence-based slashing, monitoring
 
@@ -536,21 +583,24 @@ Secrets:     HashiCorp Vault / AWS Secrets Manager
 
 The current implementation is a **solid prototype** demonstrating the basic voting flow, but it **lacks production-grade security**. The architecture is sound and aligned with the specification, but critical cryptographic components are mocked.
 
-### Recommended Path Forward:
+### Recommended Path Forward
 
 **Option A: Full Production System (12 weeks)**
+
 - Implement all missing cryptographic features
 - Full BFT consensus with threshold encryption
 - Complete testing and security audit
 - **Best for:** Official university elections
 
 **Option B: Secure MVP (6 weeks)**
+
 - Focus on blind signatures and client-side encryption
 - Upgrade to Tendermint (simpler than custom BFT)
 - Basic threshold crypto (2-of-3 validators)
 - **Best for:** Pilot program with limited elections
 
 **Option C: Demo System (Current)**
+
 - Keep current implementation
 - Clearly label as "demonstration only"
 - **Best for:** Academic research/learning
@@ -561,9 +611,10 @@ The current implementation is a **solid prototype** demonstrating the basic voti
 
 ## Files That Need Creation/Major Updates
 
-### New Files Needed:
-```
-backend/
+### New Files Needed
+
+```text
+services/backend/
   ├── services/
   │   ├── blindSignature.js      (NEW)
   │   ├── thresholdCrypto.js     (NEW)
@@ -575,7 +626,7 @@ backend/
       ├── crypto.test.js         (NEW)
       └── elections.test.js      (NEW)
 
-blockchain-node/
+services/blockchain-node/
   ├── consensus/
   │   ├── tendermint.js          (NEW)
   │   └── validator.js           (MAJOR UPDATE)
@@ -585,7 +636,7 @@ blockchain-node/
   └── tests/
       └── consensus.test.js      (NEW)
 
-frontend/
+services/frontend/
   ├── services/
   │   ├── crypto.js              (NEW - WebCrypto)
   │   └── receipt.js             (NEW)
@@ -602,18 +653,20 @@ infrastructure/
   └── vault/                     (NEW)
 ```
 
-### Files Needing Major Updates:
-```
-backend/utils/crypto.js          (REPLACE all functions)
-blockchain-node/blockchain.js    (ADD BFT consensus)
-blockchain-node/index.js         (ADD Merkle proofs)
-frontend/src/views/VoteView.vue  (ADD client crypto)
-backend/config/db.js             (ADD migrations support)
+### Files Needing Major Updates
+
+```text
+services/backend/utils/crypto.js          (REPLACE all functions)
+services/blockchain-node/src/core/blockchain.js    (ADD BFT consensus)
+services/blockchain-node/index.js         (ADD Merkle proofs)
+services/frontend/src/views/VoteView.vue  (ADD client crypto)
+services/backend/config/db.js             (ADD migrations support)
 ```
 
 ---
 
 **Next Action:** Would you like me to start implementing any specific component? I recommend starting with:
+
 1. Database schema completion
 2. Client-side key generation (WebCrypto)
 3. Real cryptographic signatures (Ed25519)

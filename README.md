@@ -91,7 +91,7 @@ infra\scripts\docker-start.bat
 - ⛓️ **Blockchain**: [http://localhost:3001](http://localhost:3001)
 - 🗄️ **phpMyAdmin**: [http://localhost:8080](http://localhost:8080)
 
-**Done!** All 5 services running in Docker containers. See [DOCKER_SETUP.md](./docs/project-status/DOCKER_SETUP.md) for details.
+**Done!** All 5 services running in Docker containers. See [DOCKER_SETUP.md](./docs/project-status/docker/DOCKER_SETUP.md) for details.
 
 ### 📊 Monitoring (Optional but Recommended)
 
@@ -119,7 +119,7 @@ docker-compose -f infra/docker/docker-compose.yml -f infra/docker/docker-compose
 - Pre-configured dashboards
 - Automatic alerting for issues
 
-See [MONITORING_GUIDE.md](./docs/project-status/MONITORING_GUIDE.md) for complete documentation.
+See [MONITORING_GUIDE.md](./docs/project-status/monitoring/MONITORING_GUIDE.md) for complete documentation.
 
 ---
 
@@ -168,11 +168,11 @@ Comprehensive documentation available:
 
 ### Core Documentation
 
-- **[DOCKER_SETUP.md](./docs/project-status/DOCKER_SETUP.md)** - Complete Docker setup guide
-- **[DOCKER_QUICK_REFERENCE.md](./docs/project-status/DOCKER_QUICK_REFERENCE.md)** - Quick Docker commands
-- **[HELPER_SCRIPTS_REFERENCE.md](./docs/project-status/HELPER_SCRIPTS_REFERENCE.md)** - All helper scripts
-- **[MONITORING_GUIDE.md](./docs/project-status/MONITORING_GUIDE.md)** - Prometheus & Grafana setup
-- **[DOCKER_TEST_RESULTS.md](./docs/project-status/DOCKER_TEST_RESULTS.md)** - Docker test report
+- **[DOCKER_SETUP.md](./docs/project-status/docker/DOCKER_SETUP.md)** - Complete Docker setup guide
+- **[DOCKER_QUICK_REFERENCE.md](./docs/project-status/docker/DOCKER_QUICK_REFERENCE.md)** - Quick Docker commands
+- **[HELPER_SCRIPTS_REFERENCE.md](./docs/project-status/guides/HELPER_SCRIPTS_REFERENCE.md)** - All helper scripts
+- **[MONITORING_GUIDE.md](./docs/project-status/monitoring/MONITORING_GUIDE.md)** - Prometheus & Grafana setup
+- **[DOCKER_TEST_RESULTS.md](./docs/project-status/testing/DOCKER_TEST_RESULTS.md)** - Docker test report
 
 ### Development Documentation
 

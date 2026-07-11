@@ -173,7 +173,7 @@ echo ""
 
 echo -e "${CYAN}📋 OUTPUT FILES:${NC}"
 echo ""
-echo "  Main Report: docs/project-status/PHASE_3_COMPLETE.md"
+echo "  Main Report: docs/project-status/archive/PHASE_3_COMPLETE.md"
 echo "  Test Logs:   /tmp/task_3.*.log"
 echo "  Network:     infra/docker/docker-compose.multi-node.yml"
 echo ""

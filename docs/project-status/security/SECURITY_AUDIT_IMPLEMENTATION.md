@@ -8,23 +8,23 @@ This document describes the comprehensive security and audit logging system impl
 
 ### Components
 
-1. **AdminAuditLogger** (`backend/utils/adminAuditLogger.js`)
+1. **AdminAuditLogger** (`services/backend/utils/adminAuditLogger.js`)
    - Core utility class for all audit logging operations
    - Provides cryptographic signatures and hash verification
    - Handles security event classification
    - Integrates with MySQL database
 
-2. **Database Migration** (`backend/migrations/002_add_admin_audit_logging.js`)
+2. **Database Migration** (`services/backend/migrations/002_add_admin_audit_logging.js`)
    - Creates audit logging tables
    - Adds mutation locking columns to elections and candidates
    - Establishes audit log views for analytics
 
-3. **Enhanced Elections Routes** (`backend/routes/elections.js`)
+3. **Enhanced Elections Routes** (`services/backend/routes/elections.js`)
    - Integrates audit logging into all admin operations
    - Implements mutation locking checks
    - Provides audit log retrieval endpoints
 
-4. **Frontend Audit Viewer** (`frontend/src/components/AdminAuditLogs.vue`)
+4. **Frontend Audit Viewer** (`services/frontend/src/components/AdminAuditLogs.vue`)
    - Vue 3 component for viewing and analyzing audit logs
    - Supports filtering and pagination
    - Allows integrity verification of audit entries
@@ -51,21 +51,24 @@ Every admin action is logged with complete forensic details:
 Elections and candidates are protected from modification after election activation:
 
 **Election Lifecycle:**
-```
-PENDING (Mutations allowed) 
+
+```text
+PENDING (Mutations allowed)
   ↓
-ACTIVE (Mutations locked) 
+ACTIVE (Mutations locked)
   ↓
 COMPLETED
 ```
 
 **Mutation Restrictions:**
+
 - Cannot add candidates to active or locked elections
 - Cannot delete candidates from active or locked elections
 - Cannot modify election details once active
 - Lock is automatic when election status changes to "active"
 
 **Error Response** (403 Forbidden):
+
 ```json
 {
   "message": "Cannot add candidate - election is locked or active"
@@ -77,6 +80,7 @@ COMPLETED
 Sensitive operations are tracked with severity levels:
 
 **Severity Levels:**
+
 - `LOW`: Informational events (election created, candidate added)
 - `MEDIUM`: Important changes (election activated, candidate deleted)
 - `HIGH`: Unusual activity (mutation attempt on locked election)
@@ -87,12 +91,14 @@ Sensitive operations are tracked with severity levels:
 Admin can verify the integrity of audit logs to detect tampering:
 
 **Verification Process:**
+
 1. Retrieve stored change_hash from database
 2. Recalculate SHA256 hash of changes
 3. Compare hashes
 4. Return verification result
 
 **API Response:**
+
 ```json
 {
   "valid": true,
@@ -121,7 +127,7 @@ CREATE TABLE admin_audit_logs (
   status ENUM('success', 'failed') DEFAULT 'success',
   verified BOOLEAN DEFAULT FALSE,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-  
+
   FOREIGN KEY (admin_id) REFERENCES users(id) ON DELETE CASCADE,
   INDEX idx_admin_id (admin_id),
   INDEX idx_action_type (action_type),
@@ -143,7 +149,7 @@ CREATE TABLE admin_security_logs (
   timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
   acknowledged BOOLEAN DEFAULT FALSE,
   acknowledged_by INT,
-  
+
   FOREIGN KEY (admin_id) REFERENCES users(id) ON DELETE CASCADE,
   INDEX idx_admin_id (admin_id),
   INDEX idx_event_type (event_type),
@@ -155,6 +161,7 @@ CREATE TABLE admin_security_logs (
 ### elections Table (Modified)
 
 New columns added:
+
 ```sql
 ALTER TABLE elections ADD COLUMN is_locked BOOLEAN DEFAULT FALSE;
 ALTER TABLE elections ADD COLUMN locked_at DATETIME;
@@ -164,6 +171,7 @@ ALTER TABLE elections ADD COLUMN locked_by INT;
 ### candidates Table (Modified)
 
 New columns added:
+
 ```sql
 ALTER TABLE candidates ADD COLUMN is_locked BOOLEAN DEFAULT FALSE;
 ALTER TABLE candidates ADD COLUMN locked_at DATETIME;
@@ -172,10 +180,12 @@ ALTER TABLE candidates ADD COLUMN locked_at DATETIME;
 ## API Endpoints
 
 ### 1. Create Election (Enhanced)
+
 **Endpoint:** `POST /api/elections`
 **Authorization:** Admin required
 
 **Request:**
+
 ```json
 {
   "title": "2024 Presidential Election",
@@ -190,6 +200,7 @@ ALTER TABLE candidates ADD COLUMN locked_at DATETIME;
 ```
 
 **Response (201 Created):**
+
 ```json
 {
   "id": 1,
@@ -201,15 +212,18 @@ ALTER TABLE candidates ADD COLUMN locked_at DATETIME;
 ```
 
 **Logging:**
+
 - Records admin action with all candidate details
 - Logs security event for election creation
 - Stores IP address and user agent
 
 ### 2. Lock Election
+
 **Endpoint:** `PATCH /api/elections/:id/lock`
 **Authorization:** Admin required
 
 **Response (200 OK):**
+
 ```json
 {
   "message": "Election locked successfully",
@@ -220,15 +234,18 @@ ALTER TABLE candidates ADD COLUMN locked_at DATETIME;
 ```
 
 **Logging:**
+
 - Records lock action
 - Logs security event with HIGH severity
 - Locks all candidates for the election
 
 ### 3. Add Candidate (Protected)
+
 **Endpoint:** `POST /api/elections/:id/candidates`
 **Authorization:** Admin required
 
 **Request:**
+
 ```json
 {
   "name": "New Candidate",
@@ -237,6 +254,7 @@ ALTER TABLE candidates ADD COLUMN locked_at DATETIME;
 ```
 
 **Response (201 Created):**
+
 ```json
 {
   "id": 10,
@@ -246,6 +264,7 @@ ALTER TABLE candidates ADD COLUMN locked_at DATETIME;
 ```
 
 **Response (403 Forbidden) - Election Locked:**
+
 ```json
 {
   "message": "Cannot add candidate - election is locked or active"
@@ -253,15 +272,18 @@ ALTER TABLE candidates ADD COLUMN locked_at DATETIME;
 ```
 
 **Logging:**
+
 - Success: Records add candidate action
 - Failure: Logs failed action attempt with reason
 - Logs security event if unauthorized mutation attempted
 
 ### 4. Delete Candidate (Protected)
+
 **Endpoint:** `DELETE /api/elections/:electionId/candidates/:candidateId`
 **Authorization:** Admin required
 
 **Response (200 OK):**
+
 ```json
 {
   "message": "Candidate deleted successfully"
@@ -269,6 +291,7 @@ ALTER TABLE candidates ADD COLUMN locked_at DATETIME;
 ```
 
 **Response (403 Forbidden) - Election Locked:**
+
 ```json
 {
   "message": "Cannot delete candidate - election is locked or active"
@@ -276,14 +299,17 @@ ALTER TABLE candidates ADD COLUMN locked_at DATETIME;
 ```
 
 **Logging:**
+
 - Success: Records delete candidate action
 - Failure: Logs HIGH severity security event for bypass attempt
 
 ### 5. Get Audit Logs
+
 **Endpoint:** `GET /api/admin/audit-logs?limit=20&offset=0`
 **Authorization:** Admin required
 
 **Response (200 OK):**
+
 ```json
 [
   {
@@ -307,10 +333,12 @@ ALTER TABLE candidates ADD COLUMN locked_at DATETIME;
 ```
 
 ### 6. Get Security Logs
+
 **Endpoint:** `GET /api/admin/security-logs`
 **Authorization:** Admin required
 
 **Response (200 OK):**
+
 ```json
 [
   {
@@ -327,10 +355,12 @@ ALTER TABLE candidates ADD COLUMN locked_at DATETIME;
 ```
 
 ### 7. Verify Audit Integrity
+
 **Endpoint:** `POST /api/admin/verify-audit-integrity/:logId`
 **Authorization:** Admin required
 
 **Response (200 OK):**
+
 ```json
 {
   "valid": true,
@@ -342,6 +372,7 @@ ALTER TABLE candidates ADD COLUMN locked_at DATETIME;
 ```
 
 **Response (200 OK) - Tampering Detected:**
+
 ```json
 {
   "valid": false,
@@ -357,6 +388,7 @@ ALTER TABLE candidates ADD COLUMN locked_at DATETIME;
 ### Methods
 
 #### logAdminAction()
+
 Logs successful admin operations.
 
 ```javascript
@@ -377,51 +409,55 @@ await adminLogger.logAdminAction(
 ```
 
 #### logFailedAction()
+
 Logs failed mutation attempts.
 
 ```javascript
 await adminLogger.logFailedAction(
   adminId,
-  'ADD_CANDIDATE',
-  'candidates',
+  "ADD_CANDIDATE",
+  "candidates",
   null,
-  'Cannot add candidate - election is locked',
+  "Cannot add candidate - election is locked",
   {
     electionId: 1,
-    status: 'active',
-    ipAddress: '192.168.1.100'
-  }
+    status: "active",
+    ipAddress: "192.168.1.100",
+  },
 );
 ```
 
 #### logSecurityEvent()
+
 Logs security-sensitive operations.
 
 ```javascript
 await adminLogger.logSecurityEvent(
   adminId,
-  'UNAUTHORIZED_MUTATION_ATTEMPT',
-  'HIGH',  // Severity: LOW, MEDIUM, HIGH, CRITICAL
-  'Attempt to add candidate to locked election #1',
+  "UNAUTHORIZED_MUTATION_ATTEMPT",
+  "HIGH", // Severity: LOW, MEDIUM, HIGH, CRITICAL
+  "Attempt to add candidate to locked election #1",
   {
     electionId: 1,
-    reason: 'Election is active'
-  }
+    reason: "Election is active",
+  },
 );
 ```
 
 #### getAdminLogs()
+
 Retrieves audit logs with optional filtering.
 
 ```javascript
 const logs = await adminLogger.getAdminLogs(
-  adminId,  // Optional: filter by admin
-  limit,    // Optional: pagination limit
-  offset    // Optional: pagination offset
+  adminId, // Optional: filter by admin
+  limit, // Optional: pagination limit
+  offset, // Optional: pagination offset
 );
 ```
 
 #### verifyAuditIntegrity()
+
 Verifies hash integrity of an audit entry.
 
 ```javascript
@@ -465,13 +501,13 @@ Add to any admin view:
 </template>
 
 <script>
-import AdminAuditLogs from '@/components/AdminAuditLogs.vue'
+import AdminAuditLogs from "@/components/AdminAuditLogs.vue";
 
 export default {
   components: {
-    AdminAuditLogs
-  }
-}
+    AdminAuditLogs,
+  },
+};
 </script>
 ```
 
@@ -505,12 +541,14 @@ export default {
 ## Deployment Steps
 
 ### 1. Execute Database Migration
+
 ```bash
-cd backend
+cd services/backend
 node migrations/002_add_admin_audit_logging.js
 ```
 
 This will:
+
 - Create `admin_audit_logs` table
 - Create `admin_security_logs` table
 - Add columns to `elections` table
@@ -518,6 +556,7 @@ This will:
 - Create analytics view
 
 ### 2. Deploy Backend Changes
+
 ```bash
 # Update elections.js route with new endpoints
 # Update or create adminAuditLogger.js utility
@@ -526,6 +565,7 @@ npm restart
 ```
 
 ### 3. Deploy Frontend Changes
+
 ```bash
 # Add AdminAuditLogs.vue component
 # Update AdminDashboard.vue to include audit logs tab
@@ -534,6 +574,7 @@ npm run build
 ```
 
 ### 4. Verify Deployment
+
 ```bash
 # Check audit tables created
 mysql -u root -p voting -e "DESCRIBE admin_audit_logs;"
@@ -549,7 +590,8 @@ curl -X GET http://localhost:3000/api/admin/audit-logs \
 ### Test Scenarios
 
 #### 1. Election Creation Logging
-```
+
+```text
 1. Create new election as admin
 2. Check admin_audit_logs for CREATE_ELECTION entry
 3. Verify all candidate details in changes field
@@ -557,7 +599,8 @@ curl -X GET http://localhost:3000/api/admin/audit-logs \
 ```
 
 #### 2. Mutation Locking
-```
+
+```text
 1. Create election
 2. Activate election
 3. Attempt to add candidate
@@ -567,7 +610,8 @@ curl -X GET http://localhost:3000/api/admin/audit-logs \
 ```
 
 #### 3. Integrity Verification
-```
+
+```text
 1. Get audit log ID
 2. Call verify endpoint
 3. Confirm hash match message
@@ -577,7 +621,8 @@ curl -X GET http://localhost:3000/api/admin/audit-logs \
 ```
 
 #### 4. Audit Log Retrieval
-```
+
+```text
 1. Create multiple elections/candidates
 2. Retrieve audit logs with filters
 3. Test pagination
@@ -587,17 +632,21 @@ curl -X GET http://localhost:3000/api/admin/audit-logs \
 ## Monitoring & Compliance
 
 ### Audit Log Retention
+
 - Keep audit logs for minimum 1 year
 - Archive logs older than 6 months
 - Maintain secure backups
 
 ### Compliance
+
 - Logs contain all elements required by audit standards
 - Cryptographic signatures enable non-repudiation
 - Hash verification ensures log integrity
 
 ### Reporting
+
 Generate compliance reports:
+
 - Admin activity summaries
 - Security event trends
 - Mutation lock enforcement verification
@@ -605,20 +654,26 @@ Generate compliance reports:
 ## Troubleshooting
 
 ### Issue: Audit logs not created
+
 **Solution:**
+
 - Verify migration executed successfully
 - Check database tables exist
 - Verify adminLogger instance initialized
 - Check database connection
 
 ### Issue: Hash verification fails
+
 **Solution:**
+
 - Ensure changes JSON not modified in database
 - Verify hash algorithm consistency
 - Check timestamp included in hash calculation
 
 ### Issue: Mutation locking not enforced
+
 **Solution:**
+
 - Verify is_locked column exists
 - Check election status before mutation check
 - Verify response code is 403

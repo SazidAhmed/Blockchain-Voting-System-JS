@@ -1,8 +1,9 @@
-# 🚀 Quick Start - Database Setup Complete!
+# 🚀 Quick Start - Database Setup Complete
 
 ## ✅ What's Ready
 
 Your database schema is now **100% complete** with:
+
 - 13 production-ready tables
 - Migration system
 - Sample data seeder
@@ -40,7 +41,7 @@ npm run migrate
 
 ## 📝 Edit Your .env File
 
-Open `backend/.env` and set:
+Open `services/backend/.env` and set:
 
 ```env
 DB_HOST=localhost
@@ -54,7 +55,7 @@ JWT_SECRET=change_this_to_a_long_random_string
 
 After `npm run db:reset`, you should see:
 
-```
+```text
 ========================================
 Database Migration Runner
 ========================================
@@ -132,8 +133,9 @@ curl http://localhost:3000/health
 ```
 
 Expected response:
+
 ```json
-{"status":"ok","message":"Server is running"}
+{ "status": "ok", "message": "Server is running" }
 ```
 
 ## 📚 What You Got
@@ -141,6 +143,7 @@ Expected response:
 ### 1. Database Tables (13 Total)
 
 **Core Voting:**
+
 - `users` - 7 sample users
 - `elections` - 3 sample elections
 - `candidates` - 8 sample candidates
@@ -150,11 +153,13 @@ Expected response:
 - `vote_receipts` - Cryptographic receipts
 
 **Blockchain:**
+
 - `nodes` - 4 validator nodes
 - `threshold_key_shares` - Key management
 - `tally_partial_decryptions` - Threshold decryption
 
 **System:**
+
 - `audit_logs` - Tamper-evident logging
 - `system_config` - Configuration
 - `schema_migrations` - Version tracking
@@ -180,6 +185,7 @@ npm run dev              # Dev mode (nodemon)
 ### 4. Sample Data
 
 **Users:**
+
 - 1 Admin
 - 3 Students (Alice, Bob, Charlie)
 - 1 Teacher (Dr. Smith)
@@ -187,11 +193,13 @@ npm run dev              # Dev mode (nodemon)
 - 1 Board Member (Johnson)
 
 **Elections:**
+
 1. Student Union President (active, 3 candidates)
 2. University Board (pending, 3 candidates)
 3. Budget Referendum (completed, 2 options)
 
 **Nodes:**
+
 - 3 validator nodes
 - 1 observer node
 
@@ -210,6 +218,7 @@ curl -X POST http://localhost:3000/api/users/login \
 ## 🐛 Troubleshooting
 
 ### "Cannot connect to MySQL"
+
 ```bash
 # Make sure MySQL is running
 sudo systemctl start mysql    # Linux
@@ -219,6 +228,7 @@ net start MySQL80            # Windows
 ```
 
 ### "Database does not exist"
+
 ```bash
 # Create it manually
 mysql -u root -p -e "CREATE DATABASE voting;"
@@ -228,6 +238,7 @@ npm run migrate
 ```
 
 ### "ENOENT: .env file not found"
+
 ```bash
 # Copy the example file
 cp .env.example .env
@@ -257,7 +268,7 @@ curl http://localhost:3000/health
 # Should return: {"status":"ok"}
 ```
 
-## 🎉 Success!
+## 🎉 Success
 
 Your database is ready! Next steps:
 
@@ -270,6 +281,7 @@ Your database is ready! Next steps:
 ## 📖 Need Help?
 
 Check the detailed guides:
+
 - **Setup Issues:** `DATABASE_SETUP.md`
 - **Schema Details:** `DATABASE_SCHEMA.md`
 - **Quick Commands:** `DATABASE_QUICK_REFERENCE.md`

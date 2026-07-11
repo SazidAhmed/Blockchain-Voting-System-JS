@@ -2,10 +2,10 @@
   "name": "institution-api",
   "version": "1.0.0",
   "description": "Mock institutional database API for university voting system testing",
-  "main": "index.js",
+  "main": "src/server.js",
   "scripts": {
-    "start": "node index.js",
-    "dev": "nodemon index.js"
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js"
   },
   "dependencies": {
     "cors": "^2.8.5",

@@ -32,7 +32,7 @@ PORT=3000
 ### Step 1: Install Dependencies
 
 ```bash
-cd backend
+cd services/backend
 npm install
 ```
 
@@ -51,7 +51,7 @@ npm run migrate
 Or manually:
 
 ```bash
-node migrate.js run
+node scripts/migrate.js run
 ```
 
 **Expected Output:**
@@ -89,7 +89,7 @@ npm run migrate:status
 Or:
 
 ```bash
-node migrate.js status
+node scripts/migrate.js status
 ```
 
 **Expected Output:**
@@ -523,4 +523,4 @@ WHERE db = 'voting';
 ---
 
 **Questions or Issues?**  
-Check the troubleshooting section or review logs in `services/backend/logs/`
+Check the troubleshooting section or review the application logs.

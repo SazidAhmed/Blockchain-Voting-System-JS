@@ -9,7 +9,7 @@
 
 ### Container Status
 
-```
+```text
 ✅ voting-blockchain-node-1    Up 2 minutes (healthy)    PORT 3001
 ✅ voting-blockchain-node-2    Up 2 minutes (healthy)    PORT 3002
 ✅ voting-blockchain-node-3    Up 2 minutes (healthy)    PORT 3003
@@ -29,7 +29,8 @@
 ## 📊 Access Points (All Working)
 
 ### 1. Grafana Dashboard ✅
-```
+
+```text
 URL: http://localhost:3030
 Username: admin
 Password: admin
@@ -38,13 +39,15 @@ Database: ✅ OK
 ```
 
 **Quick Test:**
+
 ```bash
 curl -s http://localhost:3030/api/health
 # Response: {"database":"ok","version":"12.2.1",...}
 ```
 
 ### 2. Prometheus ✅
-```
+
+```text
 URL: http://localhost:9090
 Status: ✅ Running
 Configuration: /etc/prometheus/prometheus.yml
@@ -52,21 +55,24 @@ Storage: /prometheus (30 days retention)
 ```
 
 ### 3. cAdvisor (Container Metrics) ✅
-```
+
+```text
 URL: http://localhost:8081
 Status: ✅ Running (healthy)
 Metrics: Container CPU, Memory, Network I/O
 ```
 
 ### 4. Node Exporter (Host Metrics) ✅
-```
+
+```text
 URL: http://localhost:9100/metrics
 Status: ✅ Running
 Metrics: CPU, Memory, Disk, Network, Processes
 ```
 
 ### 5. Blockchain Nodes ✅
-```
+
+```text
 node1: http://localhost:3001  ✅
 node2: http://localhost:3002  ✅
 node3: http://localhost:3003  ✅
@@ -83,6 +89,7 @@ All nodes are healthy and running
 ### Infrastructure Metrics (Active)
 
 **Docker Container Metrics:**
+
 - Container CPU usage
 - Container memory usage
 - Container network I/O
@@ -90,6 +97,7 @@ All nodes are healthy and running
 - Container uptime
 
 **Host System Metrics:**
+
 - CPU utilization
 - Memory utilization
 - Disk space
@@ -97,6 +105,7 @@ All nodes are healthy and running
 - Process count
 
 **Database Metrics (MySQL):**
+
 - Connection count
 - Query latency
 - Slow queries
@@ -114,20 +123,20 @@ To enable blockchain-specific metrics, the following integration is needed:
 In `blockchain-node/index.js`, add:
 
 ```javascript
-const PrometheusMetrics = require('./prometheusMetrics');
+const PrometheusMetrics = require("./src/monitoring/prometheusMetrics");
 
 // Initialize metrics
 const metrics = new PrometheusMetrics(nodeId, nodeType);
 
 // Add metrics endpoint
-app.get('/metrics', (req, res) => {
-    res.set('Content-Type', 'text/plain; charset=utf-8');
-    res.send(metrics.generateMetrics());
+app.get("/metrics", (req, res) => {
+  res.set("Content-Type", "text/plain; charset=utf-8");
+  res.send(metrics.generateMetrics());
 });
 
 // Record blockchain events
-app.on('block_created', (block) => metrics.recordBlockCreated(block));
-app.on('transaction', (tx) => metrics.recordTransactionProcessed(tx.latency));
+app.on("block_created", (block) => metrics.recordBlockCreated(block));
+app.on("transaction", (tx) => metrics.recordTransactionProcessed(tx.latency));
 ```
 
 ### Step 2: Add Dashboard Route to Frontend ⏳
@@ -157,7 +166,7 @@ docker-compose -f docker-compose.multi-node.yml -f docker-compose.monitoring.yml
 
 ### Network Information
 
-```
+```text
 Network Name: voting-blockchain-network
 Network Type: Bridge
 
@@ -170,6 +179,7 @@ Containers Connected:
 ### Blockchain Network Status
 
 **Nodes:**
+
 - Node 1: VALIDATOR (healthy)
 - Node 2: VALIDATOR (healthy)
 - Node 3: VALIDATOR (healthy)
@@ -245,47 +255,52 @@ Containers Connected:
 
 ## 📋 Access Summary
 
-| Component | URL | Status | Purpose |
-|-----------|-----|--------|---------|
-| **Grafana** | http://localhost:3030 | ✅ | Dashboard UI |
-| **Prometheus** | http://localhost:9090 | ✅ | Metrics query |
-| **cAdvisor** | http://localhost:8081 | ✅ | Container metrics |
-| **Node Exp** | http://localhost:9100 | ✅ | Host metrics |
-| **Node 1** | http://localhost:3001 | ✅ | Blockchain |
-| **Node 2** | http://localhost:3002 | ✅ | Blockchain |
-| **Node 3** | http://localhost:3003 | ✅ | Blockchain |
-| **Node 4** | http://localhost:3004 | ✅ | Blockchain |
-| **Node 5** | http://localhost:3005 | ✅ | Blockchain |
+| Component      | URL                     | Status | Purpose           |
+| -------------- | ----------------------- | ------ | ----------------- |
+| **Grafana**    | <http://localhost:3030> | ✅     | Dashboard UI      |
+| **Prometheus** | <http://localhost:9090> | ✅     | Metrics query     |
+| **cAdvisor**   | <http://localhost:8081> | ✅     | Container metrics |
+| **Node Exp**   | <http://localhost:9100> | ✅     | Host metrics      |
+| **Node 1**     | <http://localhost:3001> | ✅     | Blockchain        |
+| **Node 2**     | <http://localhost:3002> | ✅     | Blockchain        |
+| **Node 3**     | <http://localhost:3003> | ✅     | Blockchain        |
+| **Node 4**     | <http://localhost:3004> | ✅     | Blockchain        |
+| **Node 5**     | <http://localhost:3005> | ✅     | Blockchain        |
 
 ---
 
 ## 🚀 Quick Test Commands
 
 ### Test Grafana API
+
 ```bash
 curl -s http://localhost:3030/api/health
 # Response: {"database":"ok","version":"12.2.1",...}
 ```
 
 ### Test Prometheus Targets
+
 ```bash
 curl -s http://localhost:9090/api/v1/targets
 # Lists all scrape targets
 ```
 
 ### Test Container Metrics (cAdvisor)
+
 ```bash
 curl -s http://localhost:8081/api/v1.3/machine
 # Returns host machine metrics
 ```
 
 ### Test Host Metrics (Node Exporter)
+
 ```bash
 curl -s http://localhost:9100/metrics | head -20
 # Returns Prometheus-format metrics
 ```
 
 ### Check Blockchain Node Status
+
 ```bash
 curl -s http://localhost:3001/node/status
 # Returns node information
@@ -305,12 +320,12 @@ curl -s http://localhost:3001/node/status
 
 ---
 
-## 🎊 System Ready!
+## 🎊 System Ready
 
 **Infrastructure:** ✅ All monitoring components running  
 **Prometheus:** ✅ Metrics collection active  
 **Grafana:** ✅ Dashboard UI ready  
 **Blockchain:** ✅ Nodes running  
-**Integration:** ⏳ Ready for metrics integration  
+**Integration:** ⏳ Ready for metrics integration
 
 The monitoring foundation is solid and ready for blockchain-specific metrics integration!

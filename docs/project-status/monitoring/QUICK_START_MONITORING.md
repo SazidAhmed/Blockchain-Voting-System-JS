@@ -1,15 +1,15 @@
-# íº€ Quick Start - Monitoring System
+# ï¿½ï¿½ï¿½ Quick Start - Monitoring System
 
 **Status:** âœ… Live and Running  
 **Date:** November 17, 2025
 
 ---
 
-## í¾¯ What You Have Right Now
+## ï¿½ï¿½ï¿½ What You Have Right Now
 
 Your blockchain voting system now has **complete monitoring** with three layers:
 
-```
+```text
 LAYER 3: Real-Time Web Dashboard
          (Ready to integrate)
               â†“
@@ -22,17 +22,19 @@ LAYER 1: Application + Infrastructure Metrics
 
 ---
 
-## í¼ Access Your Monitoring
+## ï¿½ï¿½ï¿½ Access Your Monitoring
 
 ### Open Grafana (Main Dashboard UI)
-```
-í´— http://localhost:3030
-í±¤ admin
-í´ admin
+
+```text
+ï¿½ï¿½ï¿½ http://localhost:3030
+ï¿½ï¿½ï¿½ admin
+ï¿½ï¿½ï¿½ admin
 ```
 
 ### Other Access Points
-```
+
+```text
 Prometheus:    http://localhost:9090
 cAdvisor:      http://localhost:8081
 Node Exporter: http://localhost:9100
@@ -43,7 +45,8 @@ Node Exporter: http://localhost:9100
 ## âœ… What's Running (Test Results)
 
 ### All Tests Passed âœ…
-```
+
+```text
 âœ… 5 Blockchain Nodes         (Healthy)
 âœ… MySQL Database             (Healthy)
 âœ… Prometheus                 (Running)
@@ -59,15 +62,17 @@ TOTAL: 42/42 Tests Passed
 
 ---
 
-## í³Š Currently Monitoring
+## ï¿½ï¿½ï¿½ Currently Monitoring
 
 ### Container Metrics âœ…
+
 - CPU usage per container
 - Memory consumption
 - Network I/O
 - Disk I/O
 
 ### System Metrics âœ…
+
 - CPU utilization
 - Memory usage
 - Disk space
@@ -75,29 +80,32 @@ TOTAL: 42/42 Tests Passed
 - System processes
 
 ### Database Metrics âœ…
+
 - Connection count
 - Query performance
 - Database size
 
 ---
 
-## í³‹ Quick Integration (Optional - 12 minutes)
+## ï¿½ï¿½ï¿½ Quick Integration (Optional - 12 minutes)
 
 To enable blockchain-specific metrics:
 
 ### 1ï¸âƒ£ Add Metrics Module
+
 Edit: `blockchain-node/index.js`
 
 ```javascript
-const PrometheusMetrics = require('./prometheusMetrics');
+const PrometheusMetrics = require("./src/monitoring/prometheusMetrics");
 const metrics = new PrometheusMetrics(nodeId, nodeType);
 
-app.get('/metrics', (req, res) => {
-    res.send(metrics.generateMetrics());
+app.get("/metrics", (req, res) => {
+  res.send(metrics.generateMetrics());
 });
 ```
 
 ### 2ï¸âƒ£ Add Dashboard Route
+
 Edit: `frontend/src/router/index.js`
 
 ```javascript
@@ -108,6 +116,7 @@ Edit: `frontend/src/router/index.js`
 ```
 
 ### 3ï¸âƒ£ Restart Services
+
 ```bash
 docker-compose -f docker-compose.multi-node.yml build
 docker-compose -f docker-compose.multi-node.yml -f docker-compose.monitoring.yml up -d
@@ -115,15 +124,17 @@ docker-compose -f docker-compose.multi-node.yml -f docker-compose.monitoring.yml
 
 ---
 
-## í¾¯ Monitoring Capabilities
+## ï¿½ï¿½ï¿½ Monitoring Capabilities
 
 ### Currently Active âœ…
+
 - Infrastructure monitoring (Prometheus)
 - Dashboard visualization (Grafana)
 - Container metrics (cAdvisor)
 - System metrics (Node Exporter)
 
-### Ready to Activate í³‹
+### Ready to Activate ï¿½ï¿½ï¿½
+
 - Blockchain metrics (Module created)
 - Real-time dashboard (Component ready)
 - Custom Grafana dashboards (Templates provided)
@@ -131,9 +142,9 @@ docker-compose -f docker-compose.multi-node.yml -f docker-compose.monitoring.yml
 
 ---
 
-## í³š Documentation Files
+## ï¿½ï¿½ï¿½ Documentation Files
 
-```
+```text
 âœ… MONITORING_LIVE_STATUS.md           (Current status)
 âœ… MONITORING_COMPLETE_SUMMARY.md      (Complete guide)
 âœ… MONITORING_FULL_TEST_REPORT.md      (Test results)
@@ -143,24 +154,27 @@ docker-compose -f docker-compose.multi-node.yml -f docker-compose.monitoring.yml
 
 ---
 
-## í´— Files Created
+## ï¿½ï¿½ï¿½ Files Created
 
 **Code (Ready):**
+
 - âœ… `blockchain-node/prometheusMetrics.js` (600+ lines)
 - âœ… `frontend/src/views/BlockchainMonitor.vue` (800+ lines)
 
 **Configuration (Fixed & Ready):**
+
 - âœ… `docker-compose.monitoring.yml` (Fixed networks)
 - âœ… `monitoring/prometheus.yml` (Scrape configs)
 
 **Documentation (Complete):**
+
 - âœ… All monitoring guides and test reports
 
 ---
 
-## í¾Š System Status
+## ï¿½ï¿½ï¿½ System Status
 
-```
+```text
 â•”â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•—
 â•‘  MONITORING: LIVE & OPERATIONAL âœ…    â•‘
 â•‘  Blockchain: HEALTHY               âœ…  â•‘
@@ -173,21 +187,24 @@ docker-compose -f docker-compose.multi-node.yml -f docker-compose.monitoring.yml
 
 ---
 
-## íº€ Next Steps
+## ï¿½ï¿½ï¿½ Next Steps
 
 **Today (5 minutes):**
-1. Open http://localhost:3030 (Grafana)
+
+1. Open <http://localhost:3030> (Grafana)
 2. Explore dashboards
 3. Check Prometheus queries
 4. View metrics
 
 **This Week (12 minutes):**
+
 1. Integrate blockchain metrics module
 2. Add dashboard route
 3. Rebuild and restart
 4. View blockchain metrics in real-time
 
 **Optional (30 minutes):**
+
 1. Create custom Grafana dashboards
 2. Configure alert rules
 3. Set up notifications
@@ -195,7 +212,7 @@ docker-compose -f docker-compose.multi-node.yml -f docker-compose.monitoring.yml
 
 ---
 
-## í²¡ Key Commands
+## ï¿½ï¿½ï¿½ Key Commands
 
 ```bash
 # View all containers
@@ -216,9 +233,10 @@ docker-compose -f docker-compose.multi-node.yml down -v
 
 ---
 
-## âœ¨ You're All Set!
+## âœ¨ You're All Set
 
 Your blockchain voting system now has **production-ready monitoring** with:
+
 - âœ… Full infrastructure visibility
 - âœ… Real-time metrics collection
 - âœ… Professional dashboard (Grafana)
@@ -226,6 +244,6 @@ Your blockchain voting system now has **production-ready monitoring** with:
 - âœ… Byzantine attack detection ready
 - âœ… Complete documentation
 
-**Access now:** http://localhost:3030
+**Access now:** <http://localhost:3030>
 
-í¾‰ **Monitoring is live!**
+ï¿½ï¿½ï¿½ **Monitoring is live!**

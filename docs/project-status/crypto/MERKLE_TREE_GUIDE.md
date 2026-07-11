@@ -25,6 +25,7 @@
 ## Overview
 
 The Merkle tree implementation adds an additional layer of data integrity and verification efficiency to the blockchain voting system. It allows for:
+
 - **Efficient verification** of individual votes without downloading all election data
 - **Tamper-proof vote batching** with cryptographic proof
 - **Reduced proof size** (O(log n) instead of O(n))
@@ -35,13 +36,14 @@ The Merkle tree implementation adds an additional layer of data integrity and ve
 ## What is a Merkle Tree?
 
 A **Merkle tree** (also called a **hash tree**) is a tree data structure where:
+
 - Every **leaf node** contains the hash of a data block (e.g., vote transaction)
 - Every **non-leaf node** contains the hash of its children's hashes
 - The **root hash** represents a cryptographic summary of all data in the tree
 
-### Visual Example:
+### Visual Example
 
-```
+```text
                     ROOT HASH
                    /          \
                   /            \
@@ -60,21 +62,26 @@ A **Merkle tree** (also called a **hash tree**) is a tree data structure where:
 ## Why Use Merkle Trees?
 
 ### 1. **Efficient Verification**
+
 To verify a single vote exists in an election with 1,000 votes:
+
 - **Without Merkle tree:** Download all 1,000 votes (~64KB)
 - **With Merkle tree:** Download only 10 hashes (~640 bytes) - **100x smaller!**
 
 ### 2. **Data Integrity**
+
 - Root hash acts as a "fingerprint" of all votes
 - Any tampering changes the root hash
 - Can detect which specific vote was tampered with
 
 ### 3. **Privacy-Preserving Verification**
+
 - Voters can verify their vote is counted without revealing other votes
 - Proof contains only the path from leaf to root (log₂(n) hashes)
 - No need to download entire election data
 
 ### 4. **Blockchain Integration**
+
 - Store Merkle root in each block (32-64 bytes)
 - Verify thousands of votes with a single hash comparison
 - Enables light clients (minimal storage requirements)
@@ -85,22 +92,22 @@ To verify a single vote exists in an election with 1,000 votes:
 
 ### Files Created
 
-1. **`blockchain-node/merkleTree.js`** - Core Merkle tree implementation
+1. **`services/blockchain-node/src/core/merkleTree.js`** - Core Merkle tree implementation
    - `MerkleNode` class - Individual tree nodes
    - `MerkleTree` class - Main tree logic
    - `MerkleTreeUtils` class - Utility functions
 
-2. **`blockchain-node/test-merkle.js`** - Comprehensive test suite
+2. **`services/blockchain-node/tests/test-merkle.js`** - Comprehensive test suite
    - 13 tests covering all functionality
    - Performance benchmarks
    - Edge case handling
 
-3. **`blockchain-node/block.js`** (modified)
+3. **`services/blockchain-node/src/core/block.js`** (modified)
    - Added `merkleRoot` field to blocks
    - Automatic Merkle root calculation on block creation
    - Included in block hash calculation
 
-4. **`blockchain-node/index.js`** (modified)
+4. **`services/blockchain-node/index.js`** (modified)
    - Added 6 new Merkle-related API endpoints
    - Proof generation and verification
    - Election-specific Merkle roots
@@ -108,17 +115,19 @@ To verify a single vote exists in an election with 1,000 votes:
 ### Core Classes
 
 #### `MerkleNode`
+
 ```javascript
 class MerkleNode {
-    constructor(hash, left = null, right = null) {
-        this.hash = hash;      // SHA-256 hash
-        this.left = left;      // Left child
-        this.right = right;    // Right child
-    }
+  constructor(hash, left = null, right = null) {
+    this.hash = hash; // SHA-256 hash
+    this.left = left; // Left child
+    this.right = right; // Right child
+  }
 }
 ```
 
 #### `MerkleTree`
+
 ```javascript
 class MerkleTree {
     constructor(data) {
@@ -126,7 +135,7 @@ class MerkleTree {
         this.root = null;      // Root node
         this.build(data);      // Build tree from data
     }
-    
+
     getRoot()              // Get root hash
     getProof(data)         // Generate Merkle proof
     verifyProof(data, proof)  // Verify Merkle proof
@@ -147,11 +156,13 @@ GET /merkle/block/:blockIndex
 **Description:** Get the Merkle root for a specific block.
 
 **Example:**
+
 ```bash
 curl http://localhost:3001/merkle/block/1
 ```
 
 **Response:**
+
 ```json
 {
   "blockIndex": 1,
@@ -172,11 +183,13 @@ GET /merkle/election/:electionId
 **Description:** Generate Merkle tree for all votes in an election.
 
 **Example:**
+
 ```bash
 curl http://localhost:3001/merkle/election/1
 ```
 
 **Response:**
+
 ```json
 {
   "electionId": "1",
@@ -207,6 +220,7 @@ Content-Type: application/json
 **Description:** Generate a Merkle proof for a specific vote.
 
 **Example:**
+
 ```bash
 curl -X POST http://localhost:3001/merkle/proof \
   -H "Content-Type: application/json" \
@@ -217,6 +231,7 @@ curl -X POST http://localhost:3001/merkle/proof \
 ```
 
 **Response:**
+
 ```json
 {
   "transactionHash": "7b3782b526974c0f580e4f958b4998b2f446b323d0827e0dd52f70b723c6e5fb",
@@ -266,6 +281,7 @@ Content-Type: application/json
 **Description:** Verify a Merkle proof independently.
 
 **Example:**
+
 ```bash
 curl -X POST http://localhost:3001/merkle/verify \
   -H "Content-Type: application/json" \
@@ -277,6 +293,7 @@ curl -X POST http://localhost:3001/merkle/verify \
 ```
 
 **Response:**
+
 ```json
 {
   "valid": true,
@@ -299,11 +316,13 @@ GET /merkle/stats
 **Description:** Get Merkle tree statistics for all elections.
 
 **Example:**
+
 ```bash
 curl http://localhost:3001/merkle/stats
 ```
 
 **Response:**
+
 ```json
 {
   "totalElections": 3,
@@ -347,6 +366,7 @@ Content-Type: application/json
 **Description:** Verify multiple Merkle proofs at once (bulk verification).
 
 **Response:**
+
 ```json
 {
   "total": 10,
@@ -371,16 +391,19 @@ Content-Type: application/json
 ### Example 1: Voter Verifies Their Vote
 
 **Step 1:** Voter receives transaction hash after voting
-```
+
+```text
 Transaction Hash: 7b3782b526974c0f580e4f958b4998b2f446b323d0827e0dd52f70b723c6e5fb
 ```
 
 **Step 2:** Election publishes Merkle root after closing
-```
+
+```text
 Election 1 Merkle Root: 22b8b069a6441a2336f1f82561330009b39e0c3a2e1b7c8d9e0f1a2b3c4d5e6f
 ```
 
 **Step 3:** Voter requests proof
+
 ```bash
 curl -X POST http://localhost:3001/merkle/proof \
   -H "Content-Type: application/json" \
@@ -391,6 +414,7 @@ curl -X POST http://localhost:3001/merkle/proof \
 ```
 
 **Step 4:** Voter verifies proof (can be done offline with verification tool)
+
 ```bash
 curl -X POST http://localhost:3001/merkle/verify \
   -H "Content-Type: application/json" \
@@ -404,11 +428,13 @@ curl -X POST http://localhost:3001/merkle/verify \
 ### Example 2: Auditor Verifies Election Integrity
 
 **Step 1:** Get published Merkle root
+
 ```bash
 curl http://localhost:3001/merkle/election/1
 ```
 
 **Step 2:** Request sample vote proofs (e.g., 10 random votes)
+
 ```bash
 for txhash in $SAMPLE_HASHES; do
   curl -X POST http://localhost:3001/merkle/proof \
@@ -418,6 +444,7 @@ done
 ```
 
 **Step 3:** Verify all proofs
+
 ```bash
 curl -X POST http://localhost:3001/merkle/batch-verify \
   -H "Content-Type: application/json" \
@@ -433,10 +460,12 @@ curl -X POST http://localhost:3001/merkle/batch-verify \
 **Scenario:** Mobile app with limited storage wants to verify votes.
 
 **Storage Requirements:**
+
 - **Without Merkle tree:** Store entire blockchain (~MB)
 - **With Merkle tree:** Store only block headers + Merkle roots (~KB)
 
 **Verification Process:**
+
 1. Download block headers (contains Merkle roots)
 2. Request proof for specific vote
 3. Verify proof against stored Merkle root
@@ -449,18 +478,19 @@ curl -X POST http://localhost:3001/merkle/batch-verify \
 ### Test Suite: `test-merkle.js`
 
 ```bash
-$ node test-merkle.js
+node test-merkle.js
 ```
 
 **Results:**
-```
+
+```text
 ✅ Tests Passed: 13
 ❌ Tests Failed: 0
 📊 Total Tests: 13
 🎯 Success Rate: 100.00%
 ```
 
-### Tests Performed:
+### Tests Performed
 
 1. ✅ **Tree Construction from Votes** - Successfully built tree with 4 votes
 2. ✅ **Root Hash Calculation** - Deterministic hash generation confirmed
@@ -483,6 +513,7 @@ $ node test-merkle.js
 ### Block Structure (Enhanced)
 
 **Before Merkle Tree:**
+
 ```javascript
 {
   "index": 1,
@@ -495,6 +526,7 @@ $ node test-merkle.js
 ```
 
 **After Merkle Tree:**
+
 ```javascript
 {
   "index": 1,
@@ -507,7 +539,7 @@ $ node test-merkle.js
 }
 ```
 
-### Benefits:
+### Benefits
 
 1. **Block Integrity:** Merkle root included in block hash → tampering detected
 2. **Efficient Verification:** Can verify individual transactions without full block
@@ -520,31 +552,34 @@ $ node test-merkle.js
 
 ### Benchmarks (from test suite)
 
-| Metric | Value | Notes |
-|--------|-------|-------|
-| **Tree Construction (4 votes)** | <1ms | Instant |
-| **Tree Construction (100 votes)** | 1ms | Very fast |
-| **Proof Generation** | <1ms | Instant |
-| **Proof Verification** | <1ms | Instant |
-| **Tree Depth (4 votes)** | 2 levels | log₂(4) |
-| **Tree Depth (100 votes)** | 7 levels | log₂(100) |
-| **Proof Size (4 votes)** | 2 hashes (128 bytes) | 50% of full data |
-| **Proof Size (100 votes)** | 7 hashes (448 bytes) | ~99% savings |
+| Metric                            | Value                | Notes            |
+| --------------------------------- | -------------------- | ---------------- |
+| **Tree Construction (4 votes)**   | <1ms                 | Instant          |
+| **Tree Construction (100 votes)** | 1ms                  | Very fast        |
+| **Proof Generation**              | <1ms                 | Instant          |
+| **Proof Verification**            | <1ms                 | Instant          |
+| **Tree Depth (4 votes)**          | 2 levels             | log₂(4)          |
+| **Tree Depth (100 votes)**        | 7 levels             | log₂(100)        |
+| **Proof Size (4 votes)**          | 2 hashes (128 bytes) | 50% of full data |
+| **Proof Size (100 votes)**        | 7 hashes (448 bytes) | ~99% savings     |
 
 ### Efficiency Calculation
 
 **Example: Election with 1,000 votes**
 
 **Without Merkle Proofs:**
+
 - Full data download: 1,000 votes × 64 bytes = **64,000 bytes**
 - Bandwidth per verification: **64KB**
 
 **With Merkle Proofs:**
+
 - Proof size: log₂(1000) × 64 bytes = 10 × 64 = **640 bytes**
 - Bandwidth per verification: **0.64KB**
 - **Savings: 99%** ✅
 
 **For 1 million voters:**
+
 - Without Merkle: 1,000,000 × 64KB = **64GB of bandwidth**
 - With Merkle: 1,000,000 × 0.64KB = **640MB of bandwidth**
 - **Savings: 64GB → 640MB (99% reduction)** 🎉
@@ -553,7 +588,7 @@ $ node test-merkle.js
 
 ## Security Analysis
 
-### Properties Verified:
+### Properties Verified
 
 1. ✅ **Collision Resistance:** SHA-256 makes finding two different inputs with same hash computationally infeasible
 2. ✅ **Tamper Detection:** Any change to leaf data changes root hash
@@ -561,66 +596,61 @@ $ node test-merkle.js
 4. ✅ **Independent Verification:** Can verify without trusting server
 5. ✅ **Privacy Preserving:** Proof reveals nothing about other votes
 
-### Potential Attacks:
+### Potential Attacks
 
-| Attack | Mitigation | Status |
-|--------|-----------|--------|
-| **Fake Proof** | Server cannot fake valid proof without breaking SHA-256 | ✅ Protected |
-| **Proof Substitution** | Proof includes root hash, must match published root | ✅ Protected |
-| **Data Tampering** | Any change invalidates all proofs | ✅ Protected |
-| **Replay Attack** | Transaction hash includes timestamp and nullifier | ✅ Protected |
+| Attack                 | Mitigation                                              | Status       |
+| ---------------------- | ------------------------------------------------------- | ------------ |
+| **Fake Proof**         | Server cannot fake valid proof without breaking SHA-256 | ✅ Protected |
+| **Proof Substitution** | Proof includes root hash, must match published root     | ✅ Protected |
+| **Data Tampering**     | Any change invalidates all proofs                       | ✅ Protected |
+| **Replay Attack**      | Transaction hash includes timestamp and nullifier       | ✅ Protected |
 
 ---
 
 ## Integration with Frontend
 
-### Recommended Implementation:
+### Recommended Implementation
 
-**File: `frontend/src/services/merkle.js`**
+**File: `services/frontend/src/services/merkle.js`**
 
 ```javascript
 export async function verifyVoteInclusion(transactionHash, electionId) {
   // Step 1: Get election Merkle root
   const rootResponse = await fetch(
-    `${BLOCKCHAIN_URL}/merkle/election/${electionId}`
+    `${BLOCKCHAIN_URL}/merkle/election/${electionId}`,
   );
   const { merkleRoot } = await rootResponse.json();
-  
+
   // Step 2: Get proof for vote
-  const proofResponse = await fetch(
-    `${BLOCKCHAIN_URL}/merkle/proof`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ transactionHash, electionId })
-    }
-  );
+  const proofResponse = await fetch(`${BLOCKCHAIN_URL}/merkle/proof`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ transactionHash, electionId }),
+  });
   const { proof, vote } = await proofResponse.json();
-  
+
   // Step 3: Verify proof (client-side verification possible)
-  const verifyResponse = await fetch(
-    `${BLOCKCHAIN_URL}/merkle/verify`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ vote, proof, merkleRoot })
-    }
-  );
+  const verifyResponse = await fetch(`${BLOCKCHAIN_URL}/merkle/verify`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ vote, proof, merkleRoot }),
+  });
   const { valid } = await verifyResponse.json();
-  
+
   return { valid, proof, merkleRoot };
 }
 ```
 
 **Usage in Component:**
+
 ```javascript
 async function handleVerifyVote() {
   const result = await verifyVoteInclusion(myTransactionHash, electionId);
-  
+
   if (result.valid) {
-    alert('✅ Your vote is verified in the election!');
+    alert("✅ Your vote is verified in the election!");
   } else {
-    alert('❌ Vote verification failed!');
+    alert("❌ Vote verification failed!");
   }
 }
 ```
@@ -629,17 +659,20 @@ async function handleVerifyVote() {
 
 ## Future Enhancements
 
-### Phase 1 (Next Release):
+### Phase 1 (Next Release)
+
 - [ ] Frontend UI for Merkle proof verification
 - [ ] Download proof as PDF receipt
 - [ ] QR code with Merkle proof for mobile verification
 
-### Phase 2 (Advanced):
+### Phase 2 (Advanced)
+
 - [ ] Sparse Merkle trees for constant proof size
 - [ ] Merkle Mountain Ranges for efficient updates
 - [ ] Zero-knowledge Merkle proofs (zk-SNARKs)
 
-### Phase 3 (Research):
+### Phase 3 (Research)
+
 - [ ] Quantum-resistant Merkle signatures
 - [ ] Multi-level Merkle trees (tree of trees)
 - [ ] Compressed Merkle proofs
@@ -648,16 +681,16 @@ async function handleVerifyVote() {
 
 ## Comparison with Alternatives
 
-### Merkle Tree vs Alternatives:
+### Merkle Tree vs Alternatives
 
-| Feature | Merkle Tree | Full Data Download | Simple Hashing |
-|---------|-------------|-------------------|----------------|
-| **Proof Size** | O(log n) ✅ | O(n) ❌ | O(1) ⚠️ |
-| **Verification** | Efficient ✅ | Slow ❌ | Fast ✅ |
-| **Tamper Detection** | Granular ✅ | Yes ✅ | Limited ⚠️ |
-| **Privacy** | Good ✅ | None ❌ | Excellent ✅ |
-| **Bandwidth** | Low ✅ | High ❌ | Very Low ✅ |
-| **Can identify tampered item** | Yes ✅ | Yes ✅ | No ❌ |
+| Feature                        | Merkle Tree  | Full Data Download | Simple Hashing |
+| ------------------------------ | ------------ | ------------------ | -------------- |
+| **Proof Size**                 | O(log n) ✅  | O(n) ❌            | O(1) ⚠️        |
+| **Verification**               | Efficient ✅ | Slow ❌            | Fast ✅        |
+| **Tamper Detection**           | Granular ✅  | Yes ✅             | Limited ⚠️     |
+| **Privacy**                    | Good ✅      | None ❌            | Excellent ✅   |
+| **Bandwidth**                  | Low ✅       | High ❌            | Very Low ✅    |
+| **Can identify tampered item** | Yes ✅       | Yes ✅             | No ❌          |
 
 **Conclusion:** Merkle trees provide the best balance of efficiency, security, and verification capability.
 
@@ -665,7 +698,7 @@ async function handleVerifyVote() {
 
 ## Conclusion
 
-### ✅ Achievement Summary:
+### ✅ Achievement Summary
 
 - **Implementation Complete:** Fully functional Merkle tree system
 - **Test Coverage:** 100% (13/13 tests passed)
@@ -674,14 +707,14 @@ async function handleVerifyVote() {
 - **Efficiency:** 99% bandwidth savings for large elections
 - **Security:** Cryptographically secure tamper detection
 
-### 🎯 Impact on System:
+### 🎯 Impact on System
 
 1. **Voters:** Can verify vote inclusion with minimal data
 2. **Auditors:** Can sample-check election integrity efficiently
 3. **System:** Reduced bandwidth and storage requirements
 4. **Trust:** Cryptographic proof replaces trust-based verification
 
-### 📊 Project Status Update:
+### 📊 Project Status Update
 
 **Before Merkle Tree:** 94% Complete  
 **After Merkle Tree:** 96% Complete ✅  

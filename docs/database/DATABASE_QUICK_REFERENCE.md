@@ -3,7 +3,7 @@
 ## Quick Start (First Time Setup)
 
 ```bash
-cd backend
+cd services/backend
 
 # 1. Install dependencies
 npm install
@@ -231,14 +231,14 @@ npm run db:reset
 
 ```text
 services/backend/
-├── migrate.js              # Migration runner
-├── seed.js                 # Sample data seeder
-├── DATABASE_SETUP.md       # Detailed setup guide
-├── DATABASE_SCHEMA.md      # Full schema documentation
+├── scripts/
+│   ├── migrate.js           # Migration runner
+│   └── seed.js              # Sample data seeder
 ├── config/
-│   └── db.js              # Database connection config
+│   └── db.js               # Database connection config
 └── migrations/
-    └── 001_initial_schema.sql  # Initial schema migration
+    ├── 001_initial_schema.sql  # Initial schema migration
+    └── 002_add_admin_audit_logging.js
 ```
 
 ## Environment Variables

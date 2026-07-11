@@ -10,11 +10,12 @@
 
 ### 1. Created Complete SQL Schema Migration
 
-**File:** `backend/migrations/001_initial_schema.sql`
+**File:** `services/backend/migrations/001_initial_schema.sql`
 
 Created a comprehensive database schema with **13 tables** covering all requirements:
 
 #### Core Tables (User & Voting)
+
 - ✅ `users` - Enhanced with pseudonymous identifiers and encrypted profiles
 - ✅ `elections` - With threshold encryption parameters
 - ✅ `candidates` - Election candidates with metadata
@@ -24,24 +25,28 @@ Created a comprehensive database schema with **13 tables** covering all requirem
 - ✅ `vote_receipts` - Cryptographic receipts with Merkle proofs
 
 #### Blockchain Network Tables
+
 - ✅ `nodes` - Validator and observer nodes with governance
 - ✅ `threshold_key_shares` - Key share metadata (HSM references)
 - ✅ `tally_partial_decryptions` - Partial decryptions for tallying
 
 #### System Tables
+
 - ✅ `audit_logs` - Tamper-evident audit trail with hash chaining
 - ✅ `system_config` - Global configuration parameters
 - ✅ `schema_migrations` - Migration version tracking
 
 #### Database Views
+
 - ✅ `v_active_elections` - Convenient election summary
 - ✅ `v_node_health` - Node health monitoring
 
 ### 2. Built Migration Runner
 
-**File:** `backend/migrate.js`
+**File:** `services/backend/scripts/migrate.js`
 
 Features:
+
 - Automatic database creation
 - Sequential migration execution
 - Checksum verification
@@ -51,9 +56,10 @@ Features:
 
 ### 3. Created Sample Data Seeder
 
-**File:** `backend/seed.js`
+**File:** `services/backend/scripts/seed.js`
 
 Seeds development data:
+
 - 7 sample users (admin, students, teacher, staff, board member)
 - 3 elections (active, pending, completed)
 - 8 candidates across elections
@@ -66,6 +72,7 @@ Seeds development data:
 Created 3 documentation files:
 
 #### `DATABASE_SCHEMA.md` (Full Documentation)
+
 - Detailed table descriptions
 - Security principles
 - Data flow examples
@@ -74,6 +81,7 @@ Created 3 documentation files:
 - Monitoring queries
 
 #### `DATABASE_SETUP.md` (Setup Guide)
+
 - Step-by-step installation
 - Configuration instructions
 - Migration management
@@ -82,6 +90,7 @@ Created 3 documentation files:
 - Performance optimization
 
 #### `DATABASE_QUICK_REFERENCE.md` (Quick Start)
+
 - Quick setup commands
 - Common operations
 - Sample data overview
@@ -90,9 +99,9 @@ Created 3 documentation files:
 
 ### 5. Updated Configuration Files
 
-- ✅ `backend/config/db.js` - Enhanced with vote_receipts table
-- ✅ `backend/package.json` - Added migration and seed scripts
-- ✅ `backend/.env.example` - Complete environment template
+- ✅ `services/backend/config/db.js` - Enhanced with vote_receipts table
+- ✅ `services/backend/package.json` - Added migration and seed scripts
+- ✅ `services/backend/.env.example` - Complete environment template
 
 ---
 
@@ -183,7 +192,7 @@ Created 3 documentation files:
 ### First Time Setup
 
 ```bash
-cd backend
+cd services/backend
 
 # 1. Install dependencies
 npm install
@@ -204,11 +213,11 @@ npm start
 
 ### Sample Credentials (Development)
 
-| Role | Institution ID | Password |
-|------|----------------|----------|
-| Admin | ADMIN001 | admin123 |
-| Student | STU001 | password123 |
-| Teacher | TEACH001 | password123 |
+| Role    | Institution ID | Password    |
+| ------- | -------------- | ----------- |
+| Admin   | ADMIN001       | admin123    |
+| Student | STU001         | password123 |
+| Teacher | TEACH001       | password123 |
 
 ### Verify Installation
 
@@ -284,6 +293,7 @@ audit_logs
 ## Comparison: Before vs After
 
 ### Before
+
 - 4 basic tables (users, elections, candidates, voter_registrations)
 - No blind token support
 - No nullifier tracking
@@ -293,6 +303,7 @@ audit_logs
 - Limited documentation
 
 ### After
+
 - ✅ 13 comprehensive tables
 - ✅ Blind token support with privacy
 - ✅ Nullifier tracking with hashing
@@ -324,21 +335,23 @@ With the database schema complete, you can now:
 ## Files Created/Modified
 
 ### New Files
-```
-backend/
+
+```text
+services/backend/
 ├── migrations/
 │   └── 001_initial_schema.sql        (577 lines)
-├── migrate.js                         (234 lines)
-├── seed.js                            (390 lines)
-├── DATABASE_SCHEMA.md                 (450+ lines)
-├── DATABASE_SETUP.md                  (650+ lines)
-├── DATABASE_QUICK_REFERENCE.md        (280+ lines)
-└── .env.example                       (45 lines)
+├── scripts/
+│   ├── migrate.js                     (234 lines)
+│   └── seed.js                        (390 lines)
+├── .env.example                       (45 lines)
+└── config/
+    └── db.js
 ```
 
 ### Modified Files
-```
-backend/
+
+```text
+services/backend/
 ├── config/db.js                       (Added vote_receipts)
 └── package.json                       (Added 5 new scripts)
 ```

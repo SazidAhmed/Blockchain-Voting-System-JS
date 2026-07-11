@@ -357,13 +357,13 @@ WHERE id = ?;
 
 ```bash
 # Run all pending migrations
-node services/backend/migrate.js run
+node services/backend/scripts/migrate.js run
 
 # Check migration status
-node services/backend/migrate.js status
+node services/backend/scripts/migrate.js status
 
 # Rollback last migration (when implemented)
-node services/backend/migrate.js rollback
+node services/backend/scripts/migrate.js rollback
 ```
 
 ### Creating New Migrations

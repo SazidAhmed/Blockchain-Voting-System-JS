@@ -1,4 +1,5 @@
 # Blockchain Node Integration - Complete
+
 **Date:** October 31, 2025  
 **Status:** ✅ COMPLETE  
 **Time Taken:** ~1 hour
@@ -6,6 +7,7 @@
 ---
 
 ## Overview
+
 Successfully diagnosed and fixed blockchain node connection issues, started the node, and verified full integration with the backend voting system.
 
 ---
@@ -13,34 +15,39 @@ Successfully diagnosed and fixed blockchain node connection issues, started the 
 ## Issues Diagnosed and Fixed
 
 ### Issue 1: Port 3001 ECONNREFUSED
+
 **Problem:** Backend couldn't connect to blockchain node on port 3001
 
 **Root Cause:** Blockchain node was not running
 
 **Diagnosis Steps:**
-1. Checked blockchain-node directory structure ✅
+
+1. Checked services/blockchain-node directory structure ✅
 2. Verified dependencies installed ✅
 3. Attempted to start node - failed
 4. Found async `loadChain()` issue in constructor causing crashes
 5. Fixed promise handling
 
 **Solution:**
+
 ```javascript
 // Before (in blockchain.js constructor):
-this.loadChain();  // Unhandled promise rejection crashes process
+this.loadChain(); // Unhandled promise rejection crashes process
 
 // After:
-this.loadChain().catch(err => {
-    console.log('Error loading chain, using genesis block:', err.message);
+this.loadChain().catch((err) => {
+  console.log("Error loading chain, using genesis block:", err.message);
 });
 ```
 
 ### Issue 2: Port Already in Use
+
 **Problem:** EADDRINUSE error when trying to start node
 
 **Root Cause:** Zombie process holding port 3001
 
 **Solution:**
+
 ```bash
 # Found process ID
 netstat -ano | grep :3001
@@ -51,6 +58,7 @@ taskkill //PID 20104 //F
 ```
 
 ### Issue 3: Process Startup Issues
+
 **Problem:** Node process starting but immediately exiting
 
 **Solution:** Created startup script `start.sh` for reliable process management
@@ -60,14 +68,16 @@ taskkill //PID 20104 //F
 ## Blockchain Node Status
 
 ### ✅ Running Successfully
+
 - **Port:** 3001
 - **Node ID:** node1
 - **Status:** LISTENING
 - **Process ID:** 2809 (via start.sh)
-- **Database:** LevelDB at `./data/node1`
+- **Database:** LevelDB at `services/blockchain-node/data/`
 - **Genesis Block:** Created successfully
 
 ### Node Configuration
+
 ```javascript
 {
   nodeId: 'node1',
@@ -82,8 +92,10 @@ taskkill //PID 20104 //F
 ## API Endpoints Verified
 
 ### 1. ✅ GET /node
+
 **Purpose:** Get node information  
 **Response:**
+
 ```json
 {
   "nodeId": "node1",
@@ -93,20 +105,25 @@ taskkill //PID 20104 //F
 ```
 
 ### 2. ✅ GET /chain
+
 **Purpose:** Get full blockchain  
 **Response:**
+
 ```json
 {
   "chain": [...],
   "length": 2
 }
 ```
+
 - Genesis block at index 0
 - Can store multiple blocks
 
 ### 3. ✅ POST /vote
+
 **Purpose:** Submit encrypted vote to blockchain  
 **Request:**
+
 ```json
 {
   "voterId": 1,
@@ -117,7 +134,9 @@ taskkill //PID 20104 //F
   "publicKey": "..."
 }
 ```
+
 **Response:**
+
 ```json
 {
   "message": "Vote will be added to Block 1",
@@ -130,8 +149,10 @@ taskkill //PID 20104 //F
 ```
 
 ### 4. ✅ GET /nullifier/:nullifier
+
 **Purpose:** Check if nullifier has been used (double-vote prevention)  
 **Response:**
+
 ```json
 {
   "nullifier": "aaaa...aaaa",
@@ -140,8 +161,10 @@ taskkill //PID 20104 //F
 ```
 
 ### 5. ✅ GET /mine
+
 **Purpose:** Mine pending transactions into a new block  
 **Response:**
+
 ```json
 {
   "message": "New block forged",
@@ -157,23 +180,28 @@ taskkill //PID 20104 //F
   }
 }
 ```
+
 - Uses Proof of Work (difficulty: 2)
 - Block hash starts with "00"
 - Transactions are included in block
 
 ### 6. ✅ POST /transactions/new
+
 **Purpose:** Add generic transaction  
 **Status:** Available but not used for voting
 
 ### 7. ✅ POST /validators/register
+
 **Purpose:** Register new validator nodes  
 **Status:** Available for multi-node setup
 
 ### 8. ✅ POST /nodes/register
+
 **Purpose:** Register peer nodes  
 **Status:** Available for P2P network
 
 ### 9. ✅ GET /elections/:electionId/results
+
 **Purpose:** Get votes for specific election  
 **Status:** Available for vote tallying
 
@@ -182,34 +210,40 @@ taskkill //PID 20104 //F
 ## Backend Integration
 
 ### Blockchain API Client
-**Location:** `backend/routes/elections.js`
+
+**Location:** `services/backend/routes/elections.js`
 
 **Configuration:**
+
 ```javascript
 const blockchainApi = axios.create({
-  baseURL: process.env.BLOCKCHAIN_NODE_URL  // http://localhost:3001
+  baseURL: process.env.BLOCKCHAIN_NODE_URL, // http://localhost:3001
 });
 ```
 
 ### Vote Submission Flow
+
 1. User submits vote to backend (`POST /api/elections/:id/vote`)
 2. Backend validates signature and checks double-vote
 3. **Backend submits to blockchain node:**
+
    ```javascript
-   await blockchainApi.post('/vote', {
+   await blockchainApi.post("/vote", {
      voterId: userId,
      electionId,
      encryptedBallot,
      nullifier,
-     signature
+     signature,
    });
    ```
+
 4. Blockchain adds to pending transactions
 5. Backend receives receipt with `blockIndex` and `timestamp`
 6. Backend stores metadata in MySQL database
 7. Receipt returned to user
 
 ### Fallback Mode (Development)
+
 - If blockchain node unavailable: ⚠️ Warning logged
 - Vote still recorded in database
 - Simulated transaction hash generated
@@ -220,26 +254,31 @@ const blockchainApi = axios.create({
 ## Features Verified
 
 ### ✅ Vote Storage
+
 - Encrypted ballots stored in blockchain
 - Votes added to pending transactions
 - Included in next mined block
 
 ### ✅ Double-Vote Prevention
+
 - Nullifiers tracked across all blocks
 - `isNullifierUsed()` checks entire chain
 - Duplicate nullifiers rejected
 
 ### ✅ Block Mining
+
 - Proof of Work consensus (difficulty: 2)
 - Block hash validation
 - Chain integrity maintained
 
 ### ✅ Data Persistence
-- LevelDB storage in `./data/node1/`
+
+- LevelDB storage in `services/blockchain-node/data/`
 - Chain saved after each new block
 - Genesis block persists across restarts
 
 ### ✅ Signature Verification
+
 - Vote signatures validated
 - Invalid votes rejected
 - Only signed by registered validators
@@ -249,6 +288,7 @@ const blockchainApi = axios.create({
 ## Blockchain Structure
 
 ### Genesis Block
+
 ```javascript
 {
   index: 0,
@@ -266,6 +306,7 @@ const blockchainApi = axios.create({
 ```
 
 ### Vote Block (Example)
+
 ```javascript
 {
   index: 1,
@@ -295,6 +336,7 @@ const blockchainApi = axios.create({
 ## Merkle Proof Status
 
 ### Current Implementation
+
 - ⚠️ **Merkle proof generation not fully implemented**
 - Vote receipts include:
   - ✅ Nullifier
@@ -303,19 +345,23 @@ const blockchainApi = axios.create({
   - ❌ Merkle proof (TODO)
 
 ### Package Available
+
 - `merkle` package installed (v0.6.0)
 - Ready for implementation
 
 ### Recommended Enhancement
+
 Add Merkle tree generation in block creation:
+
 ```javascript
 // In blockchain.js createBlock()
-const merkle = require('merkle');
-const tree = merkle('sha256').sync(transactions);
+const merkle = require("merkle");
+const tree = merkle("sha256").sync(transactions);
 newBlock.merkleRoot = tree.root();
 ```
 
 Then provide proofs in receipts:
+
 ```javascript
 // In vote receipt
 receipt.merkleProof = tree.getProofPath(txIndex);
@@ -326,10 +372,12 @@ receipt.merkleProof = tree.getProofPath(txIndex);
 ## Test Results
 
 ### Comprehensive Test Suite
-**Script:** `backend/test-blockchain.js`
+
+**Script:** `services/backend/tests/test-blockchain.js`
 
 **Results:**
-```
+
+```text
 Test 1: GET /node                  ✅ PASS
 Test 2: GET /chain                 ✅ PASS
 Test 3: POST /vote                 ✅ PASS
@@ -345,29 +393,34 @@ Test 6: GET /chain (after mining)  ✅ PASS
 ## Files Created/Modified
 
 ### Created (2 files)
-1. `blockchain-node/start.sh` - Startup script for reliable process management
-2. `backend/test-blockchain.js` - Comprehensive blockchain integration test suite
+
+1. `services/blockchain-node/start.sh` - Startup script for reliable process management
+2. `services/backend/tests/test-blockchain.js` - Comprehensive blockchain integration test suite
 
 ### Modified (1 file)
-1. `blockchain-node/blockchain.js` - Fixed async loadChain() promise handling
+
+1. `services/blockchain-node/src/core/blockchain.js` - Fixed async loadChain() promise handling
 
 ---
 
 ## Process Management
 
 ### Start Blockchain Node
+
 ```bash
 cd h:/Voting/blockchain-node
 ./start.sh
 ```
 
 Or manually:
+
 ```bash
-cd h:/Voting/blockchain-node
+cd services/blockchain-node
 node index.js
 ```
 
 ### Check Status
+
 ```bash
 # Check if process running
 ps aux | grep "node index.js"
@@ -380,6 +433,7 @@ curl http://localhost:3001/node
 ```
 
 ### Stop Blockchain Node
+
 ```bash
 # Find PID
 netstat -ano | grep :3001
@@ -392,18 +446,21 @@ taskkill //PID <PID> //F
 ## Security Considerations
 
 ### ✅ Implemented
+
 - Signature verification on votes
 - Nullifier-based double-vote prevention
 - Validator registration required
 - Block signature validation
 
 ### ⚠️ Development Mode
+
 - Single validator node (node1)
 - No Byzantine Fault Tolerance consensus yet
 - Simple PoW (difficulty: 2)
 - No network encryption
 
 ### 🔜 Production Recommendations
+
 1. **Multi-Validator Setup**
    - Deploy 3+ validator nodes
    - Implement BFT consensus (2f+1 agreement)
@@ -429,12 +486,14 @@ taskkill //PID <PID> //F
 ## Integration with Backend
 
 ### Environment Variables
+
 ```bash
-# In backend/.env
+# In services/backend/.env
 BLOCKCHAIN_NODE_URL=http://localhost:3001
 ```
 
 ### Vote Flow Integration
+
 1. ✅ Backend connects to blockchain on vote submission
 2. ✅ Encrypted ballot sent to blockchain
 3. ✅ Receipt returned with block index
@@ -443,7 +502,9 @@ BLOCKCHAIN_NODE_URL=http://localhost:3001
 6. ✅ Fallback mode for development
 
 ### Database Storage
+
 **Table:** `votes_meta`
+
 ```sql
 tx_hash            VARCHAR(64)    -- Transaction hash from blockchain
 block_index        INT            -- Block number where vote is stored
@@ -460,11 +521,13 @@ created_at         TIMESTAMP      -- When vote was cast
 ## Performance Metrics
 
 ### Block Mining Time
+
 - **Difficulty 2:** ~50-200ms
 - **Hash rate:** Variable (CPU-dependent)
 - **Block size:** ~1-5 KB per block
 
 ### API Response Times
+
 - **GET /node:** < 10ms
 - **GET /chain:** < 50ms (depends on chain length)
 - **POST /vote:** < 20ms (before mining)
@@ -472,6 +535,7 @@ created_at         TIMESTAMP      -- When vote was cast
 - **GET /nullifier:** < 30ms (searches entire chain)
 
 ### Storage
+
 - **Genesis block:** ~500 bytes
 - **Vote transaction:** ~300-500 bytes
 - **Full block:** ~1-5 KB
@@ -482,6 +546,7 @@ created_at         TIMESTAMP      -- When vote was cast
 ## Next Steps
 
 ### Completed ✅
+
 - [x] Diagnose port 3001 connection issue
 - [x] Start blockchain node successfully
 - [x] Test vote storage in blockchain
@@ -490,6 +555,7 @@ created_at         TIMESTAMP      -- When vote was cast
 - [x] Test backend integration
 
 ### Recommended Enhancements 🔜
+
 1. **Merkle Proof Implementation** (~1 hour)
    - Generate merkle trees in blocks
    - Add proofs to receipts
@@ -515,13 +581,15 @@ created_at         TIMESTAMP      -- When vote was cast
 ## Troubleshooting Guide
 
 ### Problem: Port 3001 Connection Refused
+
 **Solution:**
+
 ```bash
 # Check if node running
 netstat -ano | grep :3001
 
 # If not running, start it
-cd h:/Voting/blockchain-node
+cd services/blockchain-node
 ./start.sh
 
 # If port in use, kill zombie process
@@ -530,19 +598,24 @@ taskkill //PID <PID> //F
 ```
 
 ### Problem: Blockchain Node Crashes
+
 **Solution:**
+
 - Check logs in terminal output
 - Verify LevelDB data directory writable
 - Ensure no async errors in blockchain.js
 
 ### Problem: Vote Not Stored
+
 **Solution:**
+
 - Verify blockchain node running
 - Check backend logs for blockchain errors
 - Verify voterId, electionId, nullifier format
 - Try mining a block: `curl http://localhost:3001/mine`
 
 ### Problem: Duplicate Nullifier Error
+
 **Expected Behavior:** This prevents double-voting
 **Verification:** `curl http://localhost:3001/nullifier/<nullifier>`
 
@@ -553,6 +626,7 @@ taskkill //PID <PID> //F
 ### Status: ✅ FULLY OPERATIONAL
 
 **Blockchain Node:**
+
 - Running on port 3001 ✅
 - Accepting vote submissions ✅
 - Mining blocks successfully ✅
@@ -560,6 +634,7 @@ taskkill //PID <PID> //F
 - Persisting data to LevelDB ✅
 
 **Backend Integration:**
+
 - Connecting to blockchain ✅
 - Submitting votes ✅
 - Receiving receipts ✅
@@ -567,6 +642,7 @@ taskkill //PID <PID> //F
 - Fallback mode working ✅
 
 **Testing:**
+
 - 6/6 tests passing ✅
 - All API endpoints verified ✅
 - Vote flow end-to-end tested ✅
@@ -575,17 +651,20 @@ taskkill //PID <PID> //F
 
 ## Project Progress Update
 
-### Before Blockchain Integration:
+### Before Blockchain Integration
+
 - Overall Progress: 80%
 - Blockchain: ❌ Not running
 
-### After Blockchain Integration:
+### After Blockchain Integration
+
 - **Overall Progress: 85%**
 - **Blockchain: ✅ Fully operational**
 
-### Remaining Tasks:
+### Remaining Tasks
+
 1. ⏳ Frontend Integration Testing
-2. ⏳ Documentation Updates  
+2. ⏳ Documentation Updates
 3. ⏳ Performance Testing
 4. 🔜 Merkle proof implementation (optional enhancement)
 
@@ -605,6 +684,7 @@ taskkill //PID <PID> //F
 The Blockchain Voting System now has a **fully functional blockchain backend** integrated with the voting API!
 
 Votes are now:
+
 - ✅ Stored in an immutable blockchain
 - ✅ Protected against double-voting with nullifiers
 - ✅ Encrypted end-to-end

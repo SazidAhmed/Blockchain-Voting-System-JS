@@ -3,6 +3,7 @@
 ## Pre-Deployment Review
 
 ### Code Review ✅
+
 - [x] AdminAuditLogger.js created with cryptographic integrity
 - [x] Database migration script created
 - [x] Elections.js updated with security endpoints
@@ -11,6 +12,7 @@
 - [x] All code changes committed to git
 
 ### Documentation ✅
+
 - [x] SECURITY_AUDIT_IMPLEMENTATION.md created
 - [x] API endpoints documented
 - [x] Database schema documented
@@ -19,9 +21,10 @@
 ## Deployment Steps
 
 ### Step 1: Database Migration (CRITICAL)
+
 ```bash
 # Navigate to backend directory
-cd backend
+cd services/backend
 
 # Execute migration to create audit tables
 node migrations/002_add_admin_audit_logging.js
@@ -31,6 +34,7 @@ mysql -u root -p voting -e "DESCRIBE admin_audit_logs; DESCRIBE admin_security_l
 ```
 
 **Expected Output:**
+
 - admin_audit_logs table created with 14 columns
 - admin_security_logs table created with 10 columns
 - Indexes created for performance
@@ -38,11 +42,13 @@ mysql -u root -p voting -e "DESCRIBE admin_audit_logs; DESCRIBE admin_security_l
 - candidates table modified with 2 new columns
 
 **Troubleshooting:**
+
 - If "table already exists" error: Migration already ran
 - If "connection refused": Ensure MySQL is running
 - If "access denied": Check MySQL credentials in migration file
 
 ### Step 2: Backend Service Restart
+
 ```bash
 # Option 1: Docker (if using containers)
 docker restart voting-backend
@@ -56,6 +62,7 @@ npm start
 ```
 
 **Verification:**
+
 ```bash
 # Check backend is running
 curl -X GET http://localhost:3000/api/elections/admin \
@@ -65,8 +72,9 @@ curl -X GET http://localhost:3000/api/elections/admin \
 ```
 
 ### Step 3: Frontend Build & Deploy
+
 ```bash
-cd frontend
+cd services/frontend
 
 # Install dependencies if needed
 npm install
@@ -79,13 +87,15 @@ npm run dev
 ```
 
 **Expected Result:**
+
 - No build errors
-- Frontend accessible at http://localhost:5173 (dev) or configured production URL
+- Frontend accessible at <http://localhost:5173> (dev) or configured production URL
 - AdminDashboard loads with 5 tabs (including new Audit Logs tab)
 
 ## Testing the Implementation
 
 ### Test 1: Create Election and Log It
+
 ```bash
 # 1. Navigate to Admin Dashboard
 # 2. Go to "Create Election" tab
@@ -106,6 +116,7 @@ Expected Fields:
 ```
 
 ### Test 2: Verify Mutation Locking
+
 ```bash
 # 1. From previous test, election should exist
 # 2. Go to "Elections Management" tab
@@ -121,6 +132,7 @@ Expected Fields:
 ```
 
 ### Test 3: Check Audit Log Details
+
 ```bash
 # 1. Go to Admin Dashboard → Audit Logs tab
 # 2. Click "Verify" button on any log entry
@@ -130,6 +142,7 @@ Expected Fields:
 ```
 
 ### Test 4: Filter Audit Logs
+
 ```bash
 # 1. Go to Audit Logs tab
 # 2. Filter by Action: "CREATE_ELECTION"
@@ -142,6 +155,7 @@ Expected Fields:
 ## Database Verification
 
 ### Check Tables Exist
+
 ```sql
 -- Connect to MySQL
 mysql -u root -p voting
@@ -156,6 +170,7 @@ SHOW TABLES;
 ```
 
 ### Check Sample Log Entry
+
 ```sql
 -- View recent audit log
 SELECT * FROM admin_audit_logs ORDER BY created_at DESC LIMIT 1;
@@ -171,6 +186,7 @@ SELECT * FROM admin_audit_logs ORDER BY created_at DESC LIMIT 1;
 ```
 
 ### Check Security Events
+
 ```sql
 -- View recent security events
 SELECT * FROM admin_security_logs ORDER BY timestamp DESC LIMIT 5;
@@ -184,6 +200,7 @@ SELECT * FROM admin_security_logs ORDER BY timestamp DESC LIMIT 5;
 ## API Testing
 
 ### Get Audit Logs
+
 ```bash
 curl -X GET "http://localhost:3000/api/admin/audit-logs?limit=10&offset=0" \
   -H "Authorization: Bearer YOUR_ADMIN_TOKEN" \
@@ -193,6 +210,7 @@ curl -X GET "http://localhost:3000/api/admin/audit-logs?limit=10&offset=0" \
 ```
 
 ### Get Security Logs
+
 ```bash
 curl -X GET "http://localhost:3000/api/admin/security-logs" \
   -H "Authorization: Bearer YOUR_ADMIN_TOKEN" \
@@ -202,12 +220,13 @@ curl -X GET "http://localhost:3000/api/admin/security-logs" \
 ```
 
 ### Verify Audit Integrity
+
 ```bash
 curl -X POST "http://localhost:3000/api/admin/verify-audit-integrity/1" \
   -H "Authorization: Bearer YOUR_ADMIN_TOKEN" \
   -H "Content-Type: application/json"
 
-# Expected: 
+# Expected:
 # {
 #   "valid": true,
 #   "reason": "Hash matches - log integrity verified"
@@ -217,13 +236,17 @@ curl -X POST "http://localhost:3000/api/admin/verify-audit-integrity/1" \
 ## Troubleshooting
 
 ### Issue: Migration fails with "table already exists"
+
 **Solution:**
+
 - This is normal if running migration multiple times
 - Tables are already created successfully
 - You can safely ignore this error
 
 ### Issue: AdminAuditLogs tab not showing in dashboard
+
 **Solution:**
+
 ```bash
 # Check frontend build
 npm run build
@@ -234,13 +257,15 @@ npm run build
 ```
 
 ### Issue: Audit logs not being created
+
 **Troubleshooting Steps:**
+
 ```bash
 # 1. Check backend logs
 docker logs voting-backend  # or npm logs if running locally
 
 # 2. Verify adminAuditLogger.js imported correctly
-grep -n "require.*adminAuditLogger" backend/routes/elections.js
+grep -n "require.*adminAuditLogger" services/backend/routes/elections.js
 
 # 3. Check database connection
 mysql -u root -p voting -e "SELECT COUNT(*) FROM admin_audit_logs;"
@@ -252,7 +277,9 @@ mysql -u root -p voting -e "SELECT COUNT(*) FROM admin_audit_logs;"
 ```
 
 ### Issue: "Cannot add candidate - election is locked" not appearing
+
 **Troubleshooting:**
+
 ```bash
 # 1. Verify elections table has is_locked column
 mysql -u root -p voting -e "DESCRIBE elections;" | grep is_locked
@@ -261,7 +288,7 @@ mysql -u root -p voting -e "DESCRIBE elections;" | grep is_locked
 mysql -u root -p voting -e "SELECT id, is_locked, status FROM elections LIMIT 5;"
 
 # 3. Verify elections.js has mutation checks
-grep -n "is_locked.*election" backend/routes/elections.js
+grep -n "is_locked.*election" services/backend/routes/elections.js
 
 # 4. Restart backend
 docker restart voting-backend  # or npm restart
@@ -315,6 +342,7 @@ docker restart voting-backend  # or npm restart
 ## Support
 
 For issues or questions:
+
 1. Check SECURITY_AUDIT_IMPLEMENTATION.md
 2. Review database schema and audit tables
 3. Check backend logs for errors
@@ -324,6 +352,7 @@ For issues or questions:
 ## Success Indicators
 
 ✅ System is working correctly when:
+
 - Audit logs appear immediately after admin actions
 - Failed mutations show error message and log event
 - Hash verification shows "integrity verified"

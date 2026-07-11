@@ -1,6 +1,6 @@
 # Database Improvements - Visual Summary
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────────┐
 │                                                                 │
 │   UNIVERSITY BLOCKCHAIN VOTING SYSTEM                          │
@@ -110,14 +110,14 @@
 │  🔧 INFRASTRUCTURE BUILT                                         │
 └─────────────────────────────────────────────────────────────────┘
 
-  ✅ Migration System (migrate.js - 234 lines)
+  ✅ Migration System (services/backend/scripts/migrate.js - 234 lines)
      • Automatic database creation
      • Sequential execution (001, 002, 003...)
      • Checksum verification
      • Status tracking
      • CLI: run | status | rollback
 
-  ✅ Sample Data Seeder (seed.js - 390 lines)
+  ✅ Sample Data Seeder (services/backend/scripts/seed.js - 390 lines)
      • 7 Users (admin, students, teacher, staff, board)
      • 3 Elections (active, pending, completed)
      • 8 Candidates across elections
@@ -176,7 +176,7 @@
      • Copy-paste commands
      • Verification steps
 
-  📄 .env.example
+  📄 .env.example (services/backend/.env.example)
      • Complete configuration template
      • Security placeholders
 
@@ -262,7 +262,7 @@
 │  🚀 QUICK START                                                  │
 └─────────────────────────────────────────────────────────────────┘
 
-  cd backend
+  cd services/backend
   npm install
   cp .env.example .env
   # Edit .env with MySQL password

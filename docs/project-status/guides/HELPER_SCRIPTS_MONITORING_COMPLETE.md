@@ -1,4 +1,4 @@
-# ✅ Helper Scripts & Monitoring Setup - Complete!
+# ✅ Helper Scripts & Monitoring Setup - Complete
 
 **Date:** November 5, 2025  
 **Status:** ✅ **ALL TASKS COMPLETED**  
@@ -9,6 +9,7 @@
 ## 🎯 Summary
 
 Successfully completed all pending Docker infrastructure tasks:
+
 1. ✅ Additional helper scripts created
 2. ✅ Monitoring stack with Prometheus & Grafana configured
 3. ✅ Complete documentation updated
@@ -20,9 +21,11 @@ Successfully completed all pending Docker infrastructure tasks:
 ### Core Scripts (7 total)
 
 #### 1. **docker-backup.sh** ✅
+
 **Purpose:** Backup MySQL database and blockchain data
 
 **Features:**
+
 - Automated MySQL database dump
 - Blockchain data archive
 - Environment configuration backup
@@ -30,24 +33,28 @@ Successfully completed all pending Docker infrastructure tasks:
 - Compressed tar.gz output
 - Timestamped backups
 
-**Output:** `./backups/voting_backup_YYYYMMDD_HHMMSS.tar.gz`
+**Output:** `infra/scripts/backups/voting_backup_YYYYMMDD_HHMMSS.tar.gz`
 
 #### 2. **docker-restore.sh** ✅
+
 **Purpose:** Restore system from backup
 
 **Features:**
+
 - Extract and restore MySQL database
 - Restore blockchain data
 - Compare environment configurations
 - Automatic service restart
 - Safety confirmation prompt
 
-**Usage:** `./docker-restore.sh ./backups/voting_backup_TIMESTAMP.tar.gz`
+**Usage:** `./docker-restore.sh infra/scripts/backups/voting_backup_TIMESTAMP.tar.gz`
 
 #### 3. **docker-logs.sh** ✅
+
 **Purpose:** Advanced interactive log viewer
 
 **Features:**
+
 - Interactive menu system
 - Follow all logs or specific service
 - View last N lines
@@ -56,6 +63,7 @@ Successfully completed all pending Docker infrastructure tasks:
 - Color-coded output
 
 **9 Options:**
+
 1. View all logs (follow)
 2. View backend logs
 3. View frontend logs
@@ -67,9 +75,11 @@ Successfully completed all pending Docker infrastructure tasks:
 9. View errors only
 
 #### 4. **docker-cleanup.sh** ✅
+
 **Purpose:** Clean up Docker resources
 
 **Features:**
+
 - Interactive cleanup menu
 - Remove stopped containers
 - Remove dangling images
@@ -83,9 +93,11 @@ Successfully completed all pending Docker infrastructure tasks:
 **9 Options** with safety confirmations
 
 #### 5. **docker-health-check.sh** ✅
+
 **Purpose:** Comprehensive system health check
 
 **Features:**
+
 - Docker daemon status
 - Container status check
 - HTTP endpoint testing (all 5 services)
@@ -97,9 +109,11 @@ Successfully completed all pending Docker infrastructure tasks:
 **Also created:** `docker-health-check.bat` for Windows
 
 #### 6. **docker-seed.sh** ✅
+
 **Purpose:** Seed database with test data
 
 **Features:**
+
 - Populate test users
 - Create sample elections
 - Generate candidate data
@@ -108,9 +122,11 @@ Successfully completed all pending Docker infrastructure tasks:
 - Test credential display
 
 #### 7. **docker-monitoring-start.sh** ✅
+
 **Purpose:** Start monitoring stack
 
 **Features:**
+
 - Auto-start main services if needed
 - Launch monitoring stack
 - Health check verification
@@ -132,7 +148,7 @@ All Linux scripts work in Git Bash on Windows!
 
 ### Architecture
 
-```
+```text
 ┌─────────────────────────────────────────┐
 │         Voting System Services          │
 │  (MySQL, Backend, Frontend, Blockchain) │
@@ -166,6 +182,7 @@ All Linux scripts work in Git Bash on Windows!
 ### Components Installed
 
 #### 1. **Prometheus** (Port 9090) ✅
+
 - Metrics collection and storage
 - 15-second scrape interval
 - 30-day data retention
@@ -180,12 +197,14 @@ All Linux scripts work in Git Bash on Windows!
 **Config:** `monitoring/prometheus.yml`
 
 #### 2. **Grafana** (Port 3030) ✅
+
 - Visualization platform
 - Default credentials: admin/admin
 - Auto-configured Prometheus datasource
 - Dashboard provisioning enabled
 
 **Dashboards Created:**
+
 - ✅ Voting System Overview
   - Service status (UP/DOWN)
   - CPU usage by container
@@ -198,18 +217,21 @@ All Linux scripts work in Git Bash on Windows!
 **Config:** `monitoring/grafana/provisioning/`
 
 #### 3. **cAdvisor** (Port 8081) ✅
+
 - Container-level metrics
 - CPU, memory, network, disk I/O
 - Real-time monitoring
 - 10-second update interval
 
 #### 4. **Node Exporter** (Port 9100) ✅
+
 - Host system metrics
 - CPU, memory, disk, network
 - Filesystem metrics
 - Process metrics
 
 #### 5. **MySQL Exporter** (Port 9104) ✅
+
 - Database-specific metrics
 - Connection pool status
 - Query performance
@@ -221,12 +243,14 @@ All Linux scripts work in Git Bash on Windows!
 **File:** `monitoring/alerts/voting-system-alerts.yml`
 
 #### Critical Alerts (Severity: Critical)
+
 1. **ServiceDown** - Any service down >1 minute
 2. **BackendAPIDown** - Backend API not responding
 3. **BlockchainNodeDown** - Blockchain not responding
 4. **MySQLDown** - Database not responding
 
 #### Warning Alerts (Severity: Warning)
+
 1. **HighCPUUsage** - Container >80% CPU for 5 minutes
 2. **HighMemoryUsage** - Container >85% memory
 3. **DiskSpaceLow** - Disk space <10%
@@ -240,6 +264,7 @@ All Linux scripts work in Git Bash on Windows!
 **File:** `docker-compose.monitoring.yml`
 
 **Services:**
+
 - prometheus (voting-prometheus)
 - grafana (voting-grafana)
 - cadvisor (voting-cadvisor)
@@ -247,10 +272,12 @@ All Linux scripts work in Git Bash on Windows!
 - mysql-exporter (voting-mysql-exporter)
 
 **Networks:**
+
 - `monitoring` - Isolated monitoring network
 - `voting-network` - Connected to main app
 
 **Volumes:**
+
 - `prometheus_data` - Persistent metrics storage
 - `grafana_data` - Dashboard and config storage
 
@@ -259,9 +286,11 @@ All Linux scripts work in Git Bash on Windows!
 ## 📝 Documentation Created
 
 ### 1. **MONITORING_GUIDE.md** ✅
+
 **1,200+ lines** - Complete monitoring documentation
 
 **Sections:**
+
 - Quick start guide
 - Component overview
 - Available metrics (with PromQL examples)
@@ -272,9 +301,11 @@ All Linux scripts work in Git Bash on Windows!
 - Performance tips
 
 ### 2. **HELPER_SCRIPTS_REFERENCE.md** ✅
+
 **500+ lines** - Quick reference for all scripts
 
 **Sections:**
+
 - Main operations
 - Backup & restore workflows
 - Monitoring commands
@@ -288,17 +319,22 @@ All Linux scripts work in Git Bash on Windows!
 - Emergency commands
 
 ### 3. **Updated DOCKER_SETUP.md** ✅
+
 Added new sections:
+
 - 🛠️ Helper Scripts (7 scripts documented)
 - 📊 Monitoring Setup (Quick start + features)
 
 ### 4. **Updated README.md** ✅
+
 Added:
+
 - 📊 Monitoring section in Quick Start
 - 📖 Documentation links for helper scripts
 - Helper script list in documentation section
 
 ### 5. **Updated DOCKER_QUICK_REFERENCE.md** (existing)
+
 No changes needed - still current
 
 ---
@@ -306,6 +342,7 @@ No changes needed - still current
 ## 🎉 What You Can Do Now
 
 ### 1. **Automated Backups**
+
 ```bash
 # Create backup before any major changes
 ./docker-backup.sh
@@ -315,6 +352,7 @@ No changes needed - still current
 ```
 
 ### 2. **Advanced Log Analysis**
+
 ```bash
 # Interactive log viewer
 ./docker-logs.sh
@@ -324,6 +362,7 @@ docker-compose logs | grep -i error
 ```
 
 ### 3. **System Health Monitoring**
+
 ```bash
 # Run health check anytime
 ./docker-health-check.sh
@@ -333,6 +372,7 @@ docker-compose logs | grep -i error
 ```
 
 ### 4. **Resource Management**
+
 ```bash
 # Clean up Docker resources
 ./docker-cleanup.sh
@@ -342,6 +382,7 @@ docker system df
 ```
 
 ### 5. **Visual Monitoring**
+
 ```bash
 # Start Grafana dashboard
 ./docker-monitoring-start.sh
@@ -351,6 +392,7 @@ docker system df
 ```
 
 ### 6. **Database Seeding**
+
 ```bash
 # Populate test data
 ./docker-seed.sh
@@ -363,6 +405,7 @@ docker system df
 ## 📊 Monitoring Features
 
 ### Real-Time Metrics
+
 - ✅ Service uptime (Backend, Frontend, Blockchain, MySQL)
 - ✅ Container CPU usage (per service)
 - ✅ Container memory usage (per service)
@@ -372,12 +415,14 @@ docker system df
 - ✅ Container restart events
 
 ### Alerting
+
 - ✅ Automatic alerts for 11 critical conditions
 - ✅ Configurable thresholds
 - ✅ Can integrate with Slack, Email, PagerDuty
 - ✅ Alert history in Prometheus
 
 ### Dashboards
+
 - ✅ Pre-configured Voting System Overview
 - ✅ All key metrics in one view
 - ✅ Color-coded status indicators
@@ -391,6 +436,7 @@ docker system df
 ### Files Created (Total: 20)
 
 **Scripts (7):**
+
 1. `docker-backup.sh`
 2. `docker-restore.sh`
 3. `docker-logs.sh`
@@ -400,9 +446,11 @@ docker system df
 7. `docker-monitoring-start.sh`
 
 **Windows Scripts (1):**
+
 1. `docker-health-check.bat`
 
 **Monitoring Configs (5):**
+
 1. `docker-compose.monitoring.yml`
 2. `monitoring/prometheus.yml`
 3. `monitoring/alerts/voting-system-alerts.yml`
@@ -410,20 +458,24 @@ docker system df
 5. `monitoring/grafana/provisioning/dashboards/voting-system.yml`
 
 **Dashboards (1):**
+
 1. `monitoring/grafana/dashboards/voting-system-overview.json`
 
 **Documentation (3):**
+
 1. `MONITORING_GUIDE.md`
 2. `HELPER_SCRIPTS_REFERENCE.md`
 3. `HELPER_SCRIPTS_MONITORING_COMPLETE.md` (this file)
 
 **Updated Files (3):**
+
 1. `DOCKER_SETUP.md`
 2. `README.md`
 3. `.gitignore` (add backups/)
 
 ### Directory Structure
-```
+
+```text
 h:/Voting/
 ├── docker-backup.sh
 ├── docker-restore.sh
@@ -477,6 +529,7 @@ h:/Voting/
 ## 🚀 Next Steps (Optional Enhancements)
 
 ### Future Improvements
+
 1. **Alertmanager Integration**
    - Email notifications
    - Slack integration
@@ -507,6 +560,7 @@ h:/Voting/
 ## 🎓 Learning Resources
 
 All scripts include:
+
 - ✅ Detailed comments
 - ✅ Color-coded output
 - ✅ Error handling
@@ -514,24 +568,27 @@ All scripts include:
 - ✅ Safety confirmations
 
 **Try running:**
+
 ```bash
 ./docker-health-check.sh  # See system health
 ./docker-logs.sh          # Explore log viewer
 ./docker-monitoring-start.sh  # Start monitoring
 ```
 
-Then explore Grafana dashboards at http://localhost:3030
+Then explore Grafana dashboards at <http://localhost:3030>
 
 ---
 
 ## 📞 Support
 
 **Documentation:**
-- Main Guide: [DOCKER_SETUP.md](./DOCKER_SETUP.md)
-- Monitoring: [MONITORING_GUIDE.md](./MONITORING_GUIDE.md)
+
+- Main Guide: [DOCKER_SETUP.md](../docker/DOCKER_SETUP.md)
+- Monitoring: [MONITORING_GUIDE.md](../monitoring/MONITORING_GUIDE.md)
 - Scripts: [HELPER_SCRIPTS_REFERENCE.md](./HELPER_SCRIPTS_REFERENCE.md)
 
 **Quick Help:**
+
 ```bash
 # Health check
 ./docker-health-check.sh
@@ -550,6 +607,7 @@ Then explore Grafana dashboards at http://localhost:3030
 ✅ **ALL TASKS COMPLETED SUCCESSFULLY!**
 
 The University Blockchain Voting System now has:
+
 1. ✅ Comprehensive helper scripts for all operations
 2. ✅ Professional monitoring stack with Grafana & Prometheus
 3. ✅ Automated alerting for critical issues
@@ -559,7 +617,7 @@ The University Blockchain Voting System now has:
 **Total Implementation Time:** ~1 hour  
 **Files Created/Modified:** 23  
 **Lines of Code/Config:** ~3,500+  
-**Documentation:** ~2,500 lines  
+**Documentation:** ~2,500 lines
 
 **Ready for production deployment!** 🚀
 

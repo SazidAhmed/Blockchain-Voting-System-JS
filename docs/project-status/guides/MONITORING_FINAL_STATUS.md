@@ -11,6 +11,7 @@
 Your blockchain voting system now has **complete, tested, production-ready monitoring** with:
 
 ### ✅ What's Live Right Now
+
 - 5 Blockchain nodes (3 validators, 2 observers) - ALL HEALTHY
 - 1 MySQL database - HEALTHY & RESPONSIVE
 - 1 Prometheus database - COLLECTING METRICS
@@ -21,12 +22,14 @@ Your blockchain voting system now has **complete, tested, production-ready monit
 - All data persisted in volumes
 
 ### 📊 Currently Monitoring
+
 - ✅ Container CPU, Memory, Network, Disk I/O
 - ✅ System CPU, Memory, Disk, Network usage
 - ✅ Database connections and performance
 - 📋 Blockchain metrics (ready for integration)
 
 ### 🚀 Ready to Deploy (12 minutes)
+
 - prometheusMetrics.js (600+ lines) - Created ✅
 - BlockchainMonitor.vue (800+ lines) - Created ✅
 - All documentation - Complete ✅
@@ -36,7 +39,7 @@ Your blockchain voting system now has **complete, tested, production-ready monit
 
 ## 🌐 Access Your Monitoring NOW
 
-```
+```text
 Grafana:     http://localhost:3030 (admin/admin)
 Prometheus:  http://localhost:9090
 cAdvisor:    http://localhost:8081
@@ -47,7 +50,7 @@ Node Export: http://localhost:9100
 
 ## 📈 Test Results
 
-```
+```text
 ✅ Container Status Tests           PASSED (10/10)
 ✅ Grafana API Tests               PASSED
 ✅ Prometheus Health Tests         PASSED
@@ -77,23 +80,25 @@ TOTAL: 42/42 TESTS PASSED ✅
 
 ## 💾 Code Ready
 
-1. **blockchain-node/prometheusMetrics.js** - Metrics collection
-2. **frontend/src/views/BlockchainMonitor.vue** - Dashboard UI
+1. **services/blockchain-node/src/monitoring/prometheusMetrics.js** - Metrics collection
+2. **services/frontend/src/views/BlockchainMonitor.vue** - Dashboard UI
 
 ---
 
 ## 🎯 Your Next Step
 
 **Option 1: Explore Now (5 minutes)**
-```
+
+```text
 1. Open http://localhost:3030
 2. Login: admin/admin
 3. Explore metrics
 ```
 
 **Option 2: Full Integration (12 minutes)**
-```
-1. Add metrics to blockchain-node/index.js
+
+```text
+1. Add metrics to services/blockchain-node/index.js
 2. Add route to frontend router
 3. Rebuild and restart
 4. See live blockchain metrics
@@ -103,7 +108,7 @@ TOTAL: 42/42 TESTS PASSED ✅
 
 ## 🎊 SYSTEM STATUS
 
-```
+```text
 ╔════════════════════════════════════════╗
 ║  MONITORING: LIVE & OPERATIONAL  ✅   ║
 ║  All Services: HEALTHY           ✅   ║
@@ -120,6 +125,6 @@ TOTAL: 42/42 TESTS PASSED ✅
 **Tests:** ✅ 42/42 Passed  
 **Documentation:** ✅ Complete  
 **Code:** ✅ Ready  
-**Integration:** 📋 12 minutes  
+**Integration:** 📋 12 minutes
 
-**Go to:** http://localhost:3030 🚀
+**Go to:** <http://localhost:3030> 🚀

@@ -8,9 +8,10 @@
 ## 🎉 What's Now Working
 
 ### ✅ Blockchain Metrics Exposed
+
 All 5 blockchain nodes now expose Prometheus metrics at `/metrics` endpoint:
 
-```
+```text
 http://localhost:3001/metrics  (Node 1 - Validator)
 http://localhost:3002/metrics  (Node 2 - Validator)
 http://localhost:3003/metrics  (Node 3 - Validator)
@@ -19,7 +20,9 @@ http://localhost:3005/metrics  (Node 5 - Observer)
 ```
 
 ### ✅ Prometheus Scraping Active
+
 Prometheus is **actively collecting** blockchain metrics from all 5 nodes:
+
 - Scrape interval: 15 seconds
 - Health status: UP
 - Metrics flow: Active
@@ -27,6 +30,7 @@ Prometheus is **actively collecting** blockchain metrics from all 5 nodes:
 ### ✅ Metrics Being Collected
 
 **Blockchain Counters (Growing):**
+
 - `blockchain_blocks_created_total` - Blocks created by this node
 - `blockchain_blocks_received_total` - Blocks received from peers
 - `blockchain_transactions_processed_total` - Transactions processed
@@ -35,6 +39,7 @@ Prometheus is **actively collecting** blockchain metrics from all 5 nodes:
 - `blockchain_invalid_transactions_rejected_total` - Invalid transactions rejected
 
 **Blockchain Gauges (Current State):**
+
 - `blockchain_chain_height` - Current chain height
 - `blockchain_transaction_pool_size` - Pending transactions
 - `blockchain_connected_peers` - Number of connected peers
@@ -42,6 +47,7 @@ Prometheus is **actively collecting** blockchain metrics from all 5 nodes:
 - `blockchain_unhealthy_peers` - Unhealthy peer count
 
 **Blockchain Information:**
+
 - `blockchain_node_info` - Node metadata (ID, type, version)
 
 ---
@@ -50,7 +56,8 @@ Prometheus is **actively collecting** blockchain metrics from all 5 nodes:
 
 ### Code Changes
 
-**1. blockchain-node/index.js**
+**1. services/blockchain-node/index.js**
+
 - ✅ Added PrometheusMetrics import
 - ✅ Initialized metrics module for each node
 - ✅ Added `/metrics` endpoint (Prometheus format)
@@ -62,12 +69,14 @@ Prometheus is **actively collecting** blockchain metrics from all 5 nodes:
 - ✅ Connected peer connection/disconnection tracking
 
 **2. monitoring/prometheus.yml**
+
 - ✅ Updated blockchain-node scrape config
 - ✅ Configured all 5 nodes with container names
 - ✅ Set scrape interval to 15 seconds
 - ✅ Enabled metrics collection
 
 **3. Docker Image Rebuild**
+
 - ✅ Rebuilt blockchain-node Docker image with metrics
 - ✅ All 5 nodes restarted with new code
 
@@ -76,7 +85,8 @@ Prometheus is **actively collecting** blockchain metrics from all 5 nodes:
 ## 🔍 Testing Results
 
 ### Endpoint Tests
-```
+
+```text
 ✅ Node 1: http://localhost:3001/metrics - WORKING
 ✅ Node 2: http://localhost:3002/metrics - WORKING
 ✅ Node 3: http://localhost:3003/metrics - WORKING
@@ -85,25 +95,28 @@ Prometheus is **actively collecting** blockchain metrics from all 5 nodes:
 ```
 
 ### JSON Format Tests
-```
+
+```text
 ✅ http://localhost:3001/metrics/json - WORKING
    Sample response: {"nodeId":"node1","nodeType":"validator","uptime":120,...}
 ```
 
 ### Prometheus Query Tests
-```
+
+```text
 ✅ blockchain_chain_height
    Result: 5 metrics (one from each node) = 1
-   
+
 ✅ blockchain_node_info
    Result: 5 metrics (one from each node) = 1
-   
+
 ✅ blockchain_transactions_processed_total
    Result: 5 metrics (one from each node) = 0
 ```
 
 ### Scrape Target Status
-```
+
+```text
 ✅ voting-blockchain-node-1:3001 - UP
 ✅ voting-blockchain-node-2:3002 - UP
 ✅ voting-blockchain-node-3:3003 - UP
@@ -118,7 +131,8 @@ Total: 5/5 targets UP and scraping
 ## 🚀 Access Your Metrics
 
 ### View in Prometheus Query Engine
-```
+
+```text
 🔗 http://localhost:9090
 1. Go to: Graph tab
 2. Search for: blockchain_
@@ -127,7 +141,8 @@ Total: 5/5 targets UP and scraping
 ```
 
 ### View in Grafana Dashboards
-```
+
+```text
 🔗 http://localhost:3030
 1. Create new dashboard
 2. Add panel with Prometheus data source
@@ -143,40 +158,50 @@ Total: 5/5 targets UP and scraping
 ## 📈 Example Prometheus Queries
 
 ### Query: Chain Height per Node
-```
+
+```text
 blockchain_chain_height
 ```
+
 **Result:** Shows current height on each of the 5 nodes
 
 ### Query: Transaction Rate
-```
+
+```text
 rate(blockchain_transactions_processed_total[5m])
 ```
+
 **Result:** Transactions processed per second over last 5 minutes
 
 ### Query: Byzantine Attacks
-```
+
+```text
 rate(blockchain_byzantine_attacks_detected_total[1m])
 ```
+
 **Result:** Byzantine attacks detected per minute
 
 ### Query: Connected Peers
-```
+
+```text
 blockchain_connected_peers
 ```
+
 **Result:** Number of peers connected to each node
 
 ### Query: Node Uptime
-```
+
+```text
 blockchain_node_uptime_seconds / 60
 ```
+
 **Result:** Uptime in minutes for each node
 
 ---
 
 ## 💾 Git Commits Made
 
-```
+```text
 e6caba7  Update Prometheus config to scrape all 5 blockchain nodes
 0a931fe  Integrate PrometheusMetrics into blockchain nodes
 ```
@@ -186,18 +211,21 @@ e6caba7  Update Prometheus config to scrape all 5 blockchain nodes
 ## 🎯 What's Next (Optional)
 
 ### 1. Create Grafana Dashboards (5 minutes)
+
 - Add panels for blockchain metrics
 - Create alerts for Byzantine attacks
 - Monitor transaction throughput
 - Track peer connectivity
 
 ### 2. Add Frontend Integration (5 minutes)
+
 - Add route: `/monitor` to frontend
 - Component: `BlockchainMonitor.vue` (already created)
 - Real-time web dashboard
 - Auto-refresh every 5 seconds
 
 ### 3. Configure Alerts (10 minutes)
+
 - Byzantine attack threshold alert
 - Peer disconnection alert
 - Chain height mismatch alert
@@ -207,7 +235,7 @@ e6caba7  Update Prometheus config to scrape all 5 blockchain nodes
 
 ## ✨ System Architecture Now
 
-```
+```text
 ┌─────────────────────────────────────────┐
 │  Grafana Dashboard UI (http:3030)      │
 │  • Real-time visualizations            │

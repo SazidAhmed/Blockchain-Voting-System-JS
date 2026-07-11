@@ -5,15 +5,18 @@ Welcome to the complete database documentation for the University Blockchain Vot
 ## 🚀 Start Here
 
 ### New to the Project?
-**→ Read:** [QUICK_START.md](./QUICK_START.md)  
+
+**→ Read:** [QUICK_START.md](../guides/QUICK_START.md)  
 Get your database up and running in 5 minutes with copy-paste commands.
 
 ### Need to Set Up?
-**→ Read:** [backend/DATABASE_SETUP.md](./backend/DATABASE_SETUP.md)  
+
+**→ Read:** [DATABASE_SETUP.md](../../database/DATABASE_SETUP.md)  
 Complete step-by-step installation guide with troubleshooting.
 
 ### Want a Quick Reference?
-**→ Read:** [backend/DATABASE_QUICK_REFERENCE.md](./backend/DATABASE_QUICK_REFERENCE.md)  
+
+**→ Read:** [DATABASE_QUICK_REFERENCE.md](../../database/DATABASE_QUICK_REFERENCE.md)  
 Common commands, credentials, and SQL queries.
 
 ---
@@ -22,52 +25,54 @@ Common commands, credentials, and SQL queries.
 
 ### 1. Implementation Reports
 
-| Document | Purpose | Lines |
-|----------|---------|-------|
-| [DATABASE_IMPROVEMENTS_REPORT.md](./DATABASE_IMPROVEMENTS_REPORT.md) | Comprehensive improvements documentation | 900+ |
-| [DATABASE_IMPROVEMENTS_VISUAL.md](./DATABASE_IMPROVEMENTS_VISUAL.md) | Visual summary with ASCII diagrams | 400+ |
-| [DATABASE_COMPLETION_SUMMARY.md](./DATABASE_COMPLETION_SUMMARY.md) | Project completion report | 300+ |
+| Document                                                             | Purpose                                  | Lines |
+| -------------------------------------------------------------------- | ---------------------------------------- | ----- |
+| [DATABASE_IMPROVEMENTS_REPORT.md](./DATABASE_IMPROVEMENTS_REPORT.md) | Comprehensive improvements documentation | 900+  |
+| [DATABASE_IMPROVEMENTS_VISUAL.md](./DATABASE_IMPROVEMENTS_VISUAL.md) | Visual summary with ASCII diagrams       | 400+  |
+| [DATABASE_COMPLETION_SUMMARY.md](./DATABASE_COMPLETION_SUMMARY.md)   | Project completion report                | 300+  |
 
 ### 2. Technical Documentation
 
-| Document | Purpose | Lines |
-|----------|---------|-------|
-| [backend/DATABASE_SCHEMA.md](./backend/DATABASE_SCHEMA.md) | Full schema documentation | 450+ |
-| [backend/DATABASE_SETUP.md](./backend/DATABASE_SETUP.md) | Installation & configuration guide | 650+ |
-| [backend/DATABASE_QUICK_REFERENCE.md](./backend/DATABASE_QUICK_REFERENCE.md) | Quick reference guide | 280+ |
+| Document                                                                  | Purpose                            | Lines |
+| ------------------------------------------------------------------------- | ---------------------------------- | ----- |
+| [DATABASE_SCHEMA.md](../../database/DATABASE_SCHEMA.md)                   | Full schema documentation          | 450+  |
+| [DATABASE_SETUP.md](../../database/DATABASE_SETUP.md)                     | Installation & configuration guide | 650+  |
+| [DATABASE_QUICK_REFERENCE.md](../../database/DATABASE_QUICK_REFERENCE.md) | Quick reference guide              | 280+  |
 
 ### 3. Getting Started
 
-| Document | Purpose |
-|----------|---------|
-| [QUICK_START.md](./QUICK_START.md) | 5-minute quick start |
-| [backend/.env.example](./backend/.env.example) | Environment configuration template |
+| Document                                                       | Purpose                            |
+| -------------------------------------------------------------- | ---------------------------------- |
+| [QUICK_START.md](../guides/QUICK_START.md)                     | 5-minute quick start               |
+| [backend/.env.example](../../../services/backend/.env.example) | Environment configuration template |
 
 ### 4. Source Code
 
-| File | Purpose | Lines |
-|------|---------|-------|
-| [backend/migrations/001_initial_schema.sql](./backend/migrations/001_initial_schema.sql) | Complete database schema | 577 |
-| [backend/migrate.js](./backend/migrate.js) | Migration runner | 234 |
-| [backend/seed.js](./backend/seed.js) | Sample data seeder | 390 |
-| [backend/config/db.js](./backend/config/db.js) | Database connection | 120 |
+| File                                                                                                     | Purpose                  | Lines |
+| -------------------------------------------------------------------------------------------------------- | ------------------------ | ----- |
+| [backend/migrations/001_initial_schema.sql](../../../services/backend/migrations/001_initial_schema.sql) | Complete database schema | 577   |
+| [backend/migrate.js](../../../services/backend/scripts/migrate.js)                                       | Migration runner         | 234   |
+| [backend/seed.js](../../../services/backend/scripts/seed.js)                                             | Sample data seeder       | 390   |
+| [backend/config/db.js](../../../services/backend/config/db.js)                                           | Database connection      | 120   |
 
 ---
 
 ## 🎯 Documentation by Use Case
 
-### I want to...
+### I want to
 
 #### Get Started Immediately
-```
+
+```text
 1. Read: QUICK_START.md
 2. Run: npm run db:reset
 3. Start: npm start
 ```
 
 #### Understand the Schema
-```
-Read: backend/DATABASE_SCHEMA.md
+
+```text
+Read: docs/database/DATABASE_SCHEMA.md
 - Table descriptions
 - Data relationships
 - Privacy design
@@ -75,8 +80,9 @@ Read: backend/DATABASE_SCHEMA.md
 ```
 
 #### Set Up from Scratch
-```
-Read: backend/DATABASE_SETUP.md
+
+```text
+Read: docs/database/DATABASE_SETUP.md
 - Prerequisites
 - Installation steps
 - Configuration
@@ -84,8 +90,9 @@ Read: backend/DATABASE_SETUP.md
 ```
 
 #### Find Common Commands
-```
-Read: backend/DATABASE_QUICK_REFERENCE.md
+
+```text
+Read: docs/database/DATABASE_QUICK_REFERENCE.md
 - NPM scripts
 - SQL queries
 - API examples
@@ -93,7 +100,8 @@ Read: backend/DATABASE_QUICK_REFERENCE.md
 ```
 
 #### Understand What Changed
-```
+
+```text
 Read: DATABASE_IMPROVEMENTS_REPORT.md
 - Before/after comparison
 - New features
@@ -102,7 +110,8 @@ Read: DATABASE_IMPROVEMENTS_REPORT.md
 ```
 
 #### See Visual Overview
-```
+
+```text
 Read: DATABASE_IMPROVEMENTS_VISUAL.md
 - ASCII diagrams
 - Feature highlights
@@ -116,6 +125,7 @@ Read: DATABASE_IMPROVEMENTS_VISUAL.md
 ### 13 Tables Created
 
 **Core Voting (7 tables):**
+
 - `users` - Voter accounts with privacy features
 - `elections` - Election configurations
 - `candidates` - Election candidates
@@ -125,16 +135,19 @@ Read: DATABASE_IMPROVEMENTS_VISUAL.md
 - `vote_receipts` - Cryptographic receipts
 
 **Blockchain Network (3 tables):**
+
 - `nodes` - Validator node governance
 - `threshold_key_shares` - Key management
 - `tally_partial_decryptions` - Decryption workflow
 
 **System (3 tables):**
+
 - `audit_logs` - Tamper-evident logging
 - `system_config` - Global configuration
 - `schema_migrations` - Version tracking
 
 ### 30+ Sample Records
+
 - 7 Users (admin, students, teacher, staff, board member)
 - 3 Elections (active, pending, completed)
 - 8 Candidates
@@ -145,6 +158,7 @@ Read: DATABASE_IMPROVEMENTS_VISUAL.md
 ## 🔍 Quick Reference
 
 ### NPM Commands
+
 ```bash
 npm run migrate         # Run all migrations
 npm run migrate:status  # Check migration status
@@ -155,7 +169,8 @@ npm run dev             # Dev mode with auto-reload
 ```
 
 ### Sample Credentials (Development)
-```
+
+```text
 Admin:    ADMIN001 / admin123
 Student:  STU001 / password123
 Teacher:  TEACH001 / password123
@@ -163,6 +178,7 @@ Staff:    STAFF001 / password123
 ```
 
 ### Database Connection
+
 ```env
 DB_HOST=localhost
 DB_USER=root
@@ -177,32 +193,35 @@ DB_NAME=voting
 ### Common Issues
 
 **"Cannot connect to database"**
-→ See: [DATABASE_SETUP.md § Troubleshooting](./backend/DATABASE_SETUP.md#troubleshooting)
+→ See: [DATABASE_SETUP.md § Troubleshooting](../../database/DATABASE_SETUP.md#troubleshooting)
 
 **"Migration fails"**
 → Check: `npm run migrate:status`
-→ Solution in: [DATABASE_SETUP.md](./backend/DATABASE_SETUP.md)
+→ Solution in: [DATABASE_SETUP.md](../../database/DATABASE_SETUP.md)
 
 **"Need sample data"**
 → Run: `npm run db:seed`
-→ Details in: [DATABASE_QUICK_REFERENCE.md](./backend/DATABASE_QUICK_REFERENCE.md)
+→ Details in: [DATABASE_QUICK_REFERENCE.md](../../database/DATABASE_QUICK_REFERENCE.md)
 
 ---
 
 ## 📈 Metrics
 
 ### Documentation Stats
+
 - **Total Lines:** 2,600+ lines of documentation
 - **Total Files:** 10 files (docs + code)
 - **Total Code:** 1,200+ lines (SQL + JS)
 
 ### Implementation Stats
+
 - **Tables Created:** 13
 - **Indexes Created:** 35+
 - **Sample Records:** 30+
 - **Views Created:** 2
 
 ### Quality Metrics
+
 - **Schema Completeness:** 100%
 - **Documentation Coverage:** 100%
 - **Specification Compliance:** 96%
@@ -213,29 +232,34 @@ DB_NAME=voting
 ## 🎓 Learning Path
 
 ### Beginner Path
-1. [QUICK_START.md](./QUICK_START.md) - Get running
-2. [DATABASE_QUICK_REFERENCE.md](./backend/DATABASE_QUICK_REFERENCE.md) - Learn commands
+
+1. [QUICK_START.md](../guides/QUICK_START.md) - Get running
+2. [DATABASE_QUICK_REFERENCE.md](../../database/DATABASE_QUICK_REFERENCE.md) - Learn commands
 3. [DATABASE_IMPROVEMENTS_VISUAL.md](./DATABASE_IMPROVEMENTS_VISUAL.md) - See overview
 
 ### Intermediate Path
-1. [DATABASE_SCHEMA.md](./backend/DATABASE_SCHEMA.md) - Understand tables
-2. [DATABASE_SETUP.md](./backend/DATABASE_SETUP.md) - Learn configuration
+
+1. [DATABASE_SCHEMA.md](../../database/DATABASE_SCHEMA.md) - Understand tables
+2. [DATABASE_SETUP.md](../../database/DATABASE_SETUP.md) - Learn configuration
 3. [DATABASE_COMPLETION_SUMMARY.md](./DATABASE_COMPLETION_SUMMARY.md) - See features
 
 ### Advanced Path
+
 1. [DATABASE_IMPROVEMENTS_REPORT.md](./DATABASE_IMPROVEMENTS_REPORT.md) - Full technical details
-2. [001_initial_schema.sql](./backend/migrations/001_initial_schema.sql) - Study SQL
-3. [migrate.js](./backend/migrate.js) + [seed.js](./backend/seed.js) - Understand tooling
+2. [001_initial_schema.sql](../../../services/backend/migrations/001_initial_schema.sql) - Study SQL
+3. [migrate.js](../../../services/backend/scripts/migrate.js) + [seed.js](../../../services/backend/scripts/seed.js) - Understand tooling
 
 ---
 
 ## 🔗 Related Documentation
 
 ### Project-Wide Documentation
-- [Full_University_Blockchain_Voting_Spec.md](./Full_University_Blockchain_Voting_Spec.md) - Complete specification
-- [PROJECT_STATUS_ANALYSIS.md](./PROJECT_STATUS_ANALYSIS.md) - Project status report
+
+- [Full_University_Blockchain_Voting_Spec.md](../Final_report/Full_University_Blockchain_Voting_Spec.md) - Complete specification
+- [PROJECT_STATUS_ANALYSIS.md](../archive/PROJECT_STATUS_ANALYSIS.md) - Project status report
 
 ### Coming Soon
+
 - Cryptography Implementation Guide
 - API Documentation
 - Testing Guide
@@ -246,6 +270,7 @@ DB_NAME=voting
 ## ✅ Checklist for New Developers
 
 Setup:
+
 - [ ] Read QUICK_START.md
 - [ ] Install MySQL and Node.js
 - [ ] Clone repository
@@ -255,6 +280,7 @@ Setup:
 - [ ] Start server with `npm start`
 
 Learning:
+
 - [ ] Read DATABASE_QUICK_REFERENCE.md
 - [ ] Review sample data in MySQL
 - [ ] Test API endpoints
@@ -262,6 +288,7 @@ Learning:
 - [ ] Understand privacy features
 
 Development:
+
 - [ ] Review DATABASE_SETUP.md
 - [ ] Learn migration system
 - [ ] Understand table relationships
@@ -272,9 +299,9 @@ Development:
 
 ## 📞 Getting Help
 
-1. **Quick Questions:** Check [DATABASE_QUICK_REFERENCE.md](./backend/DATABASE_QUICK_REFERENCE.md)
-2. **Setup Issues:** See [DATABASE_SETUP.md § Troubleshooting](./backend/DATABASE_SETUP.md#troubleshooting)
-3. **Schema Questions:** Read [DATABASE_SCHEMA.md](./backend/DATABASE_SCHEMA.md)
+1. **Quick Questions:** Check [DATABASE_QUICK_REFERENCE.md](../../database/DATABASE_QUICK_REFERENCE.md)
+2. **Setup Issues:** See [DATABASE_SETUP.md § Troubleshooting](../../database/DATABASE_SETUP.md#troubleshooting)
+3. **Schema Questions:** Read [DATABASE_SCHEMA.md](../../database/DATABASE_SCHEMA.md)
 4. **Implementation Details:** Review [DATABASE_IMPROVEMENTS_REPORT.md](./DATABASE_IMPROVEMENTS_REPORT.md)
 
 ---
@@ -301,15 +328,15 @@ After understanding the database, move on to:
 
 ## 📊 Document Matrix
 
-| Document | Audience | Time to Read | When to Use |
-|----------|----------|--------------|-------------|
-| QUICK_START.md | Everyone | 5 min | First time setup |
-| DATABASE_QUICK_REFERENCE.md | Developers | 10 min | Daily reference |
-| DATABASE_SETUP.md | DevOps | 30 min | Installation/config |
-| DATABASE_SCHEMA.md | Developers | 45 min | Understanding schema |
-| DATABASE_IMPROVEMENTS_REPORT.md | Technical leads | 60 min | Understanding changes |
-| DATABASE_IMPROVEMENTS_VISUAL.md | Everyone | 15 min | Quick overview |
-| DATABASE_COMPLETION_SUMMARY.md | Project managers | 20 min | Status report |
+| Document                        | Audience         | Time to Read | When to Use           |
+| ------------------------------- | ---------------- | ------------ | --------------------- |
+| QUICK_START.md                  | Everyone         | 5 min        | First time setup      |
+| DATABASE_QUICK_REFERENCE.md     | Developers       | 10 min       | Daily reference       |
+| DATABASE_SETUP.md               | DevOps           | 30 min       | Installation/config   |
+| DATABASE_SCHEMA.md              | Developers       | 45 min       | Understanding schema  |
+| DATABASE_IMPROVEMENTS_REPORT.md | Technical leads  | 60 min       | Understanding changes |
+| DATABASE_IMPROVEMENTS_VISUAL.md | Everyone         | 15 min       | Quick overview        |
+| DATABASE_COMPLETION_SUMMARY.md  | Project managers | 20 min       | Status report         |
 
 ---
 
@@ -320,7 +347,7 @@ After understanding the database, move on to:
 ✅ **Sample Data:** Available  
 ✅ **Documentation:** Comprehensive (2,600+ lines)  
 ✅ **Developer Tools:** Production-ready  
-✅ **Security Features:** Specification-compliant  
+✅ **Security Features:** Specification-compliant
 
 **Status:** PRODUCTION-READY (pending crypto implementation)
 
@@ -332,4 +359,4 @@ After understanding the database, move on to:
 
 ---
 
-*Start with [QUICK_START.md](./QUICK_START.md) and you'll be up and running in 5 minutes!*
+_Start with [QUICK_START.md](../guides/QUICK_START.md) and you'll be up and running in 5 minutes!_

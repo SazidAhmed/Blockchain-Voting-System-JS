@@ -10,8 +10,8 @@
  */
 
 // Import services (adjust path as needed in actual implementation)
-// import cryptoService from './services/crypto.js'
-// import keyManager from './services/keyManager.js'
+// import cryptoService from '../services/crypto.js'
+// import keyManager from '../services/keyManager.js'
 
 /**
  * Test 1: Key Generation
