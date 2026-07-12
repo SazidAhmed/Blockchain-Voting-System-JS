@@ -8,11 +8,12 @@ A secure, privacy-preserving blockchain-based voting system for university elect
 
 ## 🎉 Project Status
 
-**Current Phase:** Merkle Tree Integration Complete - Production Ready  
-**Last Updated:** November 13, 2025  
+**Current Phase:** Merkle Tree Integration Complete - Production Ready
+**Last Updated:** November 13, 2025
 **Completion:** 96% (~19,000+ lines of code)
 
-### ✅ Fully Implemented:
+### ✅ Fully Implemented
+
 - ✅ **Complete Docker Setup** - One-command deployment with 5 services
 - ✅ **Monitoring Stack** - Prometheus, Grafana, cAdvisor with pre-built dashboards
 - ✅ **Helper Scripts** - Backup, restore, logs, health checks, cleanup utilities
@@ -27,7 +28,8 @@ A secure, privacy-preserving blockchain-based voting system for university elect
 - ✅ **Audit Logging** - Comprehensive event tracking with severity levels
 - ✅ **Merkle Tree System** - Efficient vote verification with O(log n) proofs **[NEW]** 🎉
 
-### 🔜 Remaining Tasks:
+### 🔜 Remaining Tasks
+
 - Final documentation and screenshots (Priority 3 - In Progress)
 - Frontend Merkle proof verification UI (Optional enhancement)
 - Multi-factor authentication (Future feature)
@@ -56,10 +58,12 @@ A secure, privacy-preserving blockchain-based voting system for university elect
 ### 🐳 Docker Setup (Recommended - Easiest!)
 
 **Prerequisites:**
+
 - Docker Desktop installed ([Download here](https://www.docker.com/products/docker-desktop))
 - At least 4GB of free RAM
 
 **One-Command Setup:**
+
 ```bash
 # Clone repository
 git clone https://github.com/SazidAhmed/Blockchain-Voting-System-JS.git
@@ -80,10 +84,12 @@ docker-start.bat
 ```
 
 **Access the application:**
-- 🖥️ **Frontend**: http://localhost:5173
-- 🔧 **Backend API**: http://localhost:3000
-- ⛓️ **Blockchain**: http://localhost:3001
-- 🗄️ **phpMyAdmin**: http://localhost:8080
+
+- 🖥️ **Frontend (Voters)**: <http://localhost:5173>
+- 🔧 **Admin Panel**: <http://localhost:5174>
+- 🔧 **Backend API**: <http://localhost:3000>
+- ⛓️ **Blockchain**: <http://localhost:3001>
+- 🗄️ **phpMyAdmin**: <http://localhost:8080>
 
 **Done!** All 5 services running in Docker containers. See [DOCKER_SETUP.md](./DOCKER_SETUP.md) for details.
 
@@ -100,11 +106,13 @@ docker-compose -f docker-compose.yml -f docker-compose.monitoring.yml up -d
 ```
 
 **Access Monitoring Tools:**
-- 📈 **Grafana**: http://localhost:3030 (admin/admin)
-- 📊 **Prometheus**: http://localhost:9090
-- 🐳 **cAdvisor**: http://localhost:8081
+
+- 📈 **Grafana**: <http://localhost:3030> (admin/admin)
+- 📊 **Prometheus**: <http://localhost:9090>
+- 🐳 **cAdvisor**: <http://localhost:8081>
 
 **Features:**
+
 - Real-time service health monitoring
 - Container resource usage (CPU, memory, network)
 - MySQL database metrics
@@ -118,6 +126,7 @@ See [MONITORING_GUIDE.md](./MONITORING_GUIDE.md) for complete documentation.
 ## �️ Management Tools
 
 ### Helper Scripts
+
 ```bash
 ./docker-health-check.sh    # Check system health
 ./docker-backup.sh           # Backup database & blockchain
@@ -128,6 +137,7 @@ See [MONITORING_GUIDE.md](./MONITORING_GUIDE.md) for complete documentation.
 ```
 
 ### Testing
+
 ```bash
 # Health check all services
 ./docker-health-check.sh
@@ -157,6 +167,7 @@ node test-system.js
 Comprehensive documentation available:
 
 ### Core Documentation
+
 - **[DOCKER_SETUP.md](./DOCKER_SETUP.md)** - Complete Docker setup guide
 - **[DOCKER_QUICK_REFERENCE.md](./DOCKER_QUICK_REFERENCE.md)** - Quick Docker commands
 - **[HELPER_SCRIPTS_REFERENCE.md](./HELPER_SCRIPTS_REFERENCE.md)** - All helper scripts
@@ -164,6 +175,7 @@ Comprehensive documentation available:
 - **[DOCKER_TEST_RESULTS.md](./DOCKER_TEST_RESULTS.md)** - Docker test report
 
 ### Development Documentation
+
 - **20_10_25.md** - Client-side cryptography implementation
 - **21_10_25.md** - Backend integration and testing session
 - **CRYPTO_IMPLEMENTATION.md** - Technical API reference
@@ -172,6 +184,7 @@ Comprehensive documentation available:
 - **DATABASE_SCHEMA.md** - Database documentation
 
 ### Helper Scripts (New! ✨)
+
 - `docker-backup.sh` - Backup database and blockchain
 - `docker-restore.sh` - Restore from backups
 - `docker-logs.sh` - Advanced log viewer
@@ -182,11 +195,12 @@ Comprehensive documentation available:
 
 ## 🔄 Vote Casting Flow
 
-```
+```text
 Registration → Key Generation → Vote → Encrypt → Sign → Verify → Store → Blockchain
 ```
 
 **Detailed Flow:**
+
 1. User registers → ECDSA + RSA keypairs generated client-side
 2. User selects candidate → Ballot encrypted with election public key
 3. Vote package signed with ECDSA private key
@@ -212,17 +226,17 @@ MIT License - see LICENSE file for details
 
 ## 👥 Team
 
-**Developers:** Sazid Ahmed, Nahid Noyon  
-**Institution:** Bangladesh University of Professionals  
-**Program:** Masters in Information System Security  
+**Developers:** Sazid Ahmed, Nahid Noyon
+**Institution:** Bangladesh University of Professionals
+**Program:** Masters in Information System Security
 **Year:** 2023-2024
 
 ---
 
 ## 📧 Contact
 
-- **Email:** sazidahmed.official@gmail.com  
-- **GitHub:** [@SazidAhmed](https://github.com/SazidAhmed)  
+- **Email:** [sazidahmed.official@gmail.com](sazidahmed.official@gmail.com)
+- **GitHub:** [@SazidAhmed](https://github.com/SazidAhmed)
 - **Issues:** [Report bugs or request features](https://github.com/SazidAhmed/Blockchain-Voting-System-JS/issues)
 
 ---
@@ -232,6 +246,7 @@ MIT License - see LICENSE file for details
 **This is an academic/research project (94% complete).**
 
 **Core Security Features Tested & Verified:**
+
 - ✅ Double-vote prevention (100% test pass rate)
 - ✅ Transaction hash integrity (SHA-256 deterministic generation)
 - ✅ ECDSA signature verification
@@ -239,6 +254,7 @@ MIT License - see LICENSE file for details
 - ✅ Comprehensive audit logging
 
 **Before production use, ensure:**
+
 1. Professional security audit by cryptography experts
 2. Comprehensive penetration testing
 3. Secure key storage (HSM or encrypted key stores)
@@ -250,11 +266,12 @@ MIT License - see LICENSE file for details
 
 ---
 
-**Last Updated:** November 13, 2025  
-**Status:** Security Testing Complete - 94% Done  
+**Last Updated:** November 13, 2025
+**Status:** Security Testing Complete - 94% Done
 **Next:** Final documentation & optional Merkle tree implementation
 
 **🎉 Major Milestones Achieved:**
+
 - ✅ Double-vote prevention system validated
 - ✅ Transaction hash integrity verified
 - ✅ End-to-end voting workflow operational

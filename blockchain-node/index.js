@@ -217,6 +217,28 @@ function handlePeerMessage(peerId, message) {
 
 // API endpoints
 
+// Root route
+app.get('/', (req, res) => {
+  res.json({
+    service: 'Blockchain Voting System - Blockchain Node',
+    nodeId,
+    nodeType,
+    status: 'running',
+    endpoints: {
+      chain: '/chain',
+      node: '/node',
+      peers: '/peers',
+      metrics: '/metrics',
+      vote: '/vote',
+      mine: '/mine',
+      transactions: '/transactions/new',
+      merkle: '/merkle/stats',
+      elections: '/elections/:electionId/results',
+      nullifier: '/nullifier/:nullifier'
+    }
+  });
+});
+
 // Get the full blockchain
 app.get('/chain', (req, res) => {
     res.json({

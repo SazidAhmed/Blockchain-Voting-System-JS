@@ -5,10 +5,12 @@ This guide will help you set up the entire voting system using Docker containers
 ## 📦 What's Included
 
 The Docker setup includes:
+
 - **MySQL 8.0** - Database server
 - **phpMyAdmin** - Web-based database management
 - **Backend API** - Node.js/Express server (Port 3000)
-- **Frontend** - Vue.js application (Port 5173)
+- **Frontend (Voters)** - Vue.js application (Port 5173)
+- **Admin Panel** - Vue.js admin interface (Port 5174)
 - **Blockchain Node** - Custom blockchain (Port 3001)
 
 ## 🚀 Quick Start
@@ -18,7 +20,7 @@ The Docker setup includes:
 - Docker Desktop installed ([Download here](https://www.docker.com/products/docker-desktop))
 - Docker Compose (included with Docker Desktop)
 - At least 4GB of free RAM
-- Ports 3000, 3001, 3306, 5173, and 8080 available
+- Ports 3000, 3001, 3306, 5173, 5174, and 8080 available
 
 ### Step 1: Clone the Repository
 
@@ -75,19 +77,22 @@ docker-compose logs -f
 ```
 
 You'll know it's ready when you see:
+
 - ✅ MySQL: `ready for connections`
 - ✅ Backend: `Server running on port 3000`
 - ✅ Blockchain: `Blockchain node server running on port 3001`
-- ✅ Frontend: `Local: http://localhost:5173/`
+- ✅ Frontend (Voters): `Local: http://localhost:5173/`
+- ✅ Admin Panel: `Local: http://localhost:5174/`
 
 ### Step 5: Access the Application
 
 Open your browser and navigate to:
 
-- **Frontend (Voting UI)**: http://localhost:5173
-- **Backend API**: http://localhost:3000/api/elections
-- **Blockchain Node**: http://localhost:3001/node
-- **phpMyAdmin**: http://localhost:8080
+- **Frontend (Voting UI)**: <http://localhost:5173>
+- **Admin Panel**: <http://localhost:5174>
+- **Backend API**: <http://localhost:3000/api/elections>
+- **Blockchain Node**: <http://localhost:3001/node>
+- **phpMyAdmin**: <http://localhost:8080>
   - Server: `mysql`
   - Username: `voting_user` (or value from `.env`)
   - Password: `voting_pass` (or value from `.env`)
@@ -183,7 +188,7 @@ mysql -h 127.0.0.1 -P 3306 -u voting_user -p voting_db
 
 ### phpMyAdmin
 
-- **URL**: http://localhost:8080
+- **URL**: <http://localhost:8080>
 - **Server**: `mysql`
 - **Features**:
   - Browse tables
@@ -193,8 +198,8 @@ mysql -h 127.0.0.1 -P 3306 -u voting_user -p voting_db
 
 ### Backend API
 
-- **URL**: http://localhost:3000
-- **API Endpoints**: http://localhost:3000/api
+- **URL**: <http://localhost:3000>
+- **API Endpoints**: <http://localhost:3000/api>
 - **Features**:
   - User registration and authentication
   - Election management
@@ -203,7 +208,7 @@ mysql -h 127.0.0.1 -P 3306 -u voting_user -p voting_db
 
 ### Blockchain Node
 
-- **URL**: http://localhost:3001
+- **URL**: <http://localhost:3001>
 - **Data Persistence**: Stored in `blockchain_data` Docker volume
 - **Features**:
   - Vote storage
@@ -211,9 +216,9 @@ mysql -h 127.0.0.1 -P 3306 -u voting_user -p voting_db
   - Nullifier tracking
   - Transaction verification
 
-### Frontend
+### Frontend (Voters)
 
-- **URL**: http://localhost:5173
+- **URL**: <http://localhost:5173>
 - **Hot Reload**: Enabled (changes reflect immediately)
 - **Features**:
   - User registration/login
@@ -221,9 +226,20 @@ mysql -h 127.0.0.1 -P 3306 -u voting_user -p voting_db
   - Receipt download
   - Key management
 
+### Admin Panel
+
+- **URL**: <http://localhost:5174>
+- **Hot Reload**: Enabled (changes reflect immediately)
+- **Features**:
+  - Election management (create, activate, complete)
+  - Candidate management
+  - Audit logs viewer
+  - Real-time monitoring and analytics
+
 ## 🗄️ Database Setup
 
 The database is automatically initialized on first run with:
+
 1. Schema creation (from `backend/migrations/*.sql`)
 2. Tables for users, elections, votes, etc.
 
@@ -293,11 +309,11 @@ Should return node information.
 
 ### 4. Test Frontend
 
-Open http://localhost:5173 in browser. You should see the voting system homepage.
+Open <http://localhost:5173> in browser. You should see the voting system homepage.
 
 ### 5. End-to-End Test
 
-1. Register a new user at http://localhost:5173/register
+1. Register a new user at <http://localhost:5173/register>
 2. Login with the credentials
 3. Navigate to elections
 4. Cast a vote
@@ -310,6 +326,7 @@ Open http://localhost:5173 in browser. You should see the voting system homepage
 **Problem**: Docker containers fail to start
 
 **Solutions**:
+
 ```bash
 # Check logs
 docker-compose logs
@@ -327,6 +344,7 @@ docker-compose up --build
 **Problem**: `Error: bind: address already in use`
 
 **Solutions**:
+
 ```bash
 # Find process using the port (example: port 3000)
 # On Linux/Mac:
@@ -347,6 +365,7 @@ ports:
 **Problem**: Backend can't connect to MySQL
 
 **Solutions**:
+
 ```bash
 # Wait for MySQL to be fully ready
 docker-compose logs mysql | grep "ready for connections"
@@ -363,6 +382,7 @@ docker-compose restart backend
 **Problem**: Frontend shows blank page or errors
 
 **Solutions**:
+
 ```bash
 # Check frontend logs
 docker-compose logs frontend
@@ -378,6 +398,7 @@ docker-compose up --build frontend
 **Problem**: Tables not created
 
 **Solutions**:
+
 ```bash
 # Run migrations manually
 docker-compose exec backend npm run migrate
@@ -394,6 +415,7 @@ docker-compose exec mysql mysql -u voting_user -p voting_db -e "SHOW TABLES;"
 **Problem**: Blockchain node crashes or errors
 
 **Solutions**:
+
 ```bash
 # Stop and remove blockchain data
 docker-compose stop blockchain-node
@@ -408,6 +430,7 @@ docker-compose up -d blockchain-node
 ### Hot Reload
 
 All services support hot reload:
+
 - **Frontend**: Changes to `frontend/` files reload automatically
 - **Backend**: Restart required (or use nodemon)
 - **Blockchain**: Restart required
@@ -459,7 +482,7 @@ docker volume inspect voting_mysql_data
 
 ## 🔒 Production Deployment
 
-### DO NOT use this setup directly in production!
+### DO NOT use this setup directly in production
 
 For production, you need:
 
@@ -566,13 +589,16 @@ We provide several helper scripts to make Docker management easier:
 ### Available Scripts
 
 #### 1. `docker-start.sh` / `docker-start.bat`
+
 Interactive menu for common Docker operations:
+
 - Start/stop services
 - View logs
 - Check status
 - Quick restart
 
 **Usage:**
+
 ```bash
 # Linux/Mac
 ./docker-start.sh
@@ -582,53 +608,72 @@ docker-start.bat
 ```
 
 #### 2. `docker-backup.sh`
+
 Backup MySQL database and blockchain data:
+
 ```bash
 ./docker-backup.sh
 ```
+
 Creates timestamped backup in `./backups/` directory.
 
 #### 3. `docker-restore.sh`
+
 Restore from backup:
+
 ```bash
 ./docker-restore.sh ./backups/voting_backup_TIMESTAMP.tar.gz
 ```
 
 #### 4. `docker-logs.sh`
+
 Advanced log viewer with filtering:
+
 ```bash
 ./docker-logs.sh
 ```
+
 Features:
+
 - Follow all logs or specific service
 - Search logs with grep
 - View error logs only
 - Show last N lines
 
 #### 5. `docker-health-check.sh` / `docker-health-check.bat`
+
 Comprehensive health check for all services:
+
 ```bash
 ./docker-health-check.sh
 ```
+
 Checks:
+
 - Container status
 - Service endpoints (HTTP health checks)
 - Database connectivity
 - Resource usage
 
 #### 6. `docker-cleanup.sh`
+
 Clean up Docker resources:
+
 ```bash
 ./docker-cleanup.sh
 ```
+
 Options:
+
 - Remove stopped containers
 - Remove unused images
 - Remove unused volumes
 - Full cleanup (with confirmation)
 
 #### 7. `docker-seed.sh`
+
 Seed database with test data:
+
 ```bash
 ./docker-seed.sh
 ```
@@ -649,9 +694,9 @@ docker-compose -f docker-compose.yml -f docker-compose.monitoring.yml up -d
 
 ### Access Monitoring Tools
 
-- **Grafana**: http://localhost:3030 (admin/admin)
-- **Prometheus**: http://localhost:9090
-- **cAdvisor**: http://localhost:8081
+- **Grafana**: <http://localhost:3030> (admin/admin)
+- **Prometheus**: <http://localhost:9090>
+- **cAdvisor**: <http://localhost:8081>
 
 ### What's Monitored
 
@@ -671,6 +716,7 @@ docker-compose -f docker-compose.yml -f docker-compose.monitoring.yml up -d
 ### Alerting
 
 Automatic alerts for:
+
 - Service downtime (>1 minute)
 - High CPU usage (>80% for 5 minutes)
 - High memory usage (>85%)
@@ -682,6 +728,38 @@ Automatic alerts for:
 
 ---
 
-**Last Updated**: November 5, 2025  
-**Docker Compose Version**: 3.8  
+**Last Updated**: July 9, 2026
+**Maintained By**: Development Team081>
+
+### What's Monitored
+
+- ✅ Service uptime and health
+- ✅ Container CPU, memory, network usage
+- ✅ MySQL database metrics (connections, queries, slow queries)
+- ✅ System-level metrics (disk, CPU, memory)
+- ✅ Blockchain node performance
+- ✅ Custom application metrics
+
+### Pre-configured Dashboards
+
+1. **Voting System Overview** - All key metrics in one view
+2. **Container Metrics** - Detailed resource usage per container
+3. **MySQL Performance** - Database-specific metrics
+
+### Alerting
+
+Automatic alerts for:
+
+- Service downtime (>1 minute)
+- High CPU usage (>80% for 5 minutes)
+- High memory usage (>85%)
+- Disk space low (<10%)
+- MySQL connection issues
+- Container restarts
+
+**See** [MONITORING_GUIDE.md](./MONITORING_GUIDE.md) for complete documentation.
+
+---
+
+**Last Updated**: July 9, 2026
 **Maintained By**: Development Team

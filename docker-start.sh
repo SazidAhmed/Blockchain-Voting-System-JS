@@ -78,9 +78,15 @@ case $choice in
         echo ""
         echo "Services are now running:"
         echo "  - Frontend:     http://localhost:5173"
+        echo "  - Admin Panel:  http://localhost:5174"
         echo "  - Backend API:  http://localhost:3000"
         echo "  - Blockchain:   http://localhost:3001"
         echo "  - phpMyAdmin:   http://localhost:8080"
+        echo ""
+        echo -e "${BLUE}🌱 Seeding database with test data...${NC}"
+        sleep 10
+        docker-compose exec backend npm run db:seed
+        echo -e "${GREEN}✅ Database seeded!${NC}"
         echo ""
         echo "View logs with: docker-compose logs -f"
         ;;
@@ -93,6 +99,7 @@ case $choice in
         echo ""
         echo "Services are now running:"
         echo "  - Frontend:     http://localhost:5173"
+        echo "  - Admin Panel:  http://localhost:5174"
         echo "  - Backend API:  http://localhost:3000"
         echo "  - Blockchain:   http://localhost:3001"
         echo "  - phpMyAdmin:   http://localhost:8080"
