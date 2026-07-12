@@ -1,0 +1,15 @@
+{
+  "name": "institution-api",
+  "version": "1.0.0",
+  "description": "Mock institutional database API for university voting system testing",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "mysql2": "^3.6.0"
+  }
+}

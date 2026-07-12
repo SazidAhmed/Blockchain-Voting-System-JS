@@ -73,25 +73,25 @@ cd Blockchain-Voting-System-JS
 cp .env.example .env
 
 # Start all services (MySQL, phpMyAdmin, Backend, Blockchain, Frontend)
-docker-compose up --build -d
+docker-compose -f infra/docker/docker-compose.yml up --build -d
 
 # Or use the helper script:
 # On Linux/Mac:
-./docker-start.sh
+bash infra/scripts/docker-start.sh
 
 # On Windows:
-docker-start.bat
+infra\scripts\docker-start.bat
 ```
 
 **Access the application:**
 
-- 🖥️ **Frontend (Voters)**: <http://localhost:5173>
-- 🔧 **Admin Panel**: <http://localhost:5174>
-- 🔧 **Backend API**: <http://localhost:3000>
-- ⛓️ **Blockchain**: <http://localhost:3001>
-- 🗄️ **phpMyAdmin**: <http://localhost:8080>
+- 🖥️ **Frontend (Voters)**: [http://localhost:5173](http://localhost:5173)
+- 🔧 **Admin Panel**: [http://localhost:5174](http://localhost:5174)
+- 🔧 **Backend API**: [http://localhost:3000](http://localhost:3000)
+- ⛓️ **Blockchain**: [http://localhost:3001](http://localhost:3001)
+- 🗄️ **phpMyAdmin**: [http://localhost:8080](http://localhost:8080)
 
-**Done!** All 5 services running in Docker containers. See [DOCKER_SETUP.md](./DOCKER_SETUP.md) for details.
+**Done!** All 5 services running in Docker containers. See [DOCKER_SETUP.md](./docs/project-status/docker/DOCKER_SETUP.md) for details.
 
 ### 📊 Monitoring (Optional but Recommended)
 
@@ -99,17 +99,17 @@ Start the monitoring stack to track system performance:
 
 ```bash
 # Start Prometheus, Grafana, cAdvisor, and exporters
-./docker-monitoring-start.sh
+bash infra/scripts/docker-monitoring-start.sh
 
 # Or manually:
-docker-compose -f docker-compose.yml -f docker-compose.monitoring.yml up -d
+docker-compose -f infra/docker/docker-compose.yml -f infra/docker/docker-compose.monitoring.yml up -d
 ```
 
 **Access Monitoring Tools:**
 
-- 📈 **Grafana**: <http://localhost:3030> (admin/admin)
-- 📊 **Prometheus**: <http://localhost:9090>
-- 🐳 **cAdvisor**: <http://localhost:8081>
+- 📈 **Grafana**: [http://localhost:3030](http://localhost:3030) (admin/admin)
+- 📊 **Prometheus**: [http://localhost:9090](http://localhost:9090)
+- 🐳 **cAdvisor**: [http://localhost:8081](http://localhost:8081)
 
 **Features:**
 
@@ -119,7 +119,7 @@ docker-compose -f docker-compose.yml -f docker-compose.monitoring.yml up -d
 - Pre-configured dashboards
 - Automatic alerting for issues
 
-See [MONITORING_GUIDE.md](./MONITORING_GUIDE.md) for complete documentation.
+See [MONITORING_GUIDE.md](./docs/project-status/monitoring/MONITORING_GUIDE.md) for complete documentation.
 
 ---
 
@@ -128,25 +128,25 @@ See [MONITORING_GUIDE.md](./MONITORING_GUIDE.md) for complete documentation.
 ### Helper Scripts
 
 ```bash
-./docker-health-check.sh    # Check system health
-./docker-backup.sh           # Backup database & blockchain
-./docker-restore.sh <file>   # Restore from backup
-./docker-logs.sh             # Interactive log viewer
-./docker-cleanup.sh          # Clean Docker resources
-./docker-seed.sh             # Seed test data
+bash infra/scripts/docker-health-check.sh    # Check system health
+bash infra/scripts/docker-backup.sh           # Backup database & blockchain
+bash infra/scripts/docker-restore.sh <file>   # Restore from backup
+bash infra/scripts/docker-logs.sh             # Interactive log viewer
+bash infra/scripts/docker-cleanup.sh          # Clean Docker resources
+bash infra/scripts/docker-seed.sh             # Seed test data
 ```
 
 ### Testing
 
 ```bash
 # Health check all services
-./docker-health-check.sh
+bash infra/scripts/docker-health-check.sh
 
 # Run backend tests
-docker-compose exec backend npm test
+docker-compose -f infra/docker/docker-compose.yml exec backend npm test
 
 # Integration tests
-node test-system.js
+node tests/e2e/test-system.js
 ```
 
 ---
@@ -168,11 +168,11 @@ Comprehensive documentation available:
 
 ### Core Documentation
 
-- **[DOCKER_SETUP.md](./DOCKER_SETUP.md)** - Complete Docker setup guide
-- **[DOCKER_QUICK_REFERENCE.md](./DOCKER_QUICK_REFERENCE.md)** - Quick Docker commands
-- **[HELPER_SCRIPTS_REFERENCE.md](./HELPER_SCRIPTS_REFERENCE.md)** - All helper scripts
-- **[MONITORING_GUIDE.md](./MONITORING_GUIDE.md)** - Prometheus & Grafana setup
-- **[DOCKER_TEST_RESULTS.md](./DOCKER_TEST_RESULTS.md)** - Docker test report
+- **[DOCKER_SETUP.md](./docs/project-status/docker/DOCKER_SETUP.md)** - Complete Docker setup guide
+- **[DOCKER_QUICK_REFERENCE.md](./docs/project-status/docker/DOCKER_QUICK_REFERENCE.md)** - Quick Docker commands
+- **[HELPER_SCRIPTS_REFERENCE.md](./docs/project-status/guides/HELPER_SCRIPTS_REFERENCE.md)** - All helper scripts
+- **[MONITORING_GUIDE.md](./docs/project-status/monitoring/MONITORING_GUIDE.md)** - Prometheus & Grafana setup
+- **[DOCKER_TEST_RESULTS.md](./docs/project-status/testing/DOCKER_TEST_RESULTS.md)** - Docker test report
 
 ### Development Documentation
 
@@ -185,13 +185,13 @@ Comprehensive documentation available:
 
 ### Helper Scripts (New! ✨)
 
-- `docker-backup.sh` - Backup database and blockchain
-- `docker-restore.sh` - Restore from backups
-- `docker-logs.sh` - Advanced log viewer
-- `docker-cleanup.sh` - Clean Docker resources
-- `docker-health-check.sh` - System health check
-- `docker-seed.sh` - Seed test data
-- `docker-monitoring-start.sh` - Start monitoring stack
+- `infra/scripts/docker-backup.sh` - Backup database and blockchain
+- `infra/scripts/docker-restore.sh` - Restore from backups
+- `infra/scripts/docker-logs.sh` - Advanced log viewer
+- `infra/scripts/docker-cleanup.sh` - Clean Docker resources
+- `infra/scripts/docker-health-check.sh` - System health check
+- `infra/scripts/docker-seed.sh` - Seed test data
+- `infra/scripts/docker-monitoring-start.sh` - Start monitoring stack
 
 ## 🔄 Vote Casting Flow
 
@@ -201,7 +201,7 @@ Registration → Key Generation → Vote → Encrypt → Sign → Verify → Sto
 
 **Detailed Flow:**
 
-1. User registers → ECDSA + RSA keypairs generated client-side
+1. User registers → ECDSA + RSA key pair generated client-side
 2. User selects candidate → Ballot encrypted with election public key
 3. Vote package signed with ECDSA private key
 4. Backend verifies signature → Checks nullifier for duplicates
