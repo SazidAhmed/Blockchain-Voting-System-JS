@@ -1,0 +1,33 @@
+name: Refactor
+description: Suggest code restructuring without behavior change
+labels: ["refactor"]
+body:
+  - type: dropdown
+    id: component
+    attributes:
+      label: Component
+      options:
+        - Frontend (Vue 3)
+        - Admin Panel
+        - Backend (Express)
+        - Blockchain Node
+        - Institution API
+        - Docker / Infrastructure
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: What should change?
+      description: Describe the restructuring. What's wrong with the current code?
+    validations:
+      required: true
+
+  - type: textarea
+    id: motivation
+    attributes:
+      label: Why
+      description: What problem does this solve? (readability, maintainability, performance)
+    validations:
+      required: true

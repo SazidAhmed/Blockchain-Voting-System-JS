@@ -10,7 +10,7 @@ A secure, privacy-preserving blockchain-based voting system for university elect
 
 **Current Phase:** Merkle Tree Integration Complete - Production Ready
 **Last Updated:** November 13, 2025
-**Completion:** 96% (~19,000+ lines of code)
+**Completion:** 96% (~77,273+ lines of code)
 
 ### ✅ Fully Implemented
 
@@ -226,7 +226,7 @@ MIT License - see LICENSE file for details
 
 ## 👥 Team
 
-**Developers:** Sazid Ahmed, Nahid Noyon
+**Developers:** Sazid Ahmed, Nahid Hasan Noyon
 **Institution:** Bangladesh University of Professionals
 **Program:** Masters in Information System Security
 **Year:** 2023-2024
@@ -266,7 +266,7 @@ MIT License - see LICENSE file for details
 
 ---
 
-**Last Updated:** November 13, 2025
+**Last Updated:** July 13, 2026
 **Status:** Security Testing Complete - 94% Done
 **Next:** Final documentation & optional Merkle tree implementation
 

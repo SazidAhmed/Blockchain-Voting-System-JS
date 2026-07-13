@@ -1,0 +1,35 @@
+# Auto-label PRs based on which directories changed.
+# Docs: https://github.com/actions/labeler
+
+frontend:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'services/frontend/**'
+      - 'services/admin-panel/**'
+
+backend:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'services/backend/**'
+
+blockchain:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'services/blockchain-node/**'
+
+infrastructure:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'infra/**'
+      - 'docker-compose*'
+      - 'Dockerfile*'
+
+tests:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'tests/**'
+
+documentation:
+  - changed-files:
+    - any-glob-to-any-file:
+      - '**/*.md'

@@ -1,88 +1,46 @@
-name: Docker Build and Test
+name: CI
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [main, develop]
   pull_request:
-    branches: [ main, develop ]
+    branches: [main, develop]
 
 jobs:
-  build-and-test:
+  ci:
     runs-on: ubuntu-latest
-    
+
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
-    
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v2
-    
-    - name: Create .env file
-      run: |
-        cp .env.example .env
-        echo "JWT_SECRET=test-secret-key-for-ci-minimum-32-chars-long" >> .env
-    
-    - name: Build Docker images
-      run: docker-compose -f infra/docker/docker-compose.yml build
-    
-    - name: Start services
-      run: docker-compose -f infra/docker/docker-compose.yml up -d
-    
-    - name: Wait for services to be ready
-      run: |
-        echo "Waiting for services to start..."
-        sleep 30
-        docker-compose -f infra/docker/docker-compose.yml ps
-    
-    - name: Check service health
-      run: |
-        docker-compose -f infra/docker/docker-compose.yml ps
-        docker-compose -f infra/docker/docker-compose.yml logs backend
-        docker-compose -f infra/docker/docker-compose.yml logs blockchain-node
-    
-    - name: Test Backend API
-      run: |
-        curl -f http://localhost:3000/api/elections || exit 1
-    
-    - name: Test Blockchain Node
-      run: |
-        curl -f http://localhost:3001/node || exit 1
-    
-    - name: Test Frontend
-      run: |
-        curl -f http://localhost:5173 || exit 1
-    
-    - name: Run Backend Tests (if available)
-      run: |
-        docker-compose -f infra/docker/docker-compose.yml exec -T backend npm test || echo "No tests configured"
-      continue-on-error: true
-    
-    - name: Show logs on failure
-      if: failure()
-      run: |
-        docker-compose -f infra/docker/docker-compose.yml logs
-    
-    - name: Stop services
-      if: always()
-      run: docker-compose -f infra/docker/docker-compose.yml down -v
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Run CI
+        run: bash scripts/ci.sh
+
+      - name: Show logs on failure
+        if: failure()
+        run: docker compose -f infra/docker/docker-compose.yml logs
 
   security-scan:
     runs-on: ubuntu-latest
-    
+
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
-    
-    - name: Run Trivy vulnerability scanner
-      uses: aquasecurity/trivy-action@master
-      with:
-        scan-type: 'fs'
-        scan-ref: '.'
-        format: 'sarif'
-        output: 'trivy-results.sarif'
-    
-    - name: Upload Trivy results to GitHub Security tab
-      uses: github/codeql-action/upload-sarif@v2
-      if: always()
-      with:
-        sarif_file: 'trivy-results.sarif'
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: "fs"
+          scan-ref: "."
+          format: "sarif"
+          output: "trivy-results.sarif"
+
+      - name: Upload Trivy results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v2
+        if: always()
+        with:
+          sarif_file: "trivy-results.sarif"

@@ -26,10 +26,6 @@ async function generateElectionKeys(electionId) {
     }
   });
   
-  console.log('✅ Keypair generated');
-  console.log(`   Public key length: ${publicKey.length} characters`);
-  console.log(`   Private key length: ${privateKey.length} characters`);
-  
   // Save private key to file (for decryption of ballots later)
   const privateKeyPath = path.join(KEYS_DIR, `election_${electionId}_private.pem`);
   fs.writeFileSync(privateKeyPath, privateKey, 'utf8');

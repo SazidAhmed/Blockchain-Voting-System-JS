@@ -1,0 +1,28 @@
+name: CI/CD
+description: Report or suggest changes to CI/CD, Docker, or infrastructure
+labels: ["ci"]
+body:
+  - type: dropdown
+    id: type
+    attributes:
+      label: Type
+      options:
+        - Bug (CI is broken)
+        - Enhancement (new check, better pipeline)
+        - Infrastructure (Docker, scripts, hooks)
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened or what should change?
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs
+      description: Paste CI output, Docker errors, or workflow logs.
+      render: shell
