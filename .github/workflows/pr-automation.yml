@@ -41,10 +41,7 @@ jobs:
 
     - name: Check PR description
       run: |
-        BODY=$(cat <<'HEREDOC'
-        ${{ github.event.pull_request.body }}
-        HEREDOC
-        )
+        BODY="${{ github.event.pull_request.body }}"
         if [[ ${#BODY} -lt 20 ]]; then
           echo "::error::PR description too short. Describe your changes."
           exit 1

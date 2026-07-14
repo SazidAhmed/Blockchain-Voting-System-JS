@@ -48,11 +48,6 @@ PREPARE stmt FROM @query_idx;
 EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
 
--- Record this migration
-INSERT INTO schema_migrations (migration_name, checksum) VALUES
-    ('002_add_crypto_fields', SHA2('002_add_crypto_fields.sql', 256))
-ON DUPLICATE KEY UPDATE applied_at = CURRENT_TIMESTAMP;
-
 -- =====================================================
 -- END OF MIGRATION 002
 -- =====================================================

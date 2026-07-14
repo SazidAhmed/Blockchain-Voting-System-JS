@@ -78,6 +78,11 @@ CREATE TABLE IF NOT EXISTS elections (
     tally_completed_at TIMESTAMP NULL,
     results_hash VARCHAR(64) COMMENT 'SHA256 hash of final tally',
     
+    -- Lock management
+    is_locked BOOLEAN DEFAULT FALSE,
+    locked_at TIMESTAMP NULL,
+    locked_by INT NULL,
+    
     FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE RESTRICT,
     INDEX idx_status (status),
     INDEX idx_dates (start_date, end_date),
@@ -97,6 +102,10 @@ CREATE TABLE IF NOT EXISTS candidates (
     
     -- Display order
     display_order INT DEFAULT 0,
+    
+    -- Lock management
+    is_locked BOOLEAN DEFAULT FALSE,
+    locked_at TIMESTAMP NULL,
     
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     
@@ -323,6 +332,58 @@ CREATE TABLE IF NOT EXISTS audit_logs (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Tamper-evident audit trail';
 
 -- =====================================================
+-- ADMIN_AUDIT_LOGS TABLE
+-- Admin action tracking for the admin panel
+-- =====================================================
+CREATE TABLE IF NOT EXISTS admin_audit_logs (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    admin_id INT NOT NULL,
+    action_type VARCHAR(50) NOT NULL,
+    resource_type VARCHAR(50) NOT NULL,
+    resource_id INT,
+    changes LONGTEXT,
+    change_hash VARCHAR(64),
+    action_signature VARCHAR(64),
+    reason VARCHAR(500),
+    ip_address VARCHAR(45),
+    user_agent TEXT,
+    metadata JSON,
+    timestamp DATETIME NOT NULL,
+    status ENUM('success', 'failed') DEFAULT 'success',
+    verified BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_admin_id (admin_id),
+    INDEX idx_action_type (action_type),
+    INDEX idx_resource_type (resource_type),
+    INDEX idx_timestamp (timestamp),
+    FOREIGN KEY (admin_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Admin audit log entries';
+
+-- =====================================================
+-- ADMIN_SECURITY_LOGS TABLE
+-- Security-relevant events for admin monitoring
+-- =====================================================
+CREATE TABLE IF NOT EXISTS admin_security_logs (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    admin_id INT NOT NULL,
+    event_type VARCHAR(50) NOT NULL,
+    severity ENUM('LOW', 'MEDIUM', 'HIGH', 'CRITICAL') DEFAULT 'MEDIUM',
+    description VARCHAR(500),
+    metadata JSON,
+    timestamp DATETIME NOT NULL,
+    acknowledged BOOLEAN DEFAULT FALSE,
+    acknowledged_by INT,
+    acknowledged_at DATETIME,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_admin_id (admin_id),
+    INDEX idx_event_type (event_type),
+    INDEX idx_severity (severity),
+    INDEX idx_timestamp (timestamp),
+    FOREIGN KEY (admin_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (acknowledged_by) REFERENCES users(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Admin security log entries';
+
+-- =====================================================
 -- THRESHOLD_KEY_SHARES TABLE
 -- Stores information about distributed key shares
 -- (Actual shares stored in HSM/Vault, this is metadata)
@@ -464,6 +525,24 @@ SELECT
     END as health_status
 FROM nodes n
 WHERE n.node_type = 'validator';
+
+-- View for admin activity summary
+CREATE OR REPLACE VIEW admin_activity_summary AS
+SELECT 
+    u.id,
+    u.username,
+    u.email,
+    COUNT(CASE WHEN aal.action_type = 'CREATE_ELECTION' THEN 1 END) as elections_created,
+    COUNT(CASE WHEN aal.action_type = 'ADD_CANDIDATE' THEN 1 END) as candidates_added,
+    COUNT(CASE WHEN aal.action_type = 'DELETE_CANDIDATE' THEN 1 END) as candidates_deleted,
+    COUNT(CASE WHEN aal.action_type = 'ACTIVATE_ELECTION' THEN 1 END) as elections_activated,
+    COUNT(CASE WHEN aal.action_type = 'DEACTIVATE_ELECTION' THEN 1 END) as elections_deactivated,
+    COUNT(CASE WHEN aal.status = 'failed' THEN 1 END) as failed_actions,
+    MAX(aal.timestamp) as last_action
+FROM users u
+LEFT JOIN admin_audit_logs aal ON u.id = aal.admin_id
+WHERE u.role = 'admin'
+GROUP BY u.id, u.username, u.email;
 
 -- =====================================================
 -- Schema version tracking
