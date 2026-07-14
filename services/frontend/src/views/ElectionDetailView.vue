@@ -99,7 +99,8 @@ export default {
   data() {
     return {
       registrationLoading: false,
-      localError: null
+      localError: null,
+      isRegistered: false
     }
   },
   computed: {
@@ -112,11 +113,6 @@ export default {
     },
     error() {
       return this.getError || this.localError
-    },
-    isRegistered() {
-      // For now, assume all logged-in users are registered
-      // TODO: Check actual registration status from backend
-      return true
     },
     canRegister() {
       if (!this.election) return false
@@ -160,13 +156,26 @@ export default {
       
       try {
         await this.$store.dispatch('registerForElection', this.election.id)
-        // Refresh election details to update registration status
-        await this.$store.dispatch('fetchElection', this.election.id)
+        this.isRegistered = true
       } catch (error) {
         this.localError = 'Failed to register for this election. Please try again.'
         console.error('Registration error:', error)
       } finally {
         this.registrationLoading = false
+      }
+    },
+    async checkRegistrationStatus() {
+      try {
+        const token = localStorage.getItem('token')
+        const res = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'}/api/elections/${this.$route.params.id}/registration-status`, {
+          headers: { 'x-auth-token': token }
+        })
+        if (res.ok) {
+          const data = await res.json()
+          this.isRegistered = data.registered
+        }
+      } catch (e) {
+        // Silently fail — default is unregistered
       }
     },
     goToVote(candidateId) {
@@ -176,9 +185,10 @@ export default {
       })
     }
   },
-  created() {
+  async created() {
     const electionId = this.$route.params.id
-    this.$store.dispatch('fetchElection', electionId)
+    await this.$store.dispatch('fetchElection', electionId)
+    await this.checkRegistrationStatus()
   }
 }
 </script>

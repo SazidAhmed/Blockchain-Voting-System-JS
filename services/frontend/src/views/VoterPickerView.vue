@@ -115,7 +115,7 @@
 </template>
 
 <script>
-const INSTITUTION_API = 'http://localhost:4000'
+const INSTITUTION_API = import.meta.env.VITE_INSTITUTION_API_URL || 'http://localhost:4000'
 const LIMIT = 20
 
 export default {

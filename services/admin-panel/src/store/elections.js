@@ -2,6 +2,8 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { useAuthStore } from './auth'
 
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'
+
 export const useElectionsStore = defineStore('elections', () => {
   // State
   const elections = ref([])
@@ -19,7 +21,7 @@ export const useElectionsStore = defineStore('elections', () => {
     error.value = null
 
     try {
-      const response = await fetch('http://localhost:3000/api/elections/admin/all', {
+      const response = await fetch(`${API_BASE}/api/elections/admin/all`, {
         headers: {
           'Authorization': `Bearer ${authStore.token}`
         }
@@ -49,7 +51,7 @@ export const useElectionsStore = defineStore('elections', () => {
     error.value = null
 
     try {
-      const response = await fetch('http://localhost:3000/api/elections', {
+      const response = await fetch(`${API_BASE}/api/elections`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${authStore.token}`,
@@ -80,7 +82,7 @@ export const useElectionsStore = defineStore('elections', () => {
     error.value = null
 
     try {
-      const response = await fetch(`http://localhost:3000/api/elections/${electionId}/status`, {
+      const response = await fetch(`${API_BASE}/api/elections/${electionId}/status`, {
         method: 'PATCH',
         headers: {
           'Authorization': `Bearer ${authStore.token}`,
@@ -108,7 +110,7 @@ export const useElectionsStore = defineStore('elections', () => {
     error.value = null
 
     try {
-      const response = await fetch(`http://localhost:3000/api/elections/${electionId}`, {
+      const response = await fetch(`${API_BASE}/api/elections/${electionId}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${authStore.token}`,
@@ -137,7 +139,7 @@ export const useElectionsStore = defineStore('elections', () => {
     error.value = null
 
     try {
-      const response = await fetch(`http://localhost:3000/api/elections/${electionId}`, {
+      const response = await fetch(`${API_BASE}/api/elections/${electionId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${authStore.token}`
