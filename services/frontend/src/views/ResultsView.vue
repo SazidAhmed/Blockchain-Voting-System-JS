@@ -78,6 +78,8 @@
 </template>
 
 <script>
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'
+
 export default {
   name: 'ResultsView',
   data() {
@@ -116,9 +118,10 @@ export default {
       this.current = null
       try {
         const token = localStorage.getItem('token')
-        const res = await fetch(`http://localhost:3000/api/elections/${this.selectedId}`, {
+        const res = await fetch(`${API_BASE}/api/elections/${this.selectedId}`, {
           headers: { 'x-auth-token': token }
         })
+        if (!res.ok) throw new Error('Failed to load election')
         this.current = await res.json()
       } catch (e) {
         console.error(e)
@@ -130,10 +133,11 @@ export default {
   async mounted() {
     try {
       const token = localStorage.getItem('token')
-      const res = await fetch('http://localhost:3000/api/elections', {
-        headers: { 'x-auth-token': token }
-      })
-      this.elections = await res.json()
+        const res = await fetch(`${API_BASE}/api/elections`, {
+          headers: { 'x-auth-token': token }
+        })
+        if (!res.ok) throw new Error('Failed to fetch elections')
+        this.elections = await res.json()
 
       if (this.elections.length > 0) {
         // Default: most recent active, else most recent overall

@@ -2,6 +2,8 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { useAuthStore } from './auth'
 
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'
+
 export const useAuditStore = defineStore('audit', () => {
   // State
   const auditLogs = ref([])
@@ -43,7 +45,7 @@ export const useAuditStore = defineStore('audit', () => {
     error.value = null
 
     try {
-      const response = await fetch('http://localhost:3000/api/elections/admin/audit-logs', {
+      const response = await fetch(`${API_BASE}/api/elections/admin/audit-logs`, {
         headers: {
           'Authorization': `Bearer ${authStore.token}`
         }
@@ -68,7 +70,7 @@ export const useAuditStore = defineStore('audit', () => {
     error.value = null
 
     try {
-      const response = await fetch(`http://localhost:3000/api/elections/admin/verify-audit-integrity/${logId}`, {
+      const response = await fetch(`${API_BASE}/api/elections/admin/verify-audit-integrity/${logId}`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${authStore.token}`
@@ -95,7 +97,7 @@ export const useAuditStore = defineStore('audit', () => {
     error.value = null
 
     try {
-      const response = await fetch('http://localhost:3000/api/elections/admin/security-logs', {
+      const response = await fetch(`${API_BASE}/api/elections/admin/security-logs`, {
         headers: {
           'Authorization': `Bearer ${authStore.token}`
         }
@@ -119,7 +121,7 @@ export const useAuditStore = defineStore('audit', () => {
     error.value = null
 
     try {
-      const response = await fetch(`http://localhost:3000/api/elections/admin/audit-logs/export?format=${format}`, {
+      const response = await fetch(`${API_BASE}/api/elections/admin/audit-logs/export?format=${format}`, {
         headers: {
           'Authorization': `Bearer ${authStore.token}`
         }

@@ -381,6 +381,22 @@ router.post('/:id/register', auth, async (req, res) => {
   }
 });
 
+// @route   GET /api/elections/:id/registration-status
+// @desc    Check if current user is registered for an election
+// @access   Private
+router.get('/:id/registration-status', auth, async (req, res) => {
+  try {
+    const [rows] = await pool.query(
+      'SELECT id FROM voter_registrations WHERE user_id = ? AND election_id = ?',
+      [req.user.id, req.params.id]
+    );
+    res.json({ registered: rows.length > 0 });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 // @route   POST /api/elections/:id/vote
 // @desc    Cast a vote in an election
 // @access  Private
@@ -941,7 +957,7 @@ router.get('/admin/audit-logs', adminAuth, async (req, res) => {
       { targetAdminId: adminId || req.user.id, ipAddress: clientIp }
     );
 
-    res.json(logs);
+    res.json({ logs: logs.logs, total: logs.total });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'Server error' });

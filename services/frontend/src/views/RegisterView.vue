@@ -316,6 +316,7 @@ export default {
       this.email = ''
       this.role = ''
       this.department = ''
+      this.yearLevel = ''
       this.password = ''
       this.confirmPassword = ''
       this.localError = ''

@@ -374,6 +374,8 @@ import { useElectionsStore } from '../store/elections'
 import AdminAuditLogs from '../components/AdminAuditLogs.vue'
 import AdminInstituteMembersTab from '../components/AdminInstituteMembersTab.vue'
 
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'
+
 export default {
   name: 'AdminDashboard',
   components: {
@@ -522,7 +524,7 @@ export default {
       if (!confirm('Are you sure you want to delete this candidate?')) return
 
       try {
-        const response = await fetch(`http://localhost:3000/api/elections/candidates/${candidateId}`, {
+        const response = await fetch(`${API_BASE}/api/elections/candidates/${candidateId}`, {
           method: 'DELETE',
           headers: {
             'Authorization': `Bearer ${authStore.token}`
@@ -543,7 +545,7 @@ export default {
       }
 
       try {
-        const response = await fetch(`http://localhost:3000/api/elections/${selectedElectionId.value}/candidates`, {
+        const response = await fetch(`${API_BASE}/api/elections/${selectedElectionId.value}/candidates`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${authStore.token}`,

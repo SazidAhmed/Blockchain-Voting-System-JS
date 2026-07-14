@@ -1,5 +1,7 @@
 import { createStore } from 'vuex'
 
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'
+
 export default createStore({
   state: {
     user: null,
@@ -46,7 +48,7 @@ export default createStore({
       commit('SET_LOADING', true)
       commit('CLEAR_ERROR')
       try {
-        const response = await fetch('http://localhost:3000/api/users/login', {
+        const response = await fetch(`${API_BASE}/api/users/login`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
