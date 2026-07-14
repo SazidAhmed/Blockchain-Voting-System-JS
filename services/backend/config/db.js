@@ -91,7 +91,7 @@ async function initializeDatabase() {
         election_id INT NOT NULL,
         registration_token VARCHAR(255) UNIQUE,
         status ENUM('registered', 'voted', 'revoked') DEFAULT 'registered',
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        registered_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         UNIQUE KEY (user_id, election_id),
         FOREIGN KEY (user_id) REFERENCES users(id),
         FOREIGN KEY (election_id) REFERENCES elections(id)
