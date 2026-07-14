@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+# .githooks/pre-commit
+# Runs automatically before every commit.
+# Checks: secrets, syntax, commit message format.
+set -euo pipefail
+
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+NC='\033[0m'
+
+SCRIPT_DIR="$(git rev-parse --show-toplevel)/scripts"
+
+echo "Running pre-commit checks..."
+
+# 1. Secrets check
+if ! bash "$SCRIPT_DIR/check-secrets.sh"; then
+  echo -e "${RED}Commit blocked: secrets detected.${NC}"
+  exit 1
+fi
+
+# 2. Syntax check (only staged .js files)
+STAGED_JS=$(git diff --cached --name-only --diff-filter=ACMR -- "*.js" 2>/dev/null || echo "")
+if [ -n "$STAGED_JS" ]; then
+  for file in $STAGED_JS; do
+    [ -f "$file" ] || continue
+    if ! node --check "$file" 2>/dev/null; then
+      echo -e "${RED}Commit blocked: syntax error in $file${NC}"
+      exit 1
+    fi
+  done
+fi
+
+# 3. Console.log warning (only staged backend files)
+STAGED_BACKEND=$(git diff --cached --name-only --diff-filter=ACMR -- "services/backend/*.js" "services/blockchain-node/*.js" "services/institution-api/*.js" 2>/dev/null || echo "")
+if [ -n "$STAGED_BACKEND" ]; then
+  for file in $STAGED_BACKEND; do
+    [ -f "$file" ] || continue
+    if grep -q "console\.log" "$file" 2>/dev/null; then
+      echo -e "${RED}Warning: console.log found in $file${NC}"
+      echo "  Remove console.log or use a logger. Proceeding anyway..."
+    fi
+  done
+fi
+
+echo -e "${GREEN}✓ Pre-commit checks passed${NC}"

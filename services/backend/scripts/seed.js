@@ -24,7 +24,7 @@ class DatabaseSeeder {
       host: process.env.DB_HOST || 'localhost',
       user: process.env.DB_USER || 'root',
       password: process.env.DB_PASSWORD || '',
-      database: process.env.DB_NAME || 'voting'
+      database: process.env.DB_NAME || 'voting_db'
     });
     console.log('✓ Connected to database');
   }
@@ -83,7 +83,7 @@ class DatabaseSeeder {
         `INSERT INTO users 
          (institution_id, username, password, role, email, public_key, pseudonym_id, registration_status, mfa_enabled)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [user.institution_id, user.username, user.password, user.role, user.email, 
+        [user.institution_id, user.username, user.password, user.role, user.email,
          publicKey, pseudonymId, user.registration_status, false]
       );
 

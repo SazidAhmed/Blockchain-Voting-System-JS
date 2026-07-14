@@ -8,7 +8,7 @@ async function checkSchema() {
     const [usersColumns] = await pool.query(`
       SELECT COLUMN_NAME, DATA_TYPE, IS_NULLABLE, COLUMN_COMMENT
       FROM INFORMATION_SCHEMA.COLUMNS
-      WHERE TABLE_SCHEMA = 'voting'
+      WHERE TABLE_SCHEMA = process.env.DB_NAME || 'voting_db'
       AND TABLE_NAME = 'users'
       AND COLUMN_NAME IN ('public_key', 'encryption_public_key')
       ORDER BY COLUMN_NAME
@@ -27,7 +27,7 @@ async function checkSchema() {
     const [votesColumns] = await pool.query(`
       SELECT COLUMN_NAME, DATA_TYPE, IS_NULLABLE, COLUMN_COMMENT
       FROM INFORMATION_SCHEMA.COLUMNS
-      WHERE TABLE_SCHEMA = 'voting'
+      WHERE TABLE_SCHEMA = process.env.DB_NAME || 'voting_db'
       AND TABLE_NAME = 'votes_meta'
       AND COLUMN_NAME IN ('signature', 'voter_public_key')
       ORDER BY COLUMN_NAME

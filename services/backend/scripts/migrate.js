@@ -29,7 +29,7 @@ class MigrationRunner {
     this.connection = await mysql.createConnection(config);
     
     // Create database if it doesn't exist
-    const dbName = process.env.DB_NAME || 'voting';
+    const dbName = process.env.DB_NAME || 'voting_db';
     await this.connection.query(`CREATE DATABASE IF NOT EXISTS ${dbName}`);
     await this.connection.query(`USE ${dbName}`);
     
@@ -95,7 +95,7 @@ class MigrationRunner {
     `);
 
     await this.connection.query(
-      'INSERT INTO schema_migrations (migration_name, checksum) VALUES (?, ?)',
+      'INSERT INTO schema_migrations (migration_name, checksum) VALUES (?, ?) ON DUPLICATE KEY UPDATE applied_at = CURRENT_TIMESTAMP',
       [migrationName, checksum]
     );
   }

@@ -1,0 +1,62 @@
+name: Bug Report
+description: Report a bug in the Blockchain Voting System
+labels: ["bug", "triage"]
+assignees: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Thanks for reporting a bug.** Please fill out the sections below.
+
+  - type: input
+    id: component
+    attributes:
+      label: Component
+      description: Which service is affected?
+      options:
+        - Frontend (Vue 3)
+        - Admin Panel
+        - Backend (Express)
+        - Blockchain Node
+        - Institution API
+        - Docker / Infrastructure
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Describe the bug
+      description: What happened? What did you expect?
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Minimal steps to trigger the bug.
+      placeholder: |
+        1. Go to '...'
+        2. Click '...'
+        3. See error
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs
+      description: Paste any relevant console output, error messages, or docker logs.
+      render: shell
+
+  - type: dropdown
+    id: environment
+    attributes:
+      label: Environment
+      options:
+        - Docker (all services)
+        - Local development
+        - GitHub Actions CI
+    validations:
+      required: true

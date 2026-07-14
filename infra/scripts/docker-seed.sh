@@ -46,17 +46,11 @@ echo ""
 echo -e "${BLUE}Seeding database...${NC}"
 
 # Check if seed script exists in backend
-if docker-compose -f $COMPOSE_FILE exec backend test -f seed.js; then
-    docker-compose -f $COMPOSE_FILE exec backend npm run seed
+if docker-compose -f $COMPOSE_FILE exec backend test -f scripts/seed.js; then
+    docker-compose -f $COMPOSE_FILE exec backend node scripts/seed.js
 else
-    echo -e "${RED}Error: seed.js not found in backend container${NC}"
-    echo -e "${YELLOW}Running manual seed commands instead...${NC}"
-    
-    # Alternative: Use seed data from data directory
-    if [ -f "services/backend/scripts/seed.js" ]; then
-        echo -e "${BLUE}Importing users...${NC}"
-        docker-compose -f $COMPOSE_FILE exec backend node scripts/seed.js
-    fi
+    echo -e "${RED}Error: scripts/seed.js not found in backend container${NC}"
+    exit 1
 fi
 
 echo ""

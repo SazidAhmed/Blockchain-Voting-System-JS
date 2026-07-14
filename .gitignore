@@ -61,3 +61,4 @@ temp/
 *.backup
 
 tests/security/results/
+.opencode/

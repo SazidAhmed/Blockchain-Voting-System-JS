@@ -1,0 +1,22 @@
+name: Chore
+description: Dependencies, tooling, or maintenance tasks
+labels: ["chore"]
+body:
+  - type: dropdown
+    id: type
+    attributes:
+      label: Type
+      options:
+        - Dependency update
+        - Tooling change
+        - Maintenance task
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: What needs to be done?
+    validations:
+      required: true
