@@ -93,7 +93,7 @@ tests/
 ## Gotchas
 
 - Backend `CORS` allows `localhost:5173` and `localhost:5174` only — add new frontend ports to `services/backend/index.js`
-- Frontend uses `VITE_API_BASE_URL` and `VITE_BLOCKCHAIN_URL` env vars (set in docker-compose, not `.env`)
+- Frontend uses `VITE_API_BASE_URL`, `VITE_BLOCKCHAIN_URL`, and `VITE_INSTITUTION_API_URL` env vars (set in docker-compose, not `.env`)
 - Blockchain node peer discovery uses `PEERS` env var with comma-separated URLs, staggered 2s connections
 - `package-lock.json` is gitignored — run `npm install` in each service dir after cloning
 - Express 5 is used in backend/blockchain-node (not 4) — middleware API differs
