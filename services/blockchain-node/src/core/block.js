@@ -73,10 +73,10 @@ class Block {
     }
 
     // Verify the block signature
-    verifySignature(publicKey) {
-        // In a real implementation, this would verify the signature cryptographically
-        // For now, we'll simulate it
-        const expectedSignature = crypto.HmacSHA256(this.hash, publicKey).toString();
+    // ponytail: HMAC uses same key for sign+verify — this is a simulation
+    // Real impl would use ECDSA verify with public key
+    verifySignature(key) {
+        const expectedSignature = crypto.HmacSHA256(this.hash, key).toString();
         return this.signature === expectedSignature;
     }
 }

@@ -10,6 +10,9 @@ const { MerkleTree, MerkleTreeUtils } = require('./src/core/merkleTree');
 const { PeerManager, MessageTypes } = require('./src/network/peerManager');
 const NodeMonitor = require('./src/monitoring/nodeMonitor');
 const PrometheusMetrics = require('./src/monitoring/prometheusMetrics');
+const SecurityMonitor = require('./src/security/securityMonitor');
+const ByzantineValidator = require('./src/security/byzantineValidator');
+const RecoveryManager = require('./src/security/recoveryManager');
 
 // Get node ID from environment or use default
 const nodeId = process.env.NODE_ID || 'node1';
@@ -43,6 +46,11 @@ const nodeMonitor = new NodeMonitor(nodeId, nodeType);
 
 // Initialize Prometheus Metrics
 const metrics = new PrometheusMetrics(nodeId, nodeType);
+
+// Initialize Security Modules
+const securityMonitor = new SecurityMonitor({ nodeId });
+const byzantineValidator = new ByzantineValidator();
+const recoveryManager = new RecoveryManager();
 // In production, this would use proper cryptographic key generation
 const nodeKeyPair = {
     privateKey: crypto.lib.WordArray.random(32).toString(),
@@ -120,11 +128,58 @@ function handleMessage(senderId, message) {
             const receivedChain = message.data;
             if (receivedChain && receivedChain.length > blockchain.chain.length) {
                 console.log('[MSG] Received longer chain. Validating...');
-                // In a real implementation, we would validate the received chain
-                blockchain.chain = receivedChain;
-                blockchain.saveChain();
-                nodeMonitor.updateChainHeight(receivedChain.length);
-                console.log('Chain synchronized');
+                
+                // Validate chain: hash integrity, sequential links, sequential indices
+                let chainValid = true;
+                for (let i = 0; i < receivedChain.length; i++) {
+                    const block = receivedChain[i];
+                    
+                    // Check index sequence
+                    if (block.index !== i) {
+                        console.log(`[MSG] Chain invalid: block index ${block.index} expected ${i}`);
+                        chainValid = false;
+                        break;
+                    }
+                    
+                    // Check previousHash link (skip genesis)
+                    if (i > 0 && block.previousHash !== receivedChain[i - 1].hash) {
+                        console.log(`[MSG] Chain invalid: broken link at block ${i}`);
+                        chainValid = false;
+                        break;
+                    }
+                    
+                    // Verify block hash integrity using Block class
+                    const tempBlock = new Block(block.index, block.timestamp, block.data, block.previousHash);
+                    tempBlock.nonce = block.nonce;
+                    tempBlock.merkleRoot = block.merkleRoot;
+                    if (tempBlock.calculateHash() !== block.hash) {
+                        console.log(`[MSG] Chain invalid: hash mismatch at block ${i}`);
+                        chainValid = false;
+                        break;
+                    }
+                    
+                    // Verify block signature if present
+                    if (block.signature && block.validator) {
+                        const validatorKey = blockchain.validators.get(block.validator);
+                        if (validatorKey) {
+                            tempBlock.signature = block.signature;
+                            if (!tempBlock.verifySignature(validatorKey)) {
+                                console.log(`[MSG] Chain invalid: bad signature at block ${i}`);
+                                chainValid = false;
+                                break;
+                            }
+                        }
+                    }
+                }
+                
+                if (chainValid) {
+                    blockchain.chain = receivedChain;
+                    blockchain.saveChain();
+                    nodeMonitor.updateChainHeight(receivedChain.length);
+                    console.log('Chain synchronized');
+                } else {
+                    console.log('[MSG] Rejected invalid chain from peer');
+                }
             }
             break;
 
@@ -151,6 +206,12 @@ function handleMessage(senderId, message) {
         case MessageTypes.VOTE_BROADCAST:
             // Handle receiving a new vote
             console.log('[MSG] Received vote broadcast');
+            const voteAnomalies = securityMonitor.analyzeVote(message.data, senderId);
+            if (voteAnomalies.some(a => a.severity === 'critical' || a.severity === 'high')) {
+                console.warn(`[SECURITY] Suspicious vote from ${senderId}, quarantining`);
+                securityMonitor.quarantinePeer(senderId, 'SUSPICIOUS_VOTE');
+                break;
+            }
             try {
                 blockchain.addVoteTransaction(message.data);
                 nodeMonitor.recordVoteProcessed();
@@ -166,6 +227,11 @@ function handleMessage(senderId, message) {
             // Handle receiving a new block
             console.log('[MSG] Received block broadcast');
             const receivedBlock = message.data;
+            const blockAnomalies = securityMonitor.analyzeBlock(receivedBlock, senderId);
+            if (blockAnomalies.some(a => a.severity === 'critical')) {
+                console.warn(`[SECURITY] Critical anomalies in block from ${senderId}, rejecting`);
+                break;
+            }
             if (blockchain.addBlock(receivedBlock, receivedBlock.validator, receivedBlock.signature)) {
                 nodeMonitor.recordBlockProduced(receivedBlock);
                 nodeMonitor.updateChainHeight(blockchain.chain.length);
@@ -193,14 +259,15 @@ function handleMessage(senderId, message) {
         case 'MINE':
             // Handle mining request
             console.log('[MSG] Received mining request');
-            const newBlock = blockchain.createBlock(nodeId);
-            newBlock.signBlock(nodeKeyPair.privateKey);
+            const { block: minedBlock, pendingSnapshot: minedSnapshot } = blockchain.createBlock(nodeId);
+            minedBlock.signBlock(nodeKeyPair.privateKey);
 
-            if (blockchain.addBlock(newBlock, nodeId, newBlock.signature)) {
-                nodeMonitor.recordBlockProduced(newBlock);
+            if (blockchain.addBlock(minedBlock, nodeId, minedBlock.signature)) {
+                blockchain.commitBlock(minedBlock, minedSnapshot);
+                nodeMonitor.recordBlockProduced(minedBlock);
                 nodeMonitor.updateChainHeight(blockchain.chain.length);
-                metrics.recordBlockCreated(newBlock); // Record block created metric
-                peerManager.broadcastBlock(newBlock);
+                metrics.recordBlockCreated(minedBlock); // Record block created metric
+                peerManager.broadcastBlock(minedBlock);
                 console.log('New block mined and added to chain');
             }
             break;
@@ -234,7 +301,8 @@ app.get('/', (req, res) => {
       transactions: '/transactions/new',
       merkle: '/merkle/stats',
       elections: '/elections/:electionId/results',
-      nullifier: '/nullifier/:nullifier'
+      nullifier: '/nullifier/:nullifier',
+      security: '/security/status'
     }
   });
 });
@@ -406,10 +474,11 @@ app.post('/vote', (req, res) => {
 
 // Mine a new block
 app.get('/mine', (req, res) => {
-    const newBlock = blockchain.createBlock(nodeId);
+    const { block: newBlock, pendingSnapshot } = blockchain.createBlock(nodeId);
     newBlock.signBlock(nodeKeyPair.privateKey);
     
     if (blockchain.addBlock(newBlock, nodeId, newBlock.signature)) {
+        blockchain.commitBlock(newBlock, pendingSnapshot);
         nodeMonitor.recordBlockProduced(newBlock);
         nodeMonitor.updateChainHeight(blockchain.chain.length);
         
@@ -729,6 +798,22 @@ app.post('/merkle/batch-verify', (req, res) => {
     }
 });
 
+// ==================== SECURITY ENDPOINTS ====================
+
+app.get('/security/status', (req, res) => {
+    res.json({
+        metrics: securityMonitor.getBehavioralMetrics(),
+        quarantined: securityMonitor.getQuarantinedPeers(),
+        bft: byzantineValidator.getBFTMetrics(),
+        recovery: recoveryManager.getRecoveryStatus(),
+        timestamp: Date.now()
+    });
+});
+
+app.get('/security/report', (req, res) => {
+    res.json(securityMonitor.generateSecurityReport());
+});
+
 // Start the server
 server.listen(PORT, () => {
     console.log(`
@@ -799,6 +884,7 @@ if (process.env.PEERS) {
 process.on('SIGINT', () => {
     console.log('\nShutting down gracefully...');
     peerManager.shutdown();
+    securityMonitor.destroy();
     server.close(() => {
         console.log('Server closed');
         process.exit(0);
