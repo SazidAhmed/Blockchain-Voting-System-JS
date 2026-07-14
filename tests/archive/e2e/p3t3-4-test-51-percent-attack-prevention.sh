@@ -76,7 +76,7 @@ check_node_running() {
 # Get current blockchain
 get_blockchain() {
     local port=$1
-    curl -s "${BASE_URL}:${port}/blockchain" | jq '.'
+    curl -s "${BASE_URL}:${port}/chain" | jq '.'
 }
 
 # Get node status
@@ -94,13 +94,13 @@ get_network_status() {
 # Get chain length
 get_chain_length() {
     local port=$1
-    curl -s "${BASE_URL}:${port}/blockchain" | jq '.chain | length'
+    curl -s "${BASE_URL}:${port}/chain" | jq '.chain | length'
 }
 
 # Get last block hash
 get_last_block_hash() {
     local port=$1
-    curl -s "${BASE_URL}:${port}/blockchain" | jq -r '.chain[-1].hash'
+    curl -s "${BASE_URL}:${port}/chain" | jq -r '.chain[-1].hash'
 }
 
 # Create a vote
@@ -308,7 +308,7 @@ test_3_4_5_chain_reorganization_prevention() {
     # Step 2: Capture chain state
     sleep 2
     local length_after_creation=$(get_chain_length "$port1")
-    local hash_at_position_2=$(curl -s "${BASE_URL}:${port1}/blockchain" | jq -r '.chain[2].hash' 2>/dev/null || echo "UNKNOWN")
+    local hash_at_position_2=$(curl -s "${BASE_URL}:${port1}/chain" | jq -r '.chain[2].hash' 2>/dev/null || echo "UNKNOWN")
     
     log_info "Chain length: $length_after_creation"
     log_info "Block at position 2: ${hash_at_position_2:0:16}..."
@@ -317,7 +317,7 @@ test_3_4_5_chain_reorganization_prevention() {
     sleep 5
     
     local length_after_wait=$(get_chain_length "$port1")
-    local hash_at_position_2_after=$(curl -s "${BASE_URL}:${port1}/blockchain" | jq -r '.chain[2].hash' 2>/dev/null || echo "UNKNOWN")
+    local hash_at_position_2_after=$(curl -s "${BASE_URL}:${port1}/chain" | jq -r '.chain[2].hash' 2>/dev/null || echo "UNKNOWN")
     
     log_info "Chain length after wait: $length_after_wait"
     log_info "Block at position 2 now: ${hash_at_position_2_after:0:16}..."

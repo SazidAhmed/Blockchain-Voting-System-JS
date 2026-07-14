@@ -1,4 +1,12 @@
 #!/bin/bash
+# =============================================================================
+# DEPRECATED — Preserved for reference only
+# Superseded by: tests/categories/smoke-test.sh
+# Reason: Uses hardcoded production ports (3000, 3306). Consolidated script
+#          covers same flow (health, register, login, vote, double-vote)
+#          with isolated test Docker.
+# Last working: July 2026 (pre-reorganization)
+# =============================================================================
 
 # Colors for output
 GREEN='\033[0;32m'
@@ -65,9 +73,9 @@ echo -e "\n${BLUE}[4] Fetching elections...${NC}"
 ELECTIONS=$(curl -s -X GET $BACKEND/elections \
   -H "Authorization: Bearer $TOKEN")
 
-ELECTION_ID=$(echo $ELECTIONS | jq -r '.elections[0].id')
-ELECTION_TITLE=$(echo $ELECTIONS | jq -r '.elections[0].title')
-ELECTION_STATUS=$(echo $ELECTIONS | jq -r '.elections[0].status')
+ELECTION_ID=$(echo $ELECTIONS | jq -r '.[0].id')
+ELECTION_TITLE=$(echo $ELECTIONS | jq -r '.[0].title')
+ELECTION_STATUS=$(echo $ELECTIONS | jq -r '.[0].status')
 
 if [ ! -z "$ELECTION_ID" ] && [ "$ELECTION_ID" != "null" ]; then
   echo -e "${GREEN}✓ Elections retrieved${NC}"
@@ -173,7 +181,7 @@ fi
 # 10. Check Blockchain Consensus
 echo -e "\n${BLUE}[10] Checking blockchain consensus...${NC}"
 NODES_READY=0
-for i in {1..5}; do
+for i in {1..4}; do
   HEIGHT=$(curl -s http://localhost:$((3000+i))/chain 2>/dev/null | jq '.blocks | length' 2>/dev/null)
   if [ ! -z "$HEIGHT" ] && [ "$HEIGHT" -gt 0 ]; then
     NODES_READY=$((NODES_READY + 1))

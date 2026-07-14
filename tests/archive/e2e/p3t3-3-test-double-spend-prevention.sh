@@ -74,7 +74,7 @@ check_node_running() {
 # Get current blockchain
 get_blockchain() {
     local port=$1
-    curl -s "${BASE_URL}:${port}/blockchain" | jq '.'
+    curl -s "${BASE_URL}:${port}/chain" | jq '.'
 }
 
 # Create a vote

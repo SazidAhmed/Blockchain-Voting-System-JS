@@ -74,14 +74,14 @@ check_node_running() {
 # Get current blockchain
 get_blockchain() {
     local port=$1
-    curl -s "${BASE_URL}:${port}/blockchain" | jq '.'
+    curl -s "${BASE_URL}:${port}/chain" | jq '.'
 }
 
 # Get block by index
 get_block() {
     local port=$1
     local index=$2
-    curl -s "${BASE_URL}:${port}/blockchain" | jq ".chain[$index]"
+    curl -s "${BASE_URL}:${port}/chain" | jq ".chain[$index]"
 }
 
 # Create a vote
@@ -106,7 +106,7 @@ tamper_block_data() {
     local new_votes=$3
     
     # Get current blockchain
-    local blockchain=$(curl -s "${BASE_URL}:${port}/blockchain")
+    local blockchain=$(curl -s "${BASE_URL}:${port}/chain")
     
     # Modify block's votes data
     local modified=$(echo "$blockchain" | jq ".chain[$block_index].data = $new_votes")
@@ -140,7 +140,7 @@ verify_block_hash() {
 verify_merkle_tree() {
     local port=$1
     
-    local response=$(curl -s "${BASE_URL}:${port}/blockchain/verify-merkle" 2>/dev/null)
+    local response=$(curl -s "${BASE_URL}:${port}/chain/verify-merkle" 2>/dev/null)
     
     if echo "$response" | jq -e '.valid == true' > /dev/null 2>&1; then
         return 0

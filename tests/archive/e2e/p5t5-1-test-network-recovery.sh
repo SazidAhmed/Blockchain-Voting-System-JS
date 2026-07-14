@@ -134,9 +134,9 @@ test_state_synchronization() {
   log_info "Running: $test_name"
   
   # Get blockchain state from multiple peers
-  local state1=$(curl -s "${BASE_URL}:3001/blockchain/status" 2>/dev/null || echo "")
-  local state2=$(curl -s "${BASE_URL}:3002/blockchain/status" 2>/dev/null || echo "")
-  local state3=$(curl -s "${BASE_URL}:3003/blockchain/status" 2>/dev/null || echo "")
+  local state1=$(curl -s "${BASE_URL}:3001/node/status" 2>/dev/null || echo "")
+  local state2=$(curl -s "${BASE_URL}:3002/node/status" 2>/dev/null || echo "")
+  local state3=$(curl -s "${BASE_URL}:3003/node/status" 2>/dev/null || echo "")
   
   # Check if states are consistent (same block count)
   if [ -n "$state1" ] && [ -n "$state2" ] && [ -n "$state3" ]; then
