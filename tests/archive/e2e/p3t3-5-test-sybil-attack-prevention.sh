@@ -93,7 +93,7 @@ get_network_status() {
 # Get blockchain
 get_blockchain() {
     local port=$1
-    curl -s "${BASE_URL}:${port}/blockchain" | jq '.' 2>/dev/null || echo '{"chain":[]}'
+    curl -s "${BASE_URL}:${port}/chain" | jq '.' 2>/dev/null || echo '{"chain":[]}'
 }
 
 # Create a vote with potential sybil voter

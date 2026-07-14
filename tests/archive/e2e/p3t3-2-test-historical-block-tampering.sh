@@ -74,14 +74,14 @@ check_node_running() {
 # Get current blockchain
 get_blockchain() {
     local port=$1
-    curl -s "${BASE_URL}:${port}/blockchain" | jq '.'
+    curl -s "${BASE_URL}:${port}/chain" | jq '.'
 }
 
 # Get block by index
 get_block() {
     local port=$1
     local index=$2
-    curl -s "${BASE_URL}:${port}/blockchain" | jq ".chain[$index]"
+    curl -s "${BASE_URL}:${port}/chain" | jq ".chain[$index]"
 }
 
 # Create a vote
@@ -103,7 +103,7 @@ create_vote() {
 get_block_hash() {
     local port=$1
     local index=$2
-    curl -s "${BASE_URL}:${port}/blockchain" | jq -r ".chain[$index].hash"
+    curl -s "${BASE_URL}:${port}/chain" | jq -r ".chain[$index].hash"
 }
 
 # Compare blockchain states across nodes

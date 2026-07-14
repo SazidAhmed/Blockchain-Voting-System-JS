@@ -49,7 +49,7 @@ echo ""
 # Phase 2 Test 3: Blockchain Status
 echo "📋 PHASE 2 TEST 3: Blockchain Status"
 echo "------------------------------------"
-curl -s http://localhost:3001/blockchain 2>&1 | head -10
+curl -s http://localhost:3001/chain 2>&1 | head -10
 echo ""
 
 echo "=========================================="

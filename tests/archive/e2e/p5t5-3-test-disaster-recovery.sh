@@ -324,7 +324,7 @@ test_system_integrity() {
   fi
   
   # 2. Check blockchain status
-  local blockchain_status=$(curl -s "${BASE_URL}:3001/blockchain/status" 2>/dev/null || echo "")
+  local blockchain_status=$(curl -s "${BASE_URL}:3001/node/status" 2>/dev/null || echo "")
   if [ -n "$blockchain_status" ]; then
     log_recovery "✓ Blockchain accessible"
     ((integrity_checks++))

@@ -4,6 +4,9 @@ set -euo pipefail
 # Double-vote prevention test script
 # Requirements: curl, jq, openssl, docker
 # Usage: bash tests/e2e/tools/double_vote_test.sh
+#
+# ARCHIVED: Preserved for reference. Superseded by double-vote check in
+# tests/categories/smoke-test.sh. Uses production ports (3000).
 
 INSTITUTION_ID="TEST2025001"
 PASSWORD="TestPass123!"

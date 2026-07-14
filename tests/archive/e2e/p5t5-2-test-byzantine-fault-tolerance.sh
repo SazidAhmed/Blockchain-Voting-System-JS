@@ -276,8 +276,8 @@ test_consensus_properties() {
   log_bft "Testing consensus safety (no conflicting blocks) and liveness (progress)"
   
   # Test safety: verify no conflicting blocks
-  local block1=$(curl -s "${BASE_URL}:3001/blockchain/latest" 2>/dev/null || echo "")
-  local block2=$(curl -s "${BASE_URL}:3002/blockchain/latest" 2>/dev/null || echo "")
+  local block1=$(curl -s "${BASE_URL}:3001/chain/latest" 2>/dev/null || echo "")
+  local block2=$(curl -s "${BASE_URL}:3002/chain/latest" 2>/dev/null || echo "")
   
   local safety_ok=0
   if [ -n "$block1" ] && [ -n "$block2" ]; then
@@ -290,7 +290,7 @@ test_consensus_properties() {
   
   # Test liveness: verify system makes progress
   sleep 2
-  local block3=$(curl -s "${BASE_URL}:3001/blockchain/latest" 2>/dev/null || echo "")
+  local block3=$(curl -s "${BASE_URL}:3001/chain/latest" 2>/dev/null || echo "")
   
   if [ -n "$block1" ] && [ -n "$block3" ]; then
     log_bft "Liveness property verified: system making progress"
