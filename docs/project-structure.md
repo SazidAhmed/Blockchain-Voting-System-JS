@@ -1,12 +1,24 @@
-# Blockchain-Voting-System-JS
-
 ```text
 └── 📁Blockchain-Voting-System-JS
+    └── 📁.githooks
+        ├── pre-commit
+        ├── pre-push
     └── 📁.github
+        └── 📁ISSUE_TEMPLATE
+            ├── bug_report.yml
+            ├── chore.yml
+            ├── cicd.yml
+            ├── config.yml
+            ├── documentation.yml
+            ├── feature_request.yml
+            ├── refactor.yml
         └── 📁workflows
             ├── docker-build.yml
+            ├── pr-automation.yml
+        ├── labeler.yml
+        ├── WORKFLOW-GUIDE.md
+    └── 📁.opencode
     └── 📁.vscode
-        ├── settings.json
     └── 📁docs
         └── 📁database
             ├── DATABASE_QUICK_REFERENCE.md
@@ -165,10 +177,15 @@
             ├── GITHUB_PUSH_GUIDE.md
         └── 📁security
             ├── implementation.txt
+        ├── project-structure.md
     └── 📁infra
         └── 📁alerts
             ├── voting-system-alerts.yml
         └── 📁docker
+            └── 📁nginx
+                └── 📁logs
+                └── 📁ssl
+                ├── nginx.conf
             ├── docker-compose.monitoring.yml
             ├── docker-compose.multi-node.yml
             ├── docker-compose.prod.yml
@@ -203,6 +220,16 @@
             ├── docker-start.sh
             ├── start-multi-node.sh
             ├── verify-multi-node.sh
+    └── 📁scripts
+        ├── check-branch-name.sh
+        ├── check-commit-msg.sh
+        ├── check-console-logs.sh
+        ├── check-docker.sh
+        ├── check-env-example.sh
+        ├── check-secrets.sh
+        ├── check-syntax.sh
+        ├── ci.sh
+        ├── run-all-checks.sh
     └── 📁services
         └── 📁admin-panel
             └── 📁src
@@ -240,9 +267,8 @@
                 ├── validation.js
             └── 📁migrations
                 ├── 001_initial_schema.sql
-                ├── 002_add_admin_audit_logging.js
                 ├── 002_add_crypto_fields.sql
-                ├── 002_audit_logs.sql
+                ├── 003_add_admin_tables.sql
             └── 📁models
                 ├── candidate.js
                 ├── election.js
@@ -291,7 +317,6 @@
             ├── .gitignore
             ├── Dockerfile
             ├── index.js
-            ├── package-lock.json
             ├── package.json
         └── 📁blockchain-node
             └── 📁data
@@ -413,11 +438,6 @@
             ├── test-phase5-all.sh
             ├── test-system.js
         └── 📁security
-            └── 📁results
-                ├── security_tests_20251118_122322.txt
-                ├── security_tests_20251118_122330.txt
-                ├── security_tests_20251118_122357.txt
-                ├── security_tests_20251118_122424.txt
             ├── PRACTICAL_SECURITY_TESTS.sh
             ├── README.md
             ├── SECURITY_TEST_PLAN_COMPLETE.md
@@ -429,10 +449,10 @@
             ├── test-security-orchestrator.sh
         ├── quick-test.sh
         ├── run-comprehensive-tests.sh
-    ├── .env
     ├── .env.example
     ├── .gitignore
     ├── .shell_aliases
+    ├── AGENTS.md
     ├── LICENSE
     └── README.md
 ```

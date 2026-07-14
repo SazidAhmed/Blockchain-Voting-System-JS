@@ -28,7 +28,15 @@ class Blockchain {
     async loadChain() {
         try {
             const chainData = await this.db.get('chain');
-            this.chain = JSON.parse(chainData);
+            const parsed = JSON.parse(chainData);
+            this.chain = parsed.map(d => {
+                const block = new Block(d.index, d.timestamp, d.data, d.previousHash);
+                block.nonce = d.nonce;
+                block.hash = d.hash;
+                block.validator = d.validator || '';
+                block.signature = d.signature || '';
+                return block;
+            });
             console.log('Blockchain loaded from database');
         } catch (error) {
             // Key not found is expected for first run
