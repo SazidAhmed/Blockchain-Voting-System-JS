@@ -83,7 +83,7 @@ class DatabaseSeeder {
         `INSERT INTO users 
          (institution_id, username, password, role, email, public_key, pseudonym_id, registration_status, mfa_enabled)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [user.institution_id, user.username, user.password, user.role, user.email, 
+        [user.institution_id, user.username, user.password, user.role, user.email,
          publicKey, pseudonymId, user.registration_status, false]
       );
 
