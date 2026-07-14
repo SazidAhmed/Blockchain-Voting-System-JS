@@ -45,7 +45,7 @@ class PrometheusMetrics extends EventEmitter {
      */
     recordBlockCreated(blockData) {
         this.blocksCreated++;
-        this.chainHeight = (blockData?.blockNumber || this.chainHeight) + 1;
+        this.chainHeight = (blockData?.index || this.chainHeight) + 1;
         this.emit('block_created', { nodeId: this.nodeId, block: blockData });
     }
     
@@ -54,7 +54,7 @@ class PrometheusMetrics extends EventEmitter {
      */
     recordBlockReceived(blockData) {
         this.blocksReceived++;
-        this.chainHeight = Math.max(this.chainHeight, (blockData?.blockNumber || 0) + 1);
+        this.chainHeight = Math.max(this.chainHeight, (blockData?.index || 0) + 1);
         this.emit('block_received', { nodeId: this.nodeId, block: blockData });
     }
     

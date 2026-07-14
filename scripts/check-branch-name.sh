@@ -9,6 +9,10 @@ GREEN='\033[0;32m'
 NC='\033[0m'
 
 BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "")
+# In CI (GitHub Actions), checkout is detached HEAD — use env vars
+if [ "$BRANCH" = "HEAD" ]; then
+  BRANCH="${GITHUB_HEAD_REF:-${GITHUB_REF_NAME:-}}"
+fi
 
 if [ -z "$BRANCH" ]; then
   echo -e "${RED}✗ Could not determine branch name${NC}"

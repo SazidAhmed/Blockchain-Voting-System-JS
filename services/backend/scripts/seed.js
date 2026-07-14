@@ -24,7 +24,7 @@ class DatabaseSeeder {
       host: process.env.DB_HOST || 'localhost',
       user: process.env.DB_USER || 'root',
       password: process.env.DB_PASSWORD || '',
-      database: process.env.DB_NAME || 'voting'
+      database: process.env.DB_NAME || 'voting_db'
     });
     console.log('✓ Connected to database');
   }
