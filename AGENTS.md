@@ -43,24 +43,27 @@ bash infra/scripts/docker-health-check.sh
 bash infra/scripts/docker-seed.sh
 
 # Run integration tests (requires running stack)
-bash tests/quick-test.sh
+bash tests/run-tests.sh
 ```
 
 ## Testing
 
-No unit test framework configured — `npm test` is a stub in all services. Testing is integration-only via curl scripts:
+No unit test framework configured — `npm test` is a stub in all services. Testing is integration-only via shell scripts:
 
-- `tests/quick-test.sh` — full vote flow (register → login → vote → double-vote check)
-- `tests/run-comprehensive-tests.sh` — extended scenarios
-- `tests/e2e/*.sh` — network partition, mining, tamper detection
-- `tests/security/PRACTICAL_SECURITY_TESTS.sh` — security scenarios
+- `tests/run-tests.sh` — interactive test runner (menu or `all` to run everything)
+- `tests/categories/smoke-test.sh` — quick smoke test (health, login, vote, double-vote)
+- `tests/categories/integration-test.sh` — full vote lifecycle, blockchain, audit trail
+- `tests/categories/attack-test.sh` — tampered ballot, replay, SQLi, no-auth, JWT, rate-limit
+- `tests/categories/detection-test.sh` — node health, chain consistency, Merkle stats
+- `tests/categories/security-suite.sh` — no-auth vote, nullifier uniqueness, XSS, rate-limit
+- `tests/categories/resilience-test.sh` — node restart, sync, backend restart
 
-All require Docker stack running. Run `docker-compose up -d` first.
+Requires Docker stack running. Use `docker-compose -f infra/docker/docker-compose.test.yml up -d` for isolated test stack.
 
 ## Database
 
-- MySQL 8.0 with `voting_db`
-- Schema in `services/backend/migrations/*.sql` (auto-run on Docker init + backend boot)
+- MySQL 8.0 with database name `voting_db` (default, set via `DB_NAME` env var)
+- Schema in `services/backend/migrations/*.sql` (auto-run on Docker init + backend boot, also run by `npm run migrate`)
 - Seeding: `bash infra/scripts/docker-seed.sh`
 - Access: phpMyAdmin at `localhost:8080`
 
@@ -85,9 +88,23 @@ infra/
   docker/          # docker-compose files (main, monitoring, multi-node, prod)
   scripts/         # Helper scripts (backup, restore, health, seed, logs)
   monitoring/      # Prometheus, Grafana dashboards, Loki config
+docs/
+  README.md        # Index
+  architecture/    # System design, blockchain, crypto
+  database/        # Schema, setup, reference
+  api/             # Backend, blockchain-node, institution-api
+  deployment/      # Docker, environment, setup
+  development/     # Getting started, conventions, github-workflow, crypto
+  testing/         # Test architecture, how to run, CI
+  monitoring/      # Grafana, stack
+  security/        # Threat model, audit, operations
+  project/         # Structure
+  knowledge/       # Academic explainers
 tests/
-  e2e/             # Shell-based integration tests
-  security/        # Security test scenarios
+  run-tests.sh     # Interactive test runner (menu or `all` to run everything)
+  test-config.sh   # Centralized config: URLs, ports, credentials, helpers
+  categories/      # Active test scripts (smoke, integration, attack, detection, security, resilience)
+  results/         # Test run output (created at runtime)
 ```
 
 ## Gotchas
@@ -98,3 +115,13 @@ tests/
 - `package-lock.json` is gitignored — run `npm install` in each service dir after cloning
 - Express 5 is used in backend/blockchain-node (not 4) — middleware API differs
 - Institution API uses Express 4 (different from backend)
+
+## Forbidden Directories
+
+Do NOT read or reference these directories unless user explicitly asks:
+
+- `docs/archive/` — historical docs, ZIP only
+- `tests/archive/` — archived test scripts
+- `tests/deprecated/` — deprecated test scripts
+
+These are preserved for reference only. All active documentation lives under `docs/` (excluding `archive/`). All active test scripts live in `tests/categories/`.
