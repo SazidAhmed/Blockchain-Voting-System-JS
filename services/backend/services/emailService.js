@@ -8,63 +8,92 @@
  */
 
 const nodemailer = require('nodemailer');
-require('dotenv').config();
+const path = require('path');
+require('dotenv').config({ path: path.resolve(__dirname, '../../../.env') });
+
+// Institutional domains that use Ethereal (test) email
+const INSTITUTIONAL_DOMAINS = /@(university\.edu|faculty\.university\.edu|staff\.university\.edu)$/i;
 
 class EmailService {
   constructor() {
-    this.transporter = null;
-    this.initialized = false;
-    this.testMode = false;
+    this.smtpTransporter = null;
+    this.etherealTransporter = null;
+    this.smtpInitialized = false;
+    this.etherealInitialized = false;
   }
 
   /**
-   * Initialize the email transporter
-   * Auto-detects configuration from environment variables
+   * Check if an email belongs to an institutional domain
    */
-  async initialize() {
-    if (this.initialized) return;
+  isInstitutionalDomain(email) {
+    return INSTITUTIONAL_DOMAINS.test(email);
+  }
+
+  /**
+   * Initialize SMTP transporter for real emails
+   */
+  async initializeSMTP() {
+    if (this.smtpInitialized) return;
+
+    if (!process.env.SMTP_HOST || !process.env.SMTP_USER || !process.env.SMTP_PASS) {
+      console.log('📧 No SMTP config — real emails will fall back to console');
+      return;
+    }
 
     try {
-      if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
-        // Production SMTP configuration
-        this.transporter = nodemailer.createTransport({
-          host: process.env.SMTP_HOST,
-          port: parseInt(process.env.SMTP_PORT) || 587,
-          secure: process.env.SMTP_SECURE === 'true', // true for 465, false for other ports
-          auth: {
-            user: process.env.SMTP_USER,
-            pass: process.env.SMTP_PASS
-          }
-        });
-        console.log(`📧 Email service initialized with SMTP: ${process.env.SMTP_HOST}`);
-      } else {
-        // Development mode: use Ethereal test account
-        console.log('📧 No SMTP config found. Creating Ethereal test account for development...');
-        const testAccount = await nodemailer.createTestAccount();
-        this.transporter = nodemailer.createTransport({
-          host: 'smtp.ethereal.email',
-          port: 587,
-          secure: false,
-          auth: {
-            user: testAccount.user,
-            pass: testAccount.pass
-          }
-        });
-        this.testMode = true;
-        console.log(`📧 Ethereal test account created: ${testAccount.user}`);
-        console.log(`📧 View sent emails at: https://ethereal.email/login`);
-        console.log(`📧 Login: ${testAccount.user} / ${testAccount.pass}`);
-      }
-
-      // Verify connection
-      await this.transporter.verify();
-      this.initialized = true;
-      console.log('✅ Email service ready');
+      this.smtpTransporter = nodemailer.createTransport({
+        host: process.env.SMTP_HOST,
+        port: parseInt(process.env.SMTP_PORT) || 587,
+        secure: process.env.SMTP_SECURE === 'true',
+        auth: {
+          user: process.env.SMTP_USER,
+          pass: process.env.SMTP_PASS
+        }
+      });
+      await this.smtpTransporter.verify();
+      this.smtpInitialized = true;
+      console.log(`📧 SMTP ready: ${process.env.SMTP_HOST}`);
     } catch (error) {
-      console.error('❌ Email service initialization failed:', error.message);
-      // Don't throw — we'll handle it gracefully when trying to send
-      this.initialized = false;
+      console.error('❌ SMTP initialization failed:', error.message);
     }
+  }
+
+  /**
+   * Initialize Ethereal transporter for institutional emails
+   */
+  async initializeEthereal() {
+    if (this.etherealInitialized) return;
+
+    try {
+      console.log('📧 Creating Ethereal test account for institutional email...');
+      const testAccount = await nodemailer.createTestAccount();
+      this.etherealTransporter = nodemailer.createTransport({
+        host: 'smtp.ethereal.email',
+        port: 587,
+        secure: false,
+        auth: {
+          user: testAccount.user,
+          pass: testAccount.pass
+        }
+      });
+      this.etherealInitialized = true;
+      console.log(`📧 Ethereal ready: ${testAccount.user}`);
+      console.log(`📧 View emails at: https://ethereal.email/login`);
+    } catch (error) {
+      console.error('❌ Ethereal initialization failed:', error.message);
+    }
+  }
+
+  /**
+   * Get the appropriate transporter for an email address
+   */
+  async getTransporter(email) {
+    if (this.isInstitutionalDomain(email)) {
+      await this.initializeEthereal();
+      return this.etherealTransporter;
+    }
+    await this.initializeSMTP();
+    return this.smtpTransporter;
   }
 
   /**
@@ -76,15 +105,13 @@ class EmailService {
    * @returns {Promise<{success: boolean, messageId?: string, previewUrl?: string}>}
    */
   async sendOTPEmail(to, otp, fullName, institutionId) {
-    if (!this.initialized) {
-      await this.initialize();
-    }
+    const isEthereal = this.isInstitutionalDomain(to);
+    const transporter = await this.getTransporter(to);
 
-    if (!this.transporter) {
-      console.error('Email transporter not available');
-      // In development, log OTP to console as fallback
+    if (!transporter) {
+      console.error('No email transporter available');
       console.log(`\n${'='.repeat(50)}`);
-      console.log(`📧 EMAIL FALLBACK (transporter not available)`);
+      console.log(`📧 EMAIL FALLBACK (no transporter)`);
       console.log(`To: ${to}`);
       console.log(`OTP Code: ${otp}`);
       console.log(`${'='.repeat(50)}\n`);
@@ -103,17 +130,16 @@ class EmailService {
     };
 
     try {
-      const info = await this.transporter.sendMail(mailOptions);
+      const info = await transporter.sendMail(mailOptions);
       
       let previewUrl = null;
-      if (this.testMode) {
+      if (isEthereal) {
         previewUrl = nodemailer.getTestMessageUrl(info);
-        console.log(`📧 Preview URL: ${previewUrl}`);
+        console.log(`📧 Ethereal preview: ${previewUrl}`);
       }
 
       console.log(`✅ OTP email sent to ${to} (ID: ${institutionId}) — MessageID: ${info.messageId}`);
 
-      // In development, also log the OTP for convenience
       if (process.env.NODE_ENV !== 'production') {
         console.log(`🔑 [DEV] OTP for ${institutionId}: ${otp}`);
       }
@@ -122,7 +148,6 @@ class EmailService {
     } catch (error) {
       console.error(`❌ Failed to send OTP email to ${to}:`, error.message);
       
-      // Fallback: log to console in development
       if (process.env.NODE_ENV !== 'production') {
         console.log(`\n${'='.repeat(50)}`);
         console.log(`📧 EMAIL FALLBACK (send failed)`);
