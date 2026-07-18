@@ -52,6 +52,7 @@ Also allows `FRONTEND_URL` env var for custom origins. Requests with no `Origin`
 
 ## Environment Variables
 
+
 - `VITE_API_BASE_URL` — API endpoint for frontend (`http://localhost:3000`)
 - `VITE_BLOCKCHAIN_URL` — Blockchain node URL (`http://localhost:3001`)
 - `VITE_INSTITUTION_API_URL` — Institution API URL (`http://localhost:4000`)
@@ -63,7 +64,7 @@ Also allows `FRONTEND_URL` env var for custom origins. Requests with no `Origin`
 Registration requires email verification before account creation:
 
 1. `POST /api/users/institution-lookup/:institutionId` — verify member exists in institutional directory (proxied to institution-api)
-2. `POST /api/users/send-otp` — 6-digit OTP sent to institutional email via `EmailService`
+2. `POST /api/users/send-otp` — 6-digit OTP sent to institutional email via `EmailService` (SMTP or Ethereal in dev)
 3. `POST /api/users/verify-otp` — constant-time OTP comparison via `OTPService`, marks email verified (10min expiry, 3 attempts max, 60s cooldown between sends)
 4. `POST /api/users/register` — creates account, generates ECDSA + RSA-OAEP keypairs client-side, sends public keys to backend. User auto-registered for all active/pending elections
 5. `POST /api/users/login` — returns JWT for subsequent requests
