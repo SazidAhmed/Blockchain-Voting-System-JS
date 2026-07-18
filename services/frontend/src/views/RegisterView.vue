@@ -155,7 +155,7 @@
 import { mapGetters } from 'vuex'
 import keyManager from '@/services/keyManager'
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api'
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'
 
 export default {
   name: 'RegisterView',
@@ -205,7 +205,7 @@ export default {
       this.$store.commit('CLEAR_ERROR')
 
       try {
-        const res = await fetch(`${API_BASE}/users/institution-lookup/${this.studentId.trim().toUpperCase()}`)
+        const res = await fetch(`${API_BASE}/api/users/institution-lookup/${this.studentId.trim().toUpperCase()}`)
         const data = await res.json()
 
         if (!res.ok) {
@@ -233,7 +233,7 @@ export default {
       this.localError = ''
 
       try {
-        const res = await fetch(`${API_BASE}/users/send-otp`, {
+        const res = await fetch(`${API_BASE}/api/users/send-otp`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ institutionId: this.studentId.trim().toUpperCase() })
@@ -262,7 +262,7 @@ export default {
       this.localError = ''
 
       try {
-        const res = await fetch(`${API_BASE}/users/verify-otp`, {
+        const res = await fetch(`${API_BASE}/api/users/verify-otp`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -353,8 +353,8 @@ export default {
         })
 
         this.$store.commit('SET_ERROR', null)
-        alert('Registration successful! Your cryptographic keys have been generated and stored securely.')
-        this.$router.push('/elections')
+        alert('Registration successful! Your cryptographic keys have been generated and stored securely. Please login.')
+        this.$router.push('/login')
       } catch (error) {
         console.error('Registration error:', error)
         this.localError = error.response?.data?.message || error.message || 'Registration failed'

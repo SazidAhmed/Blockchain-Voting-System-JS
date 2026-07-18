@@ -71,7 +71,7 @@ Copy `.env.example` to `.env` and adjust:
 - `DB_HOST` / `DB_USER` / `DB_PASSWORD` / `DB_NAME` — MySQL connection
 - `JWT_SECRET` — signing key for auth tokens
 - `FRONTEND_URL` — CORS origin (default `http://localhost:5173`)
-- `VITE_API_BASE_URL` — frontend API target (default `http://localhost:3000/api`)
+- `VITE_API_BASE_URL` — frontend API target (default `http://localhost:3000`)
 
 ## Testing
 

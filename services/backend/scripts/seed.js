@@ -196,10 +196,7 @@ class DatabaseSeeder {
       console.log('\n  ℹ️  Elections and candidates are not seeded - create them via the admin panel.');
       console.log('\n✓ Database seeding completed successfully!');
       console.log('\n📝 Login Credentials (Development Only):');
-      console.log('  Admin:    ADMIN001 / admin123');
-      console.log('  Student:  STU001 / password123');
-      console.log('  Teacher:  TEACH001 / password123');
-      console.log('  Staff:    STAFF001 / password123\n');
+      console.log('  Admin:    ADMIN001 / admin123\n');
 
     } catch (error) {
       console.error('\n✗ Seeding failed:', error.message);

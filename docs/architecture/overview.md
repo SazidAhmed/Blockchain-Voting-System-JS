@@ -52,7 +52,8 @@ Also allows `FRONTEND_URL` env var for custom origins. Requests with no `Origin`
 
 ## Environment Variables
 
-- `VITE_API_BASE_URL` — API endpoint for frontend (`http://localhost:3000/api`)
+
+- `VITE_API_BASE_URL` — API endpoint for frontend (`http://localhost:3000`)
 - `VITE_BLOCKCHAIN_URL` — Blockchain node URL (`http://localhost:3001`)
 - `VITE_INSTITUTION_API_URL` — Institution API URL (`http://localhost:4000`)
 - `BLOCKCHAIN_NODE_URL` — Backend uses this to submit votes to blockchain
@@ -69,6 +70,15 @@ Registration requires email verification before account creation:
 5. `POST /api/users/login` — returns JWT for subsequent requests
 
 OTP service uses in-memory storage with automatic cleanup. No OTP data persisted to database.
+
+### Email Routing
+
+Emails are routed based on recipient domain:
+
+| Domain | Transporter | Use case |
+| ------ | ----------- | -------- |
+| `university.edu`, `faculty.university.edu`, `staff.university.edu` | Ethereal (test) | Institutional emails — viewable at ethereal.email |
+| All other domains | Real SMTP | Personal emails — delivered to inbox |
 
 ## Election Locking
 

@@ -216,15 +216,7 @@ router.post('/register', registerLimiter, validateRegistration, async (req, res)
       // Don't fail the registration if election registration fails
     }
 
-    // Create JWT token
-    const token = jwt.sign(
-      { id: userId, role, institutionId },
-      process.env.JWT_SECRET,
-      { expiresIn: '1h' }
-    );
-
     const response = {
-      token,
       user: {
         id: userId,
         institutionId,

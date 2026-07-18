@@ -11,7 +11,7 @@ NC='\033[0m'
 echo "Checking .env.example covers all required env vars..."
 
 # Extract env vars from code (process.env.VAR_NAME pattern)
-CODE_VARS=$(grep -rohE 'process\.env\.([A-Z_]+)' services/ --include="*.js" 2>/dev/null \
+CODE_VARS=$(grep -rohE 'process\.env\.([A-Z_]+)' services/ --include="*.js" --exclude-dir=node_modules 2>/dev/null \
   | sed 's/process\.env\.//' | sort -u)
 
 # Extract vars from .env.example

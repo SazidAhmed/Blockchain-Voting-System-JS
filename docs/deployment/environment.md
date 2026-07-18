@@ -40,11 +40,11 @@ Two sets — `DB_*` for application use, `MYSQL_*` for Docker image.
 
 These are baked at build time for production (Dockerfile.prod uses `ARG`).
 
-| Variable                   | Default                     | Description         |
-| -------------------------- | --------------------------- | ------------------- |
-| `VITE_API_BASE_URL`        | `http://localhost:3000/api` | Backend API URL     |
-| `VITE_BLOCKCHAIN_URL`      | `http://localhost:3001`     | Blockchain node URL |
-| `VITE_INSTITUTION_API_URL` | `http://localhost:4000`     | Institution API URL |
+| Variable                   | Default                 | Description         |
+| -------------------------- | ----------------------- | ------------------- |
+| `VITE_API_BASE_URL`        | `http://localhost:3000` | Backend API URL     |
+| `VITE_BLOCKCHAIN_URL`      | `http://localhost:3001` | Blockchain node URL |
+| `VITE_INSTITUTION_API_URL` | `http://localhost:4000` | Institution API URL |
 
 ### Blockchain Node (port 3001)
 
@@ -56,6 +56,8 @@ These are baked at build time for production (Dockerfile.prod uses `ARG`).
 | `PEERS`               | _(empty)_                     | Comma-separated peer URLs |
 
 ### SMTP (Optional)
+
+Configured SMTP is used for **real email addresses** (non-institutional). Institutional emails (`university.edu` family) always use Ethereal (test) regardless of SMTP config.
 
 | Variable          | Default                    | Description      |
 | ----------------- | -------------------------- | ---------------- |
