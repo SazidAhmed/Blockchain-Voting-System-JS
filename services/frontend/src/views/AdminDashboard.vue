@@ -335,6 +335,8 @@
 import { mapGetters } from 'vuex'
 import AdminAuditLogs from '../components/AdminAuditLogs.vue'
 
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'
+
 export default {
   name: 'AdminDashboard',
   components: {
@@ -391,7 +393,7 @@ export default {
       this.loading = true
       this.error = null
       try {
-        const response = await fetch('http://localhost:3000/api/elections/admin', {
+        const response = await fetch(`${API_BASE}/api/elections/admin/all`, {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('token')}`
           }
@@ -410,7 +412,7 @@ export default {
       this.createSuccess = null
 
       try {
-        const response = await fetch('http://localhost:3000/api/elections', {
+        const response = await fetch(`${API_BASE}/api/elections`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('token')}`,
@@ -443,7 +445,7 @@ export default {
     async toggleElectionStatus(election) {
       const newStatus = election.status === 'active' ? 'pending' : 'active'
       try {
-        const response = await fetch(`http://localhost:3000/api/elections/${election.id}/status`, {
+        const response = await fetch(`${API_BASE}/api/elections/${election.id}/status`, {
           method: 'PATCH',
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('token')}`,
@@ -462,7 +464,7 @@ export default {
       if (!confirm('Are you sure you want to delete this election?')) return
 
       try {
-        const response = await fetch(`http://localhost:3000/api/elections/${electionId}`, {
+        const response = await fetch(`${API_BASE}/api/elections/${electionId}`, {
           method: 'DELETE',
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -479,7 +481,7 @@ export default {
       if (!confirm('Are you sure you want to delete this candidate?')) return
 
       try {
-        const response = await fetch(`http://localhost:3000/api/candidates/${candidateId}`, {
+        const response = await fetch(`${API_BASE}/api/candidates/${candidateId}`, {
           method: 'DELETE',
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -499,7 +501,7 @@ export default {
       }
 
       try {
-        const response = await fetch(`http://localhost:3000/api/elections/${this.selectedElectionId}/candidates`, {
+        const response = await fetch(`${API_BASE}/api/elections/${this.selectedElectionId}/candidates`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('token')}`,
@@ -547,8 +549,7 @@ export default {
       return new Date(dateString).toLocaleDateString(undefined, options)
     },
     logout() {
-      localStorage.removeItem('token')
-      localStorage.removeItem('user')
+      this.$store.dispatch('logout')
       this.$router.push('/login')
     }
   },

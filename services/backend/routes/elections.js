@@ -381,6 +381,22 @@ router.post('/:id/register', auth, async (req, res) => {
   }
 });
 
+// @route   GET /api/elections/:id/registration-status
+// @desc    Check if current user is registered for an election
+// @access   Private
+router.get('/:id/registration-status', auth, async (req, res) => {
+  try {
+    const [rows] = await pool.query(
+      'SELECT id FROM voter_registrations WHERE user_id = ? AND election_id = ?',
+      [req.user.id, req.params.id]
+    );
+    res.json({ registered: rows.length > 0 });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 // @route   POST /api/elections/:id/vote
 // @desc    Cast a vote in an election
 // @access  Private
@@ -628,11 +644,10 @@ router.post('/:id/vote', voteLimiter, auth, validateVote, async (req, res) => {
       req
     );
 
-    // Store receipt (commented out - table structure mismatch)
-    // await pool.query(
-    //   'INSERT INTO vote_receipts (election_id, nullifier_hash, transaction_hash) VALUES (?, ?, ?)',
-    //   [electionId, finalNullifier, transactionHash]
-    // );
+    await pool.query(
+      'INSERT INTO vote_receipts (election_id, nullifier_hash, transaction_hash) VALUES (?, ?, ?)',
+      [electionId, finalNullifier, transactionHash]
+    );
 
     res.json({
       message: 'Vote cast successfully',
@@ -942,7 +957,7 @@ router.get('/admin/audit-logs', adminAuth, async (req, res) => {
       { targetAdminId: adminId || req.user.id, ipAddress: clientIp }
     );
 
-    res.json(logs);
+    res.json({ logs: logs.logs, total: logs.total });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'Server error' });
@@ -1028,58 +1043,6 @@ router.delete('/:id', adminAuth, async (req, res) => {
     await pool.query('DELETE FROM elections WHERE id = ?', [electionId]);
 
     res.json({ message: 'Election deleted successfully' });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: 'Server error' });
-  }
-});
-
-// @route   POST /api/elections/:id/candidates
-// @desc    Add a candidate to election
-// @access  Admin only
-router.post('/:id/candidates', adminAuth, async (req, res) => {
-  try {
-    const { name, description } = req.body;
-    const electionId = req.params.id;
-
-    if (!name) {
-      return res.status(400).json({ message: 'Candidate name is required' });
-    }
-
-    const [result] = await pool.query(
-      'INSERT INTO candidates (election_id, name, description) VALUES (?, ?, ?)',
-      [electionId, name, description]
-    );
-
-    res.status(201).json({
-      message: 'Candidate added successfully',
-      candidateId: result.insertId
-    });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: 'Server error' });
-  }
-});
-
-// @route   DELETE /api/candidates/:id
-// @desc    Delete a candidate
-// @access  Admin only
-router.delete('/candidates/:id', adminAuth, async (req, res) => {
-  try {
-    const candidateId = req.params.id;
-
-    // Check if the election this candidate belongs to is active
-    const [[candidate]] = await pool.query('SELECT election_id FROM candidates WHERE id = ?', [candidateId]);
-    if (!candidate) return res.status(404).json({ message: 'Candidate not found' });
-
-    const [[election]] = await pool.query('SELECT status FROM elections WHERE id = ?', [candidate.election_id]);
-    if (election && election.status === 'active') {
-      return res.status(403).json({ message: 'Cannot delete a candidate from an active election' });
-    }
-
-    await pool.query('DELETE FROM candidates WHERE id = ?', [candidateId]);
-
-    res.json({ message: 'Candidate deleted successfully' });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'Server error' });

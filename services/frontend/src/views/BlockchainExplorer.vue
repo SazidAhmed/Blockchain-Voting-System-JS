@@ -247,7 +247,7 @@
 <script>
 import axios from 'axios'
 
-const BLOCKCHAIN_URL = 'http://localhost:3001'
+const BLOCKCHAIN_URL = import.meta.env.VITE_BLOCKCHAIN_URL || 'http://localhost:3001'
 
 export default {
   name: 'BlockchainExplorer',
@@ -334,12 +334,6 @@ export default {
 
     nodeHealthClass() {
       return this.nodeStatus.status === 'healthy' ? 'node-healthy' : 'node-unhealthy'
-    },
-
-    nodesHealthClass() {
-      const { healthyNodes, totalNodes } = this.networkStatus
-      if (!totalNodes) return ''
-      return healthyNodes === totalNodes ? 'nodes-all-healthy' : 'nodes-degraded'
     },
 
     nodesHealthClass() {

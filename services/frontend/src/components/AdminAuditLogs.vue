@@ -81,6 +81,8 @@
 </template>
 
 <script>
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'
+
 export default {
   name: 'AdminAuditLogs',
   data() {
@@ -113,14 +115,15 @@ export default {
     async fetchLogs() {
       this.loading = true
       try {
-        const response = await fetch(`http://localhost:3000/api/admin/audit-logs?limit=${this.limit}&offset=${this.offset}`, {
+        const response = await fetch(`${API_BASE}/api/elections/admin/audit-logs?limit=${this.limit}&offset=${this.offset}`, {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('token')}`
           }
         })
         if (!response.ok) throw new Error('Failed to fetch logs')
-        this.logs = await response.json()
-        this.total = this.logs.length // In production, get total from response
+        const data = await response.json()
+        this.logs = data.logs
+        this.total = data.total
       } catch (err) {
         console.error('Error fetching logs:', err)
       } finally {
@@ -129,7 +132,7 @@ export default {
     },
     async verifyIntegrity(logId) {
       try {
-        const response = await fetch(`http://localhost:3000/api/admin/verify-audit-integrity/${logId}`, {
+        const response = await fetch(`${API_BASE}/api/elections/admin/verify-audit-integrity/${logId}`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('token')}`

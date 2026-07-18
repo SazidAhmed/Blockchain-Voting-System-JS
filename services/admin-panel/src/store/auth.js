@@ -1,6 +1,8 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'
+
 export const useAuthStore = defineStore('auth', () => {
   // State
   const user = ref(null)
@@ -18,7 +20,7 @@ export const useAuthStore = defineStore('auth', () => {
     loading.value = true
     error.value = null
     try {
-      const response = await fetch('http://localhost:3000/api/users/login', {
+      const response = await fetch(`${API_BASE}/api/users/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -53,7 +55,7 @@ export const useAuthStore = defineStore('auth', () => {
 
     loading.value = true
     try {
-      const response = await fetch('http://localhost:3000/api/users/me', {
+      const response = await fetch(`${API_BASE}/api/users/me`, {
         headers: {
           'Authorization': `Bearer ${token.value}`
         }

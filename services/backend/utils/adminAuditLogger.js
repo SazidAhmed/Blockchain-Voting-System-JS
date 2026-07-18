@@ -135,9 +135,14 @@ class AdminAuditLogger {
         ORDER BY timestamp DESC 
         LIMIT ? OFFSET ?
       `;
+      const countQuery = `
+        SELECT COUNT(*) as total FROM admin_audit_logs 
+        WHERE admin_id = ?
+      `;
 
       const [logs] = await this.pool.query(query, [adminId, limit, offset]);
-      return logs;
+      const [countResult] = await this.pool.query(countQuery, [adminId]);
+      return { logs, total: countResult[0].total };
     } catch (error) {
       console.error('Error fetching admin logs:', error);
       throw error;

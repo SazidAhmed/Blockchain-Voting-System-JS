@@ -4,7 +4,7 @@ import keyManager from '@/services/keyManager'
 
 // Configure axios
 const api = axios.create({
-  baseURL: 'http://localhost:3000/api'
+  baseURL: `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'}/api`
 })
 
 // Add interceptor to include auth token
@@ -70,8 +70,6 @@ export default createStore({
       commit('CLEAR_ERROR')
       try {
         const response = await api.post('/users/register', userData)
-        commit('SET_USER', response.data.user)
-        commit('SET_TOKEN', response.data.token)
         return response.data
       } catch (error) {
         commit('SET_ERROR', error.response?.data?.message || 'Registration failed')

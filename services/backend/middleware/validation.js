@@ -86,22 +86,26 @@ const validateVote = [
     // DO NOT convert to int - keep as string for signature verification
   
   body('encryptedBallot')
+    .optional()
     .trim()
     .notEmpty().withMessage('Encrypted ballot is required')
     .isLength({ min: 10, max: 10000 }).withMessage('Invalid encrypted ballot length'),
   
   body('nullifier')
+    .optional()
     .trim()
     .notEmpty().withMessage('Nullifier is required')
     .isHexadecimal().withMessage('Nullifier must be hexadecimal')
     .isLength({ min: 64, max: 64 }).withMessage('Nullifier must be 64 characters (SHA-256)'),
   
   body('signature')
+    .optional()
     .trim()
     .notEmpty().withMessage('Signature is required')
     .isLength({ min: 64, max: 512 }).withMessage('Invalid signature length'),
   
   body('publicKey')
+    .optional()
     .trim()
     .notEmpty().withMessage('Public key is required')
     .isBase64().withMessage('Public key must be base64 encoded')

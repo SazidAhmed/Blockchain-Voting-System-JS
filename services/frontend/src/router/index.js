@@ -8,6 +8,7 @@ import AdminDashboard from '../views/AdminDashboard.vue'
 import ResultsView from '../views/ResultsView.vue'
 import VoterPickerView from '../views/VoterPickerView.vue'
 import BlockchainExplorer from '../views/BlockchainExplorer.vue'
+import ElectionDetailView from '../views/ElectionDetailView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -47,6 +48,12 @@ const router = createRouter({
       path: '/elections/:id/vote',
       name: 'vote',
       component: VoteView,
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/elections/:id',
+      name: 'election-detail',
+      component: ElectionDetailView,
       meta: { requiresAuth: true }
     },
     {

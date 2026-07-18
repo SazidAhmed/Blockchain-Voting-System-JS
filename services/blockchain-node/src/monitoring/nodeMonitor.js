@@ -115,7 +115,10 @@ class NodeMonitor extends EventEmitter {
         const chainHeight = blockchain ? blockchain.chain.length : 0;
         const blockTimes = this.blockTimes.slice(-10); // Last 10 blocks
         const averageBlockTime = blockTimes.length > 0
-            ? blockTimes.reduce((sum, i) => sum + (blockTimes[i]?.timestamp - (blockTimes[i - 1]?.timestamp || 0)), 0) / blockTimes.length
+            ? blockTimes.reduce((sum, bt, idx) => {
+                if (idx === 0) return 0;
+                return sum + (bt.timestamp - blockTimes[idx - 1].timestamp);
+            }, 0) / Math.max(blockTimes.length - 1, 1)
             : 0;
 
         return {

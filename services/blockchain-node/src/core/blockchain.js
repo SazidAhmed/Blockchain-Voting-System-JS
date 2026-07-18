@@ -92,11 +92,12 @@ class Blockchain {
     // Create a new block with pending transactions
     createBlock(validatorId) {
         const previousBlock = this.getLatestBlock();
+        const pendingSnapshot = [...this.pendingTransactions];
         const newBlock = new Block(
             previousBlock.index + 1,
             Date.now(),
             {
-                transactions: this.pendingTransactions
+                transactions: pendingSnapshot
             },
             previousBlock.hash
         );
@@ -108,10 +109,18 @@ class Blockchain {
         // Set the validator info
         newBlock.validator = validatorId;
         
-        // Clear pending transactions
-        this.pendingTransactions = [];
-        
-        return newBlock;
+        return { block: newBlock, pendingSnapshot };
+    }
+
+    // Commit block and clear pending transactions
+    commitBlock(newBlock, pendingSnapshot) {
+        this.pendingTransactions = this.pendingTransactions.filter(tx => !pendingSnapshot.includes(tx));
+    }
+
+    // Rollback pending transactions on failed block
+    rollbackPendingTransactions(pendingSnapshot) {
+        // pendingSnapshot is already in the array since we cleared after addBlock
+        // No-op — they were never removed
     }
 
     // Add a new transaction to pending transactions
@@ -154,7 +163,7 @@ class Blockchain {
             electionId: vote.electionId,
             encryptedBallot: vote.encryptedBallot,
             nullifier: vote.nullifier,
-            timestamp: Date.now(),
+            timestamp: vote.timestamp || Date.now(),
             signature: vote.signature
         });
         

@@ -228,15 +228,14 @@ class AuditLogger {
         [limit]
       );
 
-      let previousHash = null;
+      const savedPreviousHash = this.previousHash;
+      this.previousHash = null;
       let valid = true;
       const results = [];
 
-      // Check in reverse chronological order
       for (let i = logs.length - 1; i >= 0; i--) {
         const log = logs[i];
         
-        // Recalculate hash
         const entry = {
           event_type: log.event_type,
           user_id: log.user_id,
@@ -244,26 +243,20 @@ class AuditLogger {
           target_type: log.target_type,
           target_id: log.target_id,
           timestamp: log.timestamp,
-          previous_hash: previousHash
+          previous_hash: this.previousHash
         };
         
         const calculatedHash = this.calculateLogHash(entry);
-        const isValid = calculatedHash === log.log_hash && log.previous_hash === previousHash;
+        const isValid = calculatedHash === log.log_hash && log.previous_hash === this.previousHash;
         
-        results.push({
-          id: log.id,
-          event_type: log.event_type,
-          timestamp: log.timestamp,
-          isValid
-        });
+        results.push({ id: log.id, event_type: log.event_type, timestamp: log.timestamp, isValid });
 
-        if (!isValid) {
-          valid = false;
-        }
+        if (!isValid) valid = false;
 
-        previousHash = log.log_hash;
+        this.previousHash = log.log_hash;
       }
 
+      this.previousHash = savedPreviousHash;
       return { valid, results };
     } catch (error) {
       console.error('Error verifying audit log integrity:', error);
