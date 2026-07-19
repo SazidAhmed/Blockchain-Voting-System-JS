@@ -1,365 +1,507 @@
 <template>
   <div class="admin-dashboard">
-    <!-- Sidebar Navigation -->
-    <aside class="admin-sidebar">
-      <div class="sidebar-header">
-        <div class="logo">
-          <span class="logo-icon">⚙️</span>
-          <h2>Admin Panel</h2>
-        </div>
-        <button @click="logout" class="btn btn-danger btn-logout">
-          <span>🚪 Logout</span>
-        </button>
-      </div>
-
-      <nav class="sidebar-nav">
-        <button
-          v-for="tab in navigationTabs"
-          :key="tab.id"
-          @click="activeTab = tab.id"
-          :class="['nav-item', { active: activeTab === tab.id }]"
-        >
-          <span class="nav-icon">{{ tab.icon }}</span>
-          <span class="nav-label">{{ tab.label }}</span>
-        </button>
-      </nav>
-
-      <div class="sidebar-footer">
-        <p>Admin Dashboard</p>
-        <small>© 2025 Voting System</small>
-      </div>
-    </aside>
-
-    <!-- Main Content Area -->
-    <main class="admin-main">
-      <header class="admin-header">
-        <h1>{{ getCurrentTabLabel() }}</h1>
-        <div class="header-info">
-          <span class="admin-badge">🔐 Admin User</span>
-        </div>
-      </header>
-
-      <div class="admin-content">
-        <!-- Elections Tab -->
-        <section v-show="activeTab === 'elections'" class="tab-content">
-          <h2>Elections Management</h2>
-          
-          <div v-if="loading" class="loading">Loading elections...</div>
-          <div v-else-if="error" class="alert alert-danger">{{ error }}</div>
-          <div v-else-if="elections.length === 0" class="alert alert-info">
-            No elections found. Create one in the Create Election tab.
+    <AdminNavBar />
+    <div class="admin-layout">
+      <!-- Sidebar Navigation -->
+      <aside class="admin-sidebar">
+        <div class="sidebar-header">
+          <div class="logo">
+            <PhGear :size="28" weight="fill" />
+            <h2>Admin Panel</h2>
           </div>
-          <div v-else class="elections-table">
-            <table>
-              <thead>
-                <tr>
-                  <th>Title</th>
-                  <th>Status</th>
-                  <th>Start Date</th>
-                  <th>End Date</th>
-                  <th>Candidates</th>
-                  <th>Votes</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="election in elections" :key="election.id">
-                  <td><strong>{{ election.title }}</strong></td>
-                  <td>
-                    <span class="status-badge" :class="`status-${election.status}`">
-                      {{ election.status.toUpperCase() }}
-                    </span>
-                  </td>
-                  <td>{{ formatDate(election.start_date) }}</td>
-                  <td>{{ formatDate(election.end_date) }}</td>
-                  <td class="text-center">{{ election.candidates_count || 0 }}</td>
-                  <td class="text-center">{{ election.votes_count || 0 }}</td>
-                  <td class="actions">
-                    <button 
-                      v-if="election.status !== 'active'"
-                      @click="editElection(election)" 
-                      class="btn btn-small btn-primary">
-                      Edit
-                    </button>
+          <button @click="logout" class="btn btn-danger btn-logout">
+            <PhSignOut :size="18" /> Logout
+          </button>
+        </div>
+
+        <nav class="sidebar-nav">
+          <button
+            v-for="tab in navigationTabs"
+            :key="tab.id"
+            @click="activeTab = tab.id"
+            :class="['nav-item', { active: activeTab === tab.id }]"
+          >
+            <span class="nav-icon"
+              ><component :is="tab.icon" :size="20"
+            /></span>
+            <span class="nav-label">{{ tab.label }}</span>
+          </button>
+        </nav>
+
+        <div class="sidebar-footer">
+          <p>Admin Dashboard</p>
+          <small>&copy; 2025 Voting System</small>
+        </div>
+      </aside>
+
+      <!-- Main Content Area -->
+      <main class="admin-main">
+        <header class="admin-header">
+          <h1>{{ getCurrentTabLabel() }}</h1>
+          <div class="header-info">
+            <span class="admin-badge"
+              ><PhShieldCheck :size="16" /> Admin User</span
+            >
+          </div>
+        </header>
+
+        <div class="admin-content">
+          <!-- Elections Tab -->
+          <section v-show="activeTab === 'elections'" class="tab-content">
+            <h2>Elections Management</h2>
+
+            <div v-if="loading" class="loading">
+              <div class="spinner"></div>
+              <p>Loading elections...</p>
+            </div>
+            <div v-else-if="error" class="alert alert-danger">{{ error }}</div>
+            <div v-else-if="elections.length === 0" class="alert alert-info">
+              No elections found. Create one in the Create Election tab.
+            </div>
+            <div v-else class="elections-table">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Title</th>
+                    <th>Status</th>
+                    <th>Start Date</th>
+                    <th>End Date</th>
+                    <th>Candidates</th>
+                    <th>Votes</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="election in elections" :key="election.id">
+                    <td>
+                      <strong>{{ election.title }}</strong>
+                    </td>
+                    <td>
+                      <span class="badge" :class="'badge-' + election.status">
+                        {{ election.status.toUpperCase() }}
+                      </span>
+                    </td>
+                    <td>{{ formatDate(election.start_date) }}</td>
+                    <td>{{ formatDate(election.end_date) }}</td>
+                    <td class="text-center">
+                      {{ election.candidates_count || 0 }}
+                    </td>
+                    <td class="text-center">{{ election.votes_count || 0 }}</td>
+                    <td class="actions">
+                      <button
+                        v-if="election.status !== 'active'"
+                        @click="editElection(election)"
+                        class="btn btn-small btn-primary"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        v-if="election.status !== 'active'"
+                        @click="promptActivate(election)"
+                        class="btn btn-small btn-warning"
+                      >
+                        Activate
+                      </button>
+                      <button
+                        @click="deleteElection(election.id)"
+                        class="btn btn-small btn-danger"
+                        :disabled="
+                          election.status === 'active' &&
+                          hasElectionStarted(election)
+                        "
+                        :title="
+                          election.status === 'active' &&
+                          hasElectionStarted(election)
+                            ? 'Cannot delete active election after it starts'
+                            : 'Delete election'
+                        "
+                      >
+                        Delete
+                      </button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <!-- Create Election Tab -->
+          <section v-show="activeTab === 'create'" class="tab-content">
+            <h2>
+              {{ editingElectionId ? "Edit Election" : "Create New Election" }}
+            </h2>
+            <form @submit.prevent="createElectionHandler" class="election-form">
+              <div class="form-group">
+                <label for="title">Election Title *</label>
+                <input
+                  v-model="newElection.title"
+                  type="text"
+                  id="title"
+                  class="form-input"
+                  placeholder="e.g., Student Council President 2025"
+                  required
+                />
+              </div>
+
+              <div class="form-group">
+                <label for="description">Description</label>
+                <textarea
+                  v-model="newElection.description"
+                  id="description"
+                  class="form-input"
+                  rows="4"
+                  placeholder="Election description and details"
+                ></textarea>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="startDate">Start Date *</label>
+                  <input
+                    v-model="newElection.startDate"
+                    type="datetime-local"
+                    id="startDate"
+                    class="form-input"
+                    required
+                  />
+                </div>
+
+                <div class="form-group">
+                  <label for="endDate">End Date *</label>
+                  <input
+                    v-model="newElection.endDate"
+                    type="datetime-local"
+                    id="endDate"
+                    class="form-input"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label>Candidates *</label>
+                <div class="candidates-input">
+                  <div
+                    v-for="(candidate, index) in newElection.candidates"
+                    :key="index"
+                    class="candidate-input"
+                  >
+                    <input
+                      v-model="candidate.name"
+                      type="text"
+                      class="form-input"
+                      placeholder="Candidate name"
+                      required
+                    />
+                    <input
+                      v-model="candidate.description"
+                      type="text"
+                      class="form-input"
+                      placeholder="Candidate description"
+                    />
                     <button
-                      v-if="election.status !== 'active'"
-                      @click="promptActivate(election)"
-                      class="btn btn-small btn-warning">
-                      Activate
+                      type="button"
+                      @click="removeCandidate(index)"
+                      class="btn btn-danger btn-small"
+                      v-if="newElection.candidates.length > 1"
+                    >
+                      Remove
                     </button>
-                    <button 
-                      @click="deleteElection(election.id)" 
-                      class="btn btn-small btn-danger"
-                      :disabled="election.status === 'active' && hasElectionStarted(election)"
-                      :title="(election.status === 'active' && hasElectionStarted(election)) ? 'Cannot delete active election after it starts' : 'Delete election'">
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  @click="addCandidate"
+                  class="btn btn-secondary btn-small"
+                >
+                  + Add Candidate
+                </button>
+              </div>
+
+              <div v-if="createError" class="alert alert-danger">
+                {{ createError }}
+              </div>
+              <div v-if="createSuccess" class="alert alert-success">
+                {{ createSuccess }}
+              </div>
+
+              <div v-if="creating" class="creating-indicator">
+                <div class="spinner"></div>
+                <span>{{
+                  editingElectionId
+                    ? "Updating election..."
+                    : "Creating election..."
+                }}</span>
+              </div>
+
+              <div class="form-actions">
+                <button
+                  type="submit"
+                  class="btn btn-primary"
+                  :disabled="creating"
+                >
+                  {{
+                    creating
+                      ? editingElectionId
+                        ? "Updating..."
+                        : "Creating..."
+                      : editingElectionId
+                        ? "Update Election"
+                        : "Create Election"
+                  }}
+                </button>
+                <button
+                  type="button"
+                  @click="resetForm"
+                  class="btn btn-secondary"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </section>
+
+          <!-- Manage Candidates Tab -->
+          <section v-show="activeTab === 'candidates'" class="tab-content">
+            <h2>Manage Candidates</h2>
+
+            <div v-if="elections.length === 0" class="alert alert-info">
+              No elections available. Create an election first.
+            </div>
+            <div v-else>
+              <div class="form-group">
+                <label for="electionSelect">Select Election:</label>
+                <select
+                  v-model="selectedElectionId"
+                  id="electionSelect"
+                  class="form-input"
+                >
+                  <option value="">-- Choose an election --</option>
+                  <option v-for="e in elections" :key="e.id" :value="e.id">
+                    {{ e.title }}
+                  </option>
+                </select>
+              </div>
+
+              <div v-if="selectedElectionId" class="candidates-management">
+                <h3>Candidates for: {{ selectedElection?.title }}</h3>
+
+                <div
+                  v-if="selectedElection?.candidates.length === 0"
+                  class="alert alert-info"
+                >
+                  No candidates for this election yet.
+                </div>
+                <div v-else class="candidates-list">
+                  <div
+                    v-for="candidate in selectedElection.candidates"
+                    :key="candidate.id"
+                    class="candidate-card"
+                  >
+                    <h4>{{ candidate.name }}</h4>
+                    <p>{{ candidate.description }}</p>
+                    <div class="candidate-stats">
+                      <span>Votes: {{ candidate.votes_count || 0 }}</span>
+                    </div>
+                    <button
+                      v-if="selectedElection?.status !== 'active'"
+                      @click="deleteCandidate(candidate.id)"
+                      class="btn btn-danger btn-small"
+                    >
                       Delete
                     </button>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </section>
+                  </div>
+                </div>
 
-        <!-- Create Election Tab -->
-        <section v-show="activeTab === 'create'" class="tab-content">
-          <h2>Create New Election</h2>
-          <form @submit.prevent="createElectionHandler" class="election-form">
-            <div class="form-group">
-              <label for="title">Election Title *</label>
-              <input 
-                v-model="newElection.title" 
-                type="text" 
-                id="title" 
-                class="form-control"
-                placeholder="e.g., Student Council President 2025"
-                required
-              >
-            </div>
-
-            <div class="form-group">
-              <label for="description">Description</label>
-              <textarea 
-                v-model="newElection.description" 
-                id="description" 
-                class="form-control"
-                rows="4"
-                placeholder="Election description and details"
-              ></textarea>
-            </div>
-
-            <div class="form-row">
-              <div class="form-group">
-                <label for="startDate">Start Date *</label>
-                <input 
-                  v-model="newElection.startDate" 
-                  type="datetime-local" 
-                  id="startDate"
-                  class="form-control"
-                  required
+                <div
+                  v-if="selectedElection?.status !== 'active'"
+                  class="add-candidate-form"
                 >
+                  <h4>Add New Candidate</h4>
+                  <div class="form-row add-candidate-row">
+                    <input
+                      v-model="newCandidate.name"
+                      type="text"
+                      class="form-input"
+                      placeholder="Candidate name"
+                    />
+                    <input
+                      v-model="newCandidate.description"
+                      type="text"
+                      class="form-input"
+                      placeholder="Candidate description"
+                    />
+                    <button
+                      @click="addCandidateToElection"
+                      class="btn btn-primary btn-small"
+                    >
+                      Add
+                    </button>
+                  </div>
+                </div>
               </div>
+            </div>
+          </section>
 
+          <!-- Results & Stats Tab -->
+          <section v-show="activeTab === 'results'" class="tab-content">
+            <h2>Results & Statistics</h2>
+
+            <div v-if="elections.length === 0" class="alert alert-info">
+              No elections to display results for.
+            </div>
+            <div v-else>
               <div class="form-group">
-                <label for="endDate">End Date *</label>
-                <input 
-                  v-model="newElection.endDate" 
-                  type="datetime-local" 
-                  id="endDate"
-                  class="form-control"
-                  required
+                <label for="resultsElection">Select Election:</label>
+                <select
+                  v-model="selectedResultsElectionId"
+                  id="resultsElection"
+                  class="form-input"
                 >
+                  <option value="">-- Choose an election --</option>
+                  <option v-for="e in elections" :key="e.id" :value="e.id">
+                    {{ e.title }} ({{ e.votes_count || 0 }} votes)
+                  </option>
+                </select>
               </div>
-            </div>
 
-            <div class="form-group">
-              <label>Candidates *</label>
-              <div class="candidates-input">
-                <div v-for="(candidate, index) in newElection.candidates" :key="index" class="candidate-input">
-                  <input 
-                    v-model="candidate.name" 
-                    type="text" 
-                    class="form-control"
-                    placeholder="Candidate name"
-                    required
-                  >
-                  <input 
-                    v-model="candidate.description" 
-                    type="text" 
-                    class="form-control"
-                    placeholder="Candidate description"
-                  >
-                  <button 
-                    type="button"
-                    @click="removeCandidate(index)" 
-                    class="btn btn-danger btn-small"
-                    v-if="newElection.candidates.length > 1"
-                  >
-                    Remove
-                  </button>
+              <div v-if="selectedResultsElectionId" class="results-section">
+                <div v-if="!selectedResultsElection" class="loading">
+                  Loading results...
                 </div>
-              </div>
-              <button 
-                type="button"
-                @click="addCandidate" 
-                class="btn btn-secondary btn-small"
-              >
-                + Add Candidate
-              </button>
-            </div>
-
-            <div v-if="createError" class="alert alert-danger">{{ createError }}</div>
-            <div v-if="createSuccess" class="alert alert-success">{{ createSuccess }}</div>
-
-            <div class="form-actions">
-              <button type="submit" class="btn btn-primary" :disabled="creating">
-                {{ creating ? (editingElectionId ? 'Updating...' : 'Creating...') : (editingElectionId ? 'Update Election' : 'Create Election') }}
-              </button>
-              <button type="button" @click="resetForm" class="btn btn-secondary">Cancel</button>
-            </div>
-          </form>
-        </section>
-
-        <!-- Manage Candidates Tab -->
-        <section v-show="activeTab === 'candidates'" class="tab-content">
-          <h2>Manage Candidates</h2>
-          
-          <div v-if="elections.length === 0" class="alert alert-info">
-            No elections available. Create an election first.
-          </div>
-          <div v-else>
-            <div class="form-group">
-              <label for="electionSelect">Select Election:</label>
-              <select v-model="selectedElectionId" id="electionSelect" class="form-control">
-                <option value="">-- Choose an election --</option>
-                <option v-for="e in elections" :key="e.id" :value="e.id">
-                  {{ e.title }}
-                </option>
-              </select>
-            </div>
-
-            <div v-if="selectedElectionId" class="candidates-management">
-              <h3>Candidates for: {{ selectedElection?.title }}</h3>
-              
-              <div v-if="selectedElection?.candidates.length === 0" class="alert alert-info">
-                No candidates for this election yet.
-              </div>
-              <div v-else class="candidates-list">
-                <div v-for="candidate in selectedElection.candidates" :key="candidate.id" class="candidate-card">
-                  <h4>{{ candidate.name }}</h4>
-                  <p>{{ candidate.description }}</p>
-                  <div class="candidate-stats">
-                    <span>Votes: {{ candidate.votes_count || 0 }}</span>
-                  </div>
-                  <button
-                    v-if="selectedElection?.status !== 'active'"
-                    @click="deleteCandidate(candidate.id)"
-                    class="btn btn-danger btn-small">
-                    Delete
-                  </button>
-                </div>
-              </div>
-
-              <div v-if="selectedElection?.status !== 'active'" class="add-candidate-form">
-                <h4>Add New Candidate</h4>
-                <div class="form-row">
-                  <input 
-                    v-model="newCandidate.name" 
-                    type="text" 
-                    class="form-control"
-                    placeholder="Candidate name"
-                  >
-                  <input 
-                    v-model="newCandidate.description" 
-                    type="text" 
-                    class="form-control"
-                    placeholder="Candidate description"
-                  >
-                  <button @click="addCandidateToElection" class="btn btn-primary btn-small">
-                    Add
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <!-- Results & Stats Tab -->
-        <section v-show="activeTab === 'results'" class="tab-content">
-          <h2>Results & Statistics</h2>
-          
-          <div v-if="elections.length === 0" class="alert alert-info">
-            No elections to display results for.
-          </div>
-          <div v-else>
-            <div class="form-group">
-              <label for="resultsElection">Select Election:</label>
-              <select v-model="selectedResultsElectionId" id="resultsElection" class="form-control">
-                <option value="">-- Choose an election --</option>
-                <option v-for="e in elections" :key="e.id" :value="e.id">
-                  {{ e.title }} ({{ e.votes_count || 0 }} votes)
-                </option>
-              </select>
-            </div>
-
-            <div v-if="selectedResultsElectionId" class="results-section">
-              <div v-if="!selectedResultsElection" class="loading">Loading results...</div>
-              <div v-else>
-                <div class="results-overview">
-                  <div class="stat-card">
-                    <h4>Total Votes</h4>
-                    <p class="stat-value">{{ selectedResultsElection.votes_count || 0 }}</p>
-                  </div>
-                  <div class="stat-card">
-                    <h4>Registered Voters</h4>
-                    <p class="stat-value">{{ selectedResultsElection.registrations_count || 0 }}</p>
-                  </div>
-                  <div class="stat-card">
-                    <h4>Participation</h4>
-                    <p class="stat-value">
-                      {{ selectedResultsElection.registrations_count ? 
-                        Math.round((selectedResultsElection.votes_count || 0) / selectedResultsElection.registrations_count * 100) 
-                        : 0 }}%
-                    </p>
-                  </div>
-                </div>
-
-                <div class="results-chart">
-                  <h3>Vote Distribution</h3>
-                  <div v-if="selectedResultsElection.candidates && selectedResultsElection.candidates.length > 0" class="candidates-results">
-                    <div v-for="candidate in selectedResultsElection.candidates" :key="candidate.id" class="candidate-result">
-                      <div class="result-header">
-                        <span class="candidate-rank">
-                          {{ selectedResultsElection.candidates.filter(c => (c.votes_count || 0) > (candidate.votes_count || 0)).length + 1 }}.
-                        </span>
-                        <h4>{{ candidate.name }}</h4>
-                        <span class="vote-count">{{ candidate.votes_count || 0 }} votes</span>
-                      </div>
-                      <div class="result-bar">
-                        <div 
-                          class="bar-fill" 
-                          :style="{ 
-                            width: selectedResultsElection.votes_count ? 
-                              ((candidate.votes_count || 0) / selectedResultsElection.votes_count * 100) + '%' 
-                              : 0 
-                          }"
-                        ></div>
-                      </div>
-                      <div class="result-percentage">
-                        {{ selectedResultsElection.votes_count ? 
-                          Math.round((candidate.votes_count || 0) / selectedResultsElection.votes_count * 100) 
-                          : 0 }}%
-                      </div>
+                <div v-else>
+                  <div class="results-overview">
+                    <div class="stat-card">
+                      <h4>Total Votes</h4>
+                      <p class="stat-value">
+                        {{ selectedResultsElection.votes_count || 0 }}
+                      </p>
+                    </div>
+                    <div class="stat-card">
+                      <h4>Registered Voters</h4>
+                      <p class="stat-value">
+                        {{ selectedResultsElection.registrations_count || 0 }}
+                      </p>
+                    </div>
+                    <div class="stat-card">
+                      <h4>Participation</h4>
+                      <p class="stat-value">
+                        {{
+                          selectedResultsElection.registrations_count
+                            ? Math.round(
+                                ((selectedResultsElection.votes_count || 0) /
+                                  selectedResultsElection.registrations_count) *
+                                  100,
+                              )
+                            : 0
+                        }}%
+                      </p>
                     </div>
                   </div>
-                  <div v-else class="alert alert-info">No voting data available yet.</div>
+
+                  <div class="results-chart">
+                    <h3>Vote Distribution</h3>
+                    <div
+                      v-if="
+                        selectedResultsElection.candidates &&
+                        selectedResultsElection.candidates.length > 0
+                      "
+                      class="candidates-results"
+                    >
+                      <div
+                        v-for="candidate in selectedResultsElection.candidates"
+                        :key="candidate.id"
+                        class="candidate-result"
+                      >
+                        <div class="result-header">
+                          <span class="candidate-rank">
+                            {{
+                              selectedResultsElection.candidates.filter(
+                                (c) =>
+                                  (c.votes_count || 0) >
+                                  (candidate.votes_count || 0),
+                              ).length + 1
+                            }}.
+                          </span>
+                          <h4>{{ candidate.name }}</h4>
+                          <span class="vote-count"
+                            >{{ candidate.votes_count || 0 }} votes</span
+                          >
+                        </div>
+                        <div class="result-bar">
+                          <div
+                            class="bar-fill"
+                            :style="{
+                              width: selectedResultsElection.votes_count
+                                ? ((candidate.votes_count || 0) /
+                                    selectedResultsElection.votes_count) *
+                                    100 +
+                                  '%'
+                                : '0',
+                            }"
+                          ></div>
+                        </div>
+                        <div class="result-percentage">
+                          {{
+                            selectedResultsElection.votes_count
+                              ? Math.round(
+                                  ((candidate.votes_count || 0) /
+                                    selectedResultsElection.votes_count) *
+                                    100,
+                                )
+                              : 0
+                          }}%
+                        </div>
+                      </div>
+                    </div>
+                    <div v-else class="alert alert-info">
+                      No voting data available yet.
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        </section>
+          </section>
 
-        <!-- Audit Logs Tab -->
-        <section v-show="activeTab === 'audit'" class="tab-content">
-          <AdminAuditLogs />
-        </section>
+          <!-- Audit Logs Tab -->
+          <section v-show="activeTab === 'audit'" class="tab-content">
+            <AdminAuditLogs />
+          </section>
 
-        <!-- Institute Members Tab -->
-        <section v-show="activeTab === 'members'" class="tab-content">
-          <AdminInstituteMembersTab />
-        </section>
-      </div>
-    </main>
+          <!-- Institute Members Tab -->
+          <section v-show="activeTab === 'members'" class="tab-content">
+            <AdminInstituteMembersTab />
+          </section>
+        </div>
+      </main>
+    </div>
 
     <!-- Activate Election Confirmation Modal -->
-    <div v-if="showActivateModal" class="modal-overlay" @click.self="showActivateModal = false">
+    <div
+      v-if="showActivateModal"
+      class="modal-overlay"
+      @click.self="showActivateModal = false"
+    >
       <div class="modal-box">
         <h3>Activate Election</h3>
-        <p>You are about to activate <strong>{{ pendingActivateElection?.title }}</strong>.</p>
-        <p class="modal-warning">Once activated, the election <strong>cannot be edited, deactivated, or have candidates modified</strong>. Are you sure?</p>
+        <p>
+          You are about to activate
+          <strong>{{ pendingActivateElection?.title }}</strong
+          >.
+        </p>
+        <p class="modal-warning">
+          Once activated, the election
+          <strong
+            >cannot be edited, deactivated, or have candidates modified</strong
+          >. Are you sure?
+        </p>
         <div class="modal-actions">
-          <button class="btn btn-danger" @click="showActivateModal = false">Cancel</button>
-          <button class="btn btn-primary" @click="confirmActivate">Yes, Activate</button>
+          <button class="btn btn-secondary" @click="showActivateModal = false">
+            Cancel
+          </button>
+          <button class="btn btn-primary" @click="confirmActivate">
+            Yes, Activate
+          </button>
         </div>
       </div>
     </div>
@@ -367,262 +509,287 @@
 </template>
 
 <script>
-import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
-import { useAuthStore } from '../store/auth'
-import { useElectionsStore } from '../store/elections'
-import AdminAuditLogs from '../components/AdminAuditLogs.vue'
-import AdminInstituteMembersTab from '../components/AdminInstituteMembersTab.vue'
-
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'
+import { ref, computed, onMounted } from "vue";
+import { useRouter } from "vue-router";
+import { useAuthStore } from "../store/auth";
+import { useElectionsStore } from "../store/elections";
+import AdminNavBar from "../components/AdminNavBar.vue";
+import AdminAuditLogs from "../components/AdminAuditLogs.vue";
+import AdminInstituteMembersTab from "../components/AdminInstituteMembersTab.vue";
+import {
+  PhList,
+  PhPlusCircle,
+  PhUsers,
+  PhChartBar,
+  PhShieldCheck,
+  PhSignOut,
+  PhGear,
+} from "@phosphor-icons/vue";
 
 export default {
-  name: 'AdminDashboard',
+  name: "AdminDashboard",
   components: {
+    AdminNavBar,
     AdminAuditLogs,
-    AdminInstituteMembersTab
+    AdminInstituteMembersTab,
+    PhList,
+    PhPlusCircle,
+    PhUsers,
+    PhChartBar,
+    PhShieldCheck,
+    PhSignOut,
+    PhGear,
   },
   setup() {
-    const router = useRouter()
-    const authStore = useAuthStore()
-    const electionsStore = useElectionsStore()
+    const router = useRouter();
+    const authStore = useAuthStore();
+    const electionsStore = useElectionsStore();
 
     // Local state
-    const activeTab = ref('elections')
-    const creating = ref(false)
-    const createError = ref(null)
-    const createSuccess = ref(null)
-    const selectedElectionId = ref('')
-    const selectedResultsElectionId = ref('')
-    const editingElectionId = ref(null)
-    const showActivateModal = ref(false)
-    const pendingActivateElection = ref(null)
+    const activeTab = ref("elections");
+    const creating = ref(false);
+    const createError = ref(null);
+    const createSuccess = ref(null);
+    const selectedElectionId = ref("");
+    const selectedResultsElectionId = ref("");
+    const editingElectionId = ref(null);
+    const showActivateModal = ref(false);
+    const pendingActivateElection = ref(null);
 
     const navigationTabs = [
-      { id: 'elections', label: 'Elections', icon: '📋' },
-      { id: 'create', label: 'Create Election', icon: '➕' },
-      { id: 'candidates', label: 'Manage Candidates', icon: '👥' },
-      { id: 'results', label: 'Results & Stats', icon: '📈' },
-      { id: 'audit', label: 'Audit Logs', icon: '🔐' },
-      { id: 'members', label: 'Institute Members', icon: '🎓' }
-    ]
+      { id: "elections", label: "Elections", icon: PhList },
+      { id: "create", label: "Create Election", icon: PhPlusCircle },
+      { id: "candidates", label: "Manage Candidates", icon: PhUsers },
+      { id: "results", label: "Results & Stats", icon: PhChartBar },
+      { id: "audit", label: "Audit Logs", icon: PhShieldCheck },
+      { id: "members", label: "Institute Members", icon: PhUsers },
+    ];
 
     const newElection = ref({
-      title: '',
-      description: '',
-      startDate: '',
-      endDate: '',
-      candidates: [{ name: '', description: '' }]
-    })
+      title: "",
+      description: "",
+      startDate: "",
+      endDate: "",
+      candidates: [{ name: "", description: "" }],
+    });
 
     const newCandidate = ref({
-      name: '',
-      description: ''
-    })
+      name: "",
+      description: "",
+    });
 
     // Computed
-    const elections = computed(() => electionsStore.elections)
-    const loading = computed(() => electionsStore.loading)
-    const error = computed(() => electionsStore.error)
-    const currentUser = computed(() => authStore.currentUser)
+    const elections = computed(() => electionsStore.elections);
+    const loading = computed(() => electionsStore.loading);
+    const error = computed(() => electionsStore.error);
 
     const selectedElection = computed(() => {
-      return elections.value.find(e => e.id === parseInt(selectedElectionId.value))
-    })
+      return elections.value.find(
+        (e) => e.id === parseInt(selectedElectionId.value),
+      );
+    });
 
     const selectedResultsElection = computed(() => {
-      return elections.value.find(e => e.id === parseInt(selectedResultsElectionId.value))
-    })
+      return elections.value.find(
+        (e) => e.id === parseInt(selectedResultsElectionId.value),
+      );
+    });
 
     // Methods
     const getCurrentTabLabel = () => {
-      const tab = navigationTabs.find(t => t.id === activeTab.value)
-      return tab ? tab.label : 'Dashboard'
-    }
+      const tab = navigationTabs.find((t) => t.id === activeTab.value);
+      return tab ? tab.label : "Dashboard";
+    };
 
     const hasElectionStarted = (election) => {
-      const now = new Date()
-      const startDate = new Date(election.start_date)
-      return startDate <= now
-    }
-
-    const hasElectionEnded = (election) => {
-      const now = new Date()
-      const endDate = new Date(election.end_date)
-      return endDate <= now
-    }
+      return new Date(election.start_date) <= new Date();
+    };
 
     const createElectionHandler = async () => {
-      creating.value = true
-      createError.value = null
-      createSuccess.value = null
+      creating.value = true;
+      createError.value = null;
+      createSuccess.value = null;
 
       try {
         if (editingElectionId.value) {
-          // Update existing election
           await electionsStore.updateElection(editingElectionId.value, {
             title: newElection.value.title,
             description: newElection.value.description,
             startDate: newElection.value.startDate,
             endDate: newElection.value.endDate,
-            candidates: newElection.value.candidates.filter(c => c.name)
-          })
-          createSuccess.value = 'Election updated successfully!'
+            candidates: newElection.value.candidates.filter((c) => c.name),
+          });
+          createSuccess.value = "Election updated successfully!";
         } else {
-          // Create new election
           await electionsStore.createElection({
             title: newElection.value.title,
             description: newElection.value.description,
             startDate: newElection.value.startDate,
             endDate: newElection.value.endDate,
-            candidates: newElection.value.candidates.filter(c => c.name)
-          })
-          createSuccess.value = 'Election created successfully!'
+            candidates: newElection.value.candidates.filter((c) => c.name),
+          });
+          createSuccess.value = "Election created successfully!";
         }
 
-        resetForm()
-        await electionsStore.fetchElections()
-        setTimeout(() => { activeTab.value = 'elections' }, 1500)
+        resetForm();
+        await electionsStore.fetchElections();
+        setTimeout(() => {
+          activeTab.value = "elections";
+        }, 1500);
       } catch (err) {
-        createError.value = err.message
+        createError.value = err.message;
       } finally {
-        creating.value = false
+        creating.value = false;
       }
-    }
+    };
 
     const promptActivate = (election) => {
-      pendingActivateElection.value = election
-      showActivateModal.value = true
-    }
+      pendingActivateElection.value = election;
+      showActivateModal.value = true;
+    };
 
     const confirmActivate = async () => {
       try {
-        await electionsStore.updateElectionStatus(pendingActivateElection.value.id, 'active')
+        await electionsStore.updateElectionStatus(
+          pendingActivateElection.value.id,
+          "active",
+        );
       } catch (err) {
-        console.error('Activation error:', err)
+        console.error("Activation error:", err);
       } finally {
-        showActivateModal.value = false
-        pendingActivateElection.value = null
+        showActivateModal.value = false;
+        pendingActivateElection.value = null;
       }
-    }
-
-    const toggleElectionStatus = async (election) => {
-      // kept for compatibility but activation now goes through promptActivate
-    }
+    };
 
     const deleteElection = async (electionId) => {
-      if (!confirm('Are you sure you want to delete this election?')) return
+      if (!confirm("Are you sure you want to delete this election?")) return;
 
       try {
-        await electionsStore.deleteElection(electionId)
+        await electionsStore.deleteElection(electionId);
       } catch (err) {
-        console.error('Delete error:', err)
+        console.error("Delete error:", err);
       }
-    }
+    };
 
     const deleteCandidate = async (candidateId) => {
-      if (!confirm('Are you sure you want to delete this candidate?')) return
+      if (!confirm("Are you sure you want to delete this candidate?")) return;
 
       try {
-        const response = await fetch(`${API_BASE}/api/elections/candidates/${candidateId}`, {
-          method: 'DELETE',
-          headers: {
-            'Authorization': `Bearer ${authStore.token}`
-          }
-        })
+        const response = await fetch(
+          `${import.meta.env.VITE_API_BASE_URL || "http://localhost:3000"}/api/elections/candidates/${candidateId}`,
+          {
+            method: "DELETE",
+            headers: {
+              Authorization: `Bearer ${authStore.token}`,
+            },
+          },
+        );
 
-        if (!response.ok) throw new Error('Failed to delete candidate')
-        await electionsStore.fetchElections()
+        if (!response.ok) throw new Error("Failed to delete candidate");
+        await electionsStore.fetchElections();
       } catch (err) {
-        alert(err.message)
+        alert(err.message);
       }
-    }
+    };
 
     const addCandidateToElection = async () => {
       if (!newCandidate.value.name) {
-        alert('Please enter a candidate name')
-        return
+        alert("Please enter a candidate name");
+        return;
       }
 
       try {
-        const response = await fetch(`${API_BASE}/api/elections/${selectedElectionId.value}/candidates`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${authStore.token}`,
-            'Content-Type': 'application/json'
+        const API_BASE =
+          import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
+        const response = await fetch(
+          `${API_BASE}/api/elections/${selectedElectionId.value}/candidates`,
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${authStore.token}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(newCandidate.value),
           },
-          body: JSON.stringify(newCandidate.value)
-        })
+        );
 
-        if (!response.ok) throw new Error('Failed to add candidate')
-        newCandidate.value = { name: '', description: '' }
-        await electionsStore.fetchElections()
+        if (!response.ok) throw new Error("Failed to add candidate");
+        newCandidate.value = { name: "", description: "" };
+        await electionsStore.fetchElections();
       } catch (err) {
-        alert(err.message)
+        alert(err.message);
       }
-    }
+    };
 
     const editElection = (election) => {
-      editingElectionId.value = election.id
+      editingElectionId.value = election.id;
       newElection.value = {
         title: election.title,
         description: election.description,
         startDate: new Date(election.start_date).toISOString().slice(0, 16),
         endDate: new Date(election.end_date).toISOString().slice(0, 16),
-        candidates: election.candidates || []
-      }
-      activeTab.value = 'create'
-    }
+        candidates: election.candidates || [],
+      };
+      activeTab.value = "create";
+    };
 
     const addCandidate = () => {
-      newElection.value.candidates.push({ name: '', description: '' })
-    }
+      newElection.value.candidates.push({ name: "", description: "" });
+    };
 
     const removeCandidate = (index) => {
-      newElection.value.candidates.splice(index, 1)
-    }
+      newElection.value.candidates.splice(index, 1);
+    };
 
     const resetForm = () => {
-      editingElectionId.value = null
+      editingElectionId.value = null;
       newElection.value = {
-        title: '',
-        description: '',
-        startDate: '',
-        endDate: '',
-        candidates: [{ name: '', description: '' }]
-      }
-      createError.value = null
-      createSuccess.value = null
-    }
+        title: "",
+        description: "",
+        startDate: "",
+        endDate: "",
+        candidates: [{ name: "", description: "" }],
+      };
+      createError.value = null;
+      createSuccess.value = null;
+    };
 
     const formatDate = (dateString) => {
-      const options = { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }
-      return new Date(dateString).toLocaleDateString(undefined, options)
-    }
+      return new Date(dateString).toLocaleDateString(undefined, {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    };
 
     const logout = async () => {
-      await authStore.logout()
-      await router.push('/login')
-    }
+      await authStore.logout();
+      await router.push("/login");
+    };
 
     // Lifecycle
     onMounted(async () => {
-      // Validate token with backend — if invalid/expired, logout and redirect
       if (!authStore.token) {
-        await router.push('/login')
-        return
+        await router.push("/login");
+        return;
       }
 
-      await authStore.fetchCurrentUser()
+      await authStore.fetchCurrentUser();
 
-      if (!authStore.isAuthenticated || !authStore.currentUser || authStore.currentUser.role !== 'admin') {
-        await router.push('/login')
-        return
+      if (
+        !authStore.isAuthenticated ||
+        !authStore.currentUser ||
+        authStore.currentUser.role !== "admin"
+      ) {
+        await router.push("/login");
+        return;
       }
 
-      // Fetch elections
-      await electionsStore.fetchElections()
-    })
+      await electionsStore.fetchElections();
+    });
 
     return {
       activeTab,
@@ -638,16 +805,13 @@ export default {
       elections,
       loading,
       error,
-      currentUser,
       selectedElection,
       selectedResultsElection,
-      getCurrentTabLabel,
-      hasElectionStarted,
-      hasElectionEnded,
-      createElectionHandler,
-      toggleElectionStatus,
       showActivateModal,
       pendingActivateElection,
+      getCurrentTabLabel,
+      hasElectionStarted,
+      createElectionHandler,
       promptActivate,
       confirmActivate,
       deleteElection,
@@ -658,34 +822,39 @@ export default {
       removeCandidate,
       resetForm,
       formatDate,
-      logout
-    }
-  }
-}
+      logout,
+    };
+  },
+};
 </script>
 
 <style scoped>
-* {
-  box-sizing: border-box;
-}
-
 .admin-dashboard {
   display: flex;
+  flex-direction: column;
   min-height: 100vh;
-  background-color: #f5f7fa;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: var(--bg-secondary);
+  font-family: var(--font-sans);
+}
+
+.admin-layout {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
 }
 
 /* ============= SIDEBAR ============= */
 .admin-sidebar {
   width: 280px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: var(--accent-gradient);
   color: white;
   display: flex;
   flex-direction: column;
   padding: 0;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--shadow-lg);
   position: relative;
+  overflow: hidden;
+  flex-shrink: 0;
 }
 
 .sidebar-header {
@@ -700,10 +869,6 @@ export default {
   margin-bottom: 20px;
 }
 
-.logo-icon {
-  font-size: 2rem;
-}
-
 .logo h2 {
   margin: 0;
   font-size: 1.5rem;
@@ -716,10 +881,15 @@ export default {
   background-color: rgba(255, 255, 255, 0.2);
   color: white;
   border: 2px solid rgba(255, 255, 255, 0.3);
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
   font-weight: 600;
   transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  font-size: 0.9rem;
 }
 
 .btn-logout:hover {
@@ -746,7 +916,7 @@ export default {
   background-color: transparent;
   color: rgba(255, 255, 255, 0.8);
   border: none;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
   font-size: 1rem;
   font-weight: 500;
@@ -769,8 +939,9 @@ export default {
 }
 
 .nav-icon {
-  font-size: 1.3rem;
   min-width: 30px;
+  display: flex;
+  align-items: center;
 }
 
 .nav-label {
@@ -803,18 +974,18 @@ export default {
 }
 
 .admin-header {
-  background: white;
+  background: var(--bg-card);
   padding: 20px 30px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow);
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-bottom: 1px solid #e0e0e0;
+  border-bottom: 1px solid var(--border);
 }
 
 .admin-header h1 {
   margin: 0;
-  color: #2c3e50;
+  color: var(--text-primary);
   font-size: 1.8rem;
 }
 
@@ -825,12 +996,15 @@ export default {
 }
 
 .admin-badge {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: var(--accent-gradient);
   color: white;
   padding: 8px 16px;
-  border-radius: 20px;
+  border-radius: var(--radius-xl);
   font-size: 0.9rem;
   font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
 }
 
 .admin-content {
@@ -840,10 +1014,10 @@ export default {
 }
 
 .tab-content {
-  background: white;
-  border-radius: 12px;
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
   padding: 30px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow);
   animation: fadeIn 0.3s ease;
 }
 
@@ -860,14 +1034,14 @@ export default {
 
 .tab-content h2 {
   margin-top: 0;
-  color: #2c3e50;
-  border-bottom: 3px solid #667eea;
+  color: var(--text-primary);
+  border-bottom: 3px solid var(--accent);
   padding-bottom: 15px;
   margin-bottom: 25px;
 }
 
 .tab-content h3 {
-  color: #2c3e50;
+  color: var(--text-primary);
   margin-top: 25px;
   margin-bottom: 15px;
 }
@@ -885,24 +1059,30 @@ export default {
   display: block;
   margin-bottom: 8px;
   font-weight: 600;
-  color: #2c3e50;
+  color: var(--text-primary);
   font-size: 0.95rem;
 }
 
-.form-control {
+.form-input {
   width: 100%;
   padding: 12px;
-  border: 2px solid #ddd;
-  border-radius: 6px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
   font-size: 1rem;
-  font-family: inherit;
+  font-family: var(--font-sans);
+  color: var(--text-primary);
+  background: var(--bg-primary);
   transition: border-color 0.3s ease;
+  outline: none;
 }
 
-.form-control:focus {
-  outline: none;
-  border-color: #667eea;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+.form-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 15%, transparent);
+}
+
+.form-input::placeholder {
+  color: var(--text-muted);
 }
 
 .form-row {
@@ -930,6 +1110,24 @@ export default {
   margin-top: 25px;
 }
 
+.creating-indicator {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  border-radius: var(--radius-md);
+  color: var(--accent);
+  font-weight: 600;
+  margin-top: 16px;
+}
+
+.creating-indicator .spinner {
+  width: 20px;
+  height: 20px;
+  border-width: 2px;
+}
+
 /* ============= TABLES ============= */
 .elections-table {
   overflow-x: auto;
@@ -941,81 +1139,21 @@ export default {
 }
 
 .elections-table th {
-  background-color: #f8f9fa;
+  background-color: var(--bg-secondary);
   padding: 15px;
   text-align: left;
   font-weight: 700;
-  color: #2c3e50;
-  border-bottom: 3px solid #667eea;
+  color: var(--text-primary);
+  border-bottom: 3px solid var(--accent);
 }
 
 .elections-table td {
   padding: 15px;
-  border-bottom: 1px solid #e0e0e0;
+  border-bottom: 1px solid var(--border);
 }
 
 .elections-table tr:hover {
-  background-color: #f8f9fa;
-}
-
-.status-badge {
-  display: inline-block;
-  padding: 6px 12px;
-  border-radius: 20px;
-  font-size: 0.85rem;
-  font-weight: 600;
-}
-
-.status-active {
-  background-color: #d4edda;
-  color: #155724;
-}
-
-/* Activation confirmation modal */
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 9999;
-}
-.modal-box {
-  background: #fff;
-  border-radius: 10px;
-  padding: 2rem;
-  max-width: 440px;
-  width: 90%;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.18);
-}
-.modal-box h3 {
-  margin: 0 0 0.75rem;
-  font-size: 1.25rem;
-}
-.modal-box p {
-  margin: 0 0 0.5rem;
-  color: #444;
-}
-.modal-warning {
-  color: #c0392b !important;
-  font-size: 0.9rem;
-}
-.modal-actions {
-  display: flex;
-  gap: 0.75rem;
-  justify-content: flex-end;
-  margin-top: 1.25rem;
-}
-
-.status-pending {
-  background-color: #fff3cd;
-  color: #856404;
-}
-
-.status-completed {
-  background-color: #d1ecf1;
-  color: #0c5460;
+  background-color: var(--bg-secondary);
 }
 
 .text-center {
@@ -1032,48 +1170,55 @@ export default {
 .btn {
   padding: 10px 16px;
   border: none;
-  border-radius: 6px;
+  border-radius: var(--radius-md);
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
   font-size: 0.95rem;
+  font-family: var(--font-sans);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: var(--accent-gradient);
   color: white;
 }
 
 .btn-primary:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--accent) 30%, transparent);
 }
 
 .btn-secondary {
-  background-color: #e8e8f0;
-  color: #2c3e50;
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
 }
 
 .btn-secondary:hover {
-  background-color: #d8d8e0;
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 .btn-warning {
-  background-color: #ffc107;
-  color: #212529;
+  background-color: var(--warning);
+  color: var(--text-primary);
 }
 
 .btn-warning:hover {
-  background-color: #e0a800;
+  background-color: color-mix(in srgb, var(--warning) 85%, black);
 }
 
 .btn-danger {
-  background-color: #dc3545;
+  background-color: var(--error);
   color: white;
 }
 
 .btn-danger:hover {
-  background-color: #c82333;
+  background-color: color-mix(in srgb, var(--error) 85%, black);
 }
 
 .btn-small {
@@ -1089,60 +1234,107 @@ export default {
 
 /* ============= CARDS & ALERTS ============= */
 .candidate-card {
-  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  background: var(--bg-secondary);
   padding: 20px;
-  border-radius: 8px;
-  border-left: 4px solid #667eea;
+  border-radius: var(--radius-md);
+  border-left: 4px solid var(--accent);
 }
 
 .candidate-card h4 {
   margin: 0 0 10px 0;
-  color: #2c3e50;
+  color: var(--text-primary);
 }
 
 .candidate-card p {
   margin: 0 0 12px 0;
-  color: #7f8c8d;
+  color: var(--text-secondary);
   font-size: 0.9rem;
 }
 
 .candidate-stats {
   margin-bottom: 12px;
   font-size: 0.9rem;
-  color: #667eea;
+  color: var(--accent);
   font-weight: 600;
 }
 
 .alert {
   padding: 15px;
   margin-bottom: 20px;
-  border-radius: 6px;
+  border-radius: var(--radius-md);
   border-left: 4px solid;
 }
 
 .alert-danger {
-  background-color: #f8d7da;
-  color: #721c24;
-  border-left-color: #dc3545;
+  background-color: color-mix(in srgb, var(--error) 10%, transparent);
+  color: var(--error);
+  border-left-color: var(--error);
 }
 
 .alert-success {
-  background-color: #d4edda;
-  color: #155724;
-  border-left-color: #28a745;
+  background-color: color-mix(in srgb, var(--success) 10%, transparent);
+  color: var(--success);
+  border-left-color: var(--success);
 }
 
 .alert-info {
-  background-color: #d1ecf1;
-  color: #0c5460;
-  border-left-color: #17a2b8;
+  background-color: color-mix(in srgb, var(--accent) 10%, transparent);
+  color: var(--accent);
+  border-left-color: var(--accent);
 }
 
 .loading {
   text-align: center;
   padding: 40px;
-  color: #7f8c8d;
+  color: var(--text-secondary);
   font-size: 1.1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ============= BADGES ============= */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.badge-active {
+  background: color-mix(in srgb, var(--success) 20%, transparent);
+  color: var(--success);
+}
+
+.badge-pending {
+  background: color-mix(in srgb, var(--warning) 20%, transparent);
+  color: var(--warning);
+}
+
+.badge-completed {
+  background: color-mix(in srgb, var(--accent-secondary) 20%, transparent);
+  color: var(--accent-secondary);
 }
 
 /* ============= RESULTS ============= */
@@ -1154,12 +1346,12 @@ export default {
 }
 
 .stat-card {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: var(--accent-gradient);
   color: white;
   padding: 25px;
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   text-align: center;
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--accent) 20%, transparent);
 }
 
 .stat-card h4 {
@@ -1182,10 +1374,10 @@ export default {
 }
 
 .candidate-result {
-  background: white;
+  background: var(--bg-card);
   padding: 20px;
-  border-radius: 8px;
-  border-left: 4px solid #667eea;
+  border-radius: var(--radius-md);
+  border-left: 4px solid var(--accent);
 }
 
 .result-header {
@@ -1197,7 +1389,7 @@ export default {
 
 .candidate-rank {
   font-weight: bold;
-  color: #667eea;
+  color: var(--accent);
   font-size: 1.3rem;
   width: 30px;
 }
@@ -1209,13 +1401,13 @@ export default {
 
 .vote-count {
   font-weight: 700;
-  color: #764ba2;
+  color: var(--accent-secondary);
   font-size: 0.9rem;
 }
 
 .result-bar {
   height: 35px;
-  background-color: #e0e0e0;
+  background-color: var(--border);
   border-radius: 18px;
   overflow: hidden;
   margin-bottom: 10px;
@@ -1223,31 +1415,31 @@ export default {
 
 .bar-fill {
   height: 100%;
-  background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+  background: var(--accent-gradient);
   transition: width 0.3s ease;
 }
 
 .result-percentage {
   text-align: right;
   font-weight: 700;
-  color: #667eea;
+  color: var(--accent);
   font-size: 0.95rem;
 }
 
 .add-candidate-form {
-  background-color: #f8f9fa;
+  background-color: var(--bg-secondary);
   padding: 25px;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   margin-top: 30px;
-  border-left: 4px solid #667eea;
+  border-left: 4px solid var(--accent);
 }
 
 .add-candidate-form h4 {
   margin-top: 0;
-  color: #2c3e50;
+  color: var(--text-primary);
 }
 
-.add-candidate-form .form-row {
+.add-candidate-row {
   display: grid;
   grid-template-columns: 1fr 1.5fr auto;
   gap: 10px;
@@ -1261,32 +1453,72 @@ export default {
   margin-bottom: 30px;
 }
 
+/* ============= MODAL ============= */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.modal-box {
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  padding: 2rem;
+  max-width: 440px;
+  width: 90%;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+}
+
+.modal-box h3 {
+  margin: 0 0 0.75rem;
+  font-size: 1.25rem;
+  color: var(--text-primary);
+}
+
+.modal-box p {
+  margin: 0 0 0.5rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.modal-warning {
+  color: var(--error) !important;
+  font-size: 0.9rem;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+  margin-top: 1.25rem;
+}
+
 /* ============= RESPONSIVE ============= */
 @media (max-width: 1024px) {
   .admin-sidebar {
     width: 240px;
   }
-
   .admin-content {
     padding: 20px;
   }
-
   .form-row,
-  .add-candidate-form .form-row {
+  .add-candidate-row {
     grid-template-columns: 1fr;
   }
 }
 
 @media (max-width: 768px) {
-  .admin-dashboard {
+  .admin-layout {
     flex-direction: column;
   }
-
   .admin-sidebar {
     width: 100%;
     height: auto;
   }
-
   .sidebar-nav {
     flex-direction: row;
     flex-wrap: wrap;
@@ -1294,50 +1526,36 @@ export default {
     padding-left: 10px;
     padding-right: 10px;
   }
-
   .nav-item {
     width: calc(50% - 8px);
     padding: 10px 12px;
     font-size: 0.9rem;
   }
-
-  .nav-icon {
-    font-size: 1.1rem;
-  }
-
   .nav-label {
     display: none;
   }
-
   .nav-item.active .nav-label {
     display: block;
   }
-
   .admin-content {
     padding: 15px;
   }
-
   .tab-content {
     padding: 20px;
   }
-
   .elections-table {
     font-size: 0.9rem;
   }
-
   .elections-table td,
   .elections-table th {
     padding: 10px;
   }
-
   .candidate-input {
     grid-template-columns: 1fr;
   }
-
   .actions {
     flex-direction: column;
   }
-
   .actions .btn {
     width: 100%;
   }

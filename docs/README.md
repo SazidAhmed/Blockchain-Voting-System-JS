@@ -16,6 +16,7 @@ See [deployment/setup.md](deployment/setup.md) for full guide.
 | Domain                                                    | Description                                                 |
 | --------------------------------------------------------- | ----------------------------------------------------------- |
 | [Project](project/structure.md)                           | Repository layout, file map                                 |
+| [Frontend](frontend/README.md)                            | Vue 3 app: pages, components, crypto, theming               |
 | [Architecture](architecture/overview.md)                  | System design, blockchain mechanics, crypto                 |
 | [Database](database/schema.md)                            | Schema, setup, migrations, reference                        |
 | [API](api/backend.md)                                     | Backend, blockchain node, institution API                   |

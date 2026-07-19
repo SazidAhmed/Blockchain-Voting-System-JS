@@ -1,54 +1,87 @@
 <template>
-  <div class="election-detail-container">
+  <div class="page">
     <div v-if="loading" class="loading">
       <div class="spinner"></div>
       <p>Loading election details...</p>
     </div>
-    
+
     <div v-else-if="error" class="alert alert-danger">
       {{ error }}
     </div>
-    
-    <div v-else-if="!election" class="not-found">
+
+    <div v-else-if="!election" class="empty-state card glass">
+      <PhXCircle :size="48" color="var(--text-muted)" />
       <h2>Election Not Found</h2>
       <p>The election you're looking for doesn't exist or has been removed.</p>
-      <router-link to="/elections" class="btn btn-primary">Back to Elections</router-link>
+      <router-link to="/elections" class="btn btn-primary"
+        >Back to Elections</router-link
+      >
     </div>
-    
+
     <div v-else class="election-detail">
-      <div class="election-header">
-        <div class="status-badge" :class="election.status">
-          {{ formatStatus(election.status) }}
+      <div class="election-header card glass">
+        <div class="header-top">
+          <span class="badge" :class="'badge-' + election.status">
+            <PhCheckCircle
+              v-if="election.status === 'active'"
+              :size="12"
+              weight="fill"
+            />
+            <PhClock
+              v-else-if="election.status === 'pending'"
+              :size="12"
+              weight="fill"
+            />
+            <PhChecks
+              v-else-if="election.status === 'completed'"
+              :size="12"
+              weight="fill"
+            />
+            <PhXCircle v-else :size="12" weight="fill" />
+            {{ formatStatus(election.status) }}
+          </span>
         </div>
         <h1>{{ election.title }}</h1>
         <p class="description">{{ election.description }}</p>
       </div>
-      
+
       <div class="election-info">
-        <div class="info-card">
-          <h3>Election Period</h3>
+        <div class="info-card card glass">
+          <h3>
+            <PhCalendarCheck :size="18" color="var(--accent)" /> Election Period
+          </h3>
           <div class="date-item">
             <span class="date-label">Start:</span>
-            <span class="date-value">{{ formatDate(election.start_date) }}</span>
+            <span class="date-value">{{
+              formatDate(election.start_date)
+            }}</span>
           </div>
           <div class="date-item">
             <span class="date-label">End:</span>
             <span class="date-value">{{ formatDate(election.end_date) }}</span>
           </div>
         </div>
-        
-        <div class="info-card">
-          <h3>Registration</h3>
+
+        <div class="info-card card glass">
+          <h3><PhUserCheck :size="18" color="var(--accent)" /> Registration</h3>
           <div v-if="isRegistered">
-            <p class="registered-status">You are registered for this election</p>
+            <p class="registered-status">
+              <PhCheckCircle :size="16" weight="fill" color="var(--success)" />
+              You are registered for this election
+            </p>
           </div>
           <div v-else>
-            <button 
-              @click="registerForElection" 
-              class="btn btn-primary" 
+            <button
+              @click="registerForElection"
+              class="btn btn-primary"
               :disabled="!canRegister || registrationLoading"
             >
-              {{ registrationLoading ? 'Registering...' : 'Register to Vote' }}
+              <PhSpinner
+                v-if="registrationLoading"
+                :size="16"
+                class="spinning"
+              />
+              {{ registrationLoading ? "Registering..." : "Register to Vote" }}
             </button>
             <p v-if="!canRegister" class="registration-note">
               Registration is not available for this election
@@ -56,35 +89,50 @@
           </div>
         </div>
       </div>
-      
-      <div v-if="election.candidates && election.candidates.length > 0" class="results-section">
+
+      <div
+        v-if="election.candidates && election.candidates.length > 0"
+        class="results-section"
+      >
         <h2>Results</h2>
         <div class="results-summary">
-          <div class="stat-box"><span class="stat-label">Total Votes</span><span class="stat-value">{{ totalVotes }}</span></div>
+          <div class="stat-box glass">
+            <span class="stat-label">Total Votes</span>
+            <span class="stat-value gradient-text">{{ totalVotes }}</span>
+          </div>
         </div>
-        <div class="results-chart">
-          <div v-for="(candidate, idx) in sortedCandidates" :key="candidate.id" class="result-bar">
+        <div class="results-chart card glass">
+          <div
+            v-for="(candidate, idx) in sortedCandidates"
+            :key="candidate.id"
+            class="result-bar"
+          >
             <div class="result-rank-name">
               <span class="rank">{{ idx + 1 }}.</span>
               <span class="cname">{{ candidate.name }}</span>
               <span class="vcount">{{ candidate.votes_count || 0 }} votes</span>
             </div>
             <div class="bar-container">
-              <div class="bar" :style="{ width: candidatePercent(candidate) + '%' }"></div>
+              <div
+                class="bar"
+                :style="{ width: candidatePercent(candidate) + '%' }"
+              ></div>
             </div>
             <div class="bar-pct">{{ candidatePercent(candidate) }}%</div>
           </div>
         </div>
       </div>
-      
+
       <div class="actions">
-        <router-link to="/elections" class="btn btn-secondary">Back to Elections</router-link>
-        <button 
-          v-if="canVote" 
-          @click="$router.push(`/elections/${election.id}/vote`)" 
+        <router-link to="/elections" class="btn btn-secondary">
+          <PhArrowLeft :size="16" /> Back to Elections
+        </router-link>
+        <button
+          v-if="canVote"
+          @click="$router.push(`/elections/${election.id}/vote`)"
           class="btn btn-primary"
         >
-          Cast Your Vote
+          <PhCheckSquare :size="16" /> Cast Your Vote
         </button>
       </div>
     </div>
@@ -92,341 +140,304 @@
 </template>
 
 <script>
-import { mapGetters } from 'vuex'
+import { mapGetters } from "vuex";
+import {
+  PhCheckCircle,
+  PhClock,
+  PhChecks,
+  PhXCircle,
+  PhCalendarCheck,
+  PhUserCheck,
+  PhSpinner,
+  PhArrowLeft,
+  PhCheckSquare,
+} from "@phosphor-icons/vue";
 
 export default {
-  name: 'ElectionDetailView',
+  name: "ElectionDetailView",
+  components: {
+    PhCheckCircle,
+    PhClock,
+    PhChecks,
+    PhXCircle,
+    PhCalendarCheck,
+    PhUserCheck,
+    PhSpinner,
+    PhArrowLeft,
+    PhCheckSquare,
+  },
   data() {
     return {
       registrationLoading: false,
       localError: null,
-      isRegistered: false
-    }
+      isRegistered: false,
+    };
   },
   computed: {
-    ...mapGetters(['getCurrentElection', 'isLoading', 'getError', 'currentUser']),
+    ...mapGetters([
+      "getCurrentElection",
+      "isLoading",
+      "getError",
+      "currentUser",
+    ]),
     election() {
-      return this.getCurrentElection
+      return this.getCurrentElection;
     },
     loading() {
-      return this.isLoading
+      return this.isLoading;
     },
     error() {
-      return this.getError || this.localError
+      return this.getError || this.localError;
     },
     canRegister() {
-      if (!this.election) return false
-      return ['pending', 'active'].includes(this.election.status)
+      if (!this.election) return false;
+      return ["pending", "active"].includes(this.election.status);
     },
     canVote() {
-      if (!this.election) return false
-      // Allow voting if election is active
-      return this.election.status === 'active'
+      if (!this.election) return false;
+      return this.election.status === "active";
     },
     totalVotes() {
-      if (!this.election || !this.election.candidates) return 0
-      return this.election.candidates.reduce((s, c) => s + (c.votes_count || 0), 0)
+      if (!this.election || !this.election.candidates) return 0;
+      return this.election.candidates.reduce(
+        (s, c) => s + (c.votes_count || 0),
+        0,
+      );
     },
     sortedCandidates() {
-      if (!this.election || !this.election.candidates) return []
-      return [...this.election.candidates].sort((a, b) => (b.votes_count || 0) - (a.votes_count || 0))
-    }
+      if (!this.election || !this.election.candidates) return [];
+      return [...this.election.candidates].sort(
+        (a, b) => (b.votes_count || 0) - (a.votes_count || 0),
+      );
+    },
   },
   methods: {
     formatDate(dateString) {
-      const options = { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }
-      return new Date(dateString).toLocaleDateString(undefined, options)
+      const options = {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      };
+      return new Date(dateString).toLocaleDateString(undefined, options);
     },
     formatStatus(status) {
       const statusMap = {
-        'pending': 'Upcoming',
-        'active': 'Active',
-        'completed': 'Completed',
-        'cancelled': 'Cancelled'
-      }
-      return statusMap[status] || status
+        pending: "Upcoming",
+        active: "Active",
+        completed: "Completed",
+        cancelled: "Cancelled",
+      };
+      return statusMap[status] || status;
     },
     candidatePercent(candidate) {
-      if (!this.totalVotes) return 0
-      return Math.round(((candidate.votes_count || 0) / this.totalVotes) * 100)
+      if (!this.totalVotes) return 0;
+      return Math.round(((candidate.votes_count || 0) / this.totalVotes) * 100);
     },
     async registerForElection() {
-      this.registrationLoading = true
-      this.localError = null
-      
+      this.registrationLoading = true;
+      this.localError = null;
+
       try {
-        await this.$store.dispatch('registerForElection', this.election.id)
-        this.isRegistered = true
+        await this.$store.dispatch("registerForElection", this.election.id);
+        this.isRegistered = true;
       } catch (error) {
-        this.localError = 'Failed to register for this election. Please try again.'
-        console.error('Registration error:', error)
+        this.localError =
+          "Failed to register for this election. Please try again.";
+        console.error("Registration error:", error);
       } finally {
-        this.registrationLoading = false
+        this.registrationLoading = false;
       }
     },
     async checkRegistrationStatus() {
       try {
-        const token = localStorage.getItem('token')
-        const res = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'}/api/elections/${this.$route.params.id}/registration-status`, {
-          headers: { 'x-auth-token': token }
-        })
+        const token = localStorage.getItem("token");
+        const res = await fetch(
+          `${import.meta.env.VITE_API_BASE_URL || "http://localhost:3000"}/api/elections/${this.$route.params.id}/registration-status`,
+          {
+            headers: { "x-auth-token": token },
+          },
+        );
         if (res.ok) {
-          const data = await res.json()
-          this.isRegistered = data.registered
+          const data = await res.json();
+          this.isRegistered = data.registered;
         }
       } catch (e) {
-        // Silently fail — default is unregistered
+        // Silently fail
       }
     },
-    goToVote(candidateId) {
-      this.$router.push({
-        path: `/elections/${this.election.id}/vote`,
-        query: { candidateId }
-      })
-    }
   },
   async created() {
-    const electionId = this.$route.params.id
-    await this.$store.dispatch('fetchElection', electionId)
-    await this.checkRegistrationStatus()
-  }
-}
+    const electionId = this.$route.params.id;
+    await this.$store.dispatch("fetchElection", electionId);
+    await this.checkRegistrationStatus();
+  },
+};
 </script>
 
 <style scoped>
-.election-detail-container {
-  max-width: 900px;
-  margin: 0 auto;
-  padding: 20px;
-}
-
-.loading, .not-found {
+.loading,
+.empty-state {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 40px;
+  padding: var(--space-12);
   text-align: center;
-}
-
-.spinner {
-  border: 4px solid rgba(0, 0, 0, 0.1);
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  border-left-color: #3498db;
-  animation: spin 1s linear infinite;
-  margin-bottom: 20px;
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  gap: var(--space-4);
 }
 
 .election-header {
-  position: relative;
-  background-color: #f8f9fa;
-  padding: 30px;
-  border-radius: 8px;
-  margin-bottom: 30px;
+  padding: var(--space-8);
+  margin-bottom: var(--space-6);
 }
 
-.status-badge {
-  position: absolute;
-  top: 20px;
-  right: 20px;
-  padding: 5px 15px;
-  border-radius: 20px;
-  font-size: 0.9rem;
-  font-weight: bold;
-  text-transform: uppercase;
+.header-top {
+  margin-bottom: var(--space-3);
 }
 
-.status-badge.pending {
-  background-color: #e0f7fa;
-  color: #0097a7;
-}
-
-.status-badge.active {
-  background-color: #e8f5e9;
-  color: #388e3c;
-}
-
-.status-badge.completed {
-  background-color: #ede7f6;
-  color: #5e35b1;
-}
-
-.status-badge.cancelled {
-  background-color: #ffebee;
-  color: #d32f2f;
-}
-
-h1 {
-  margin-bottom: 15px;
-  color: #2c3e50;
-  padding-right: 100px; /* Make room for the status badge */
+.election-header h1 {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  padding-right: 100px;
+  margin-bottom: var(--space-3);
 }
 
 .description {
-  color: #7f8c8d;
+  color: var(--text-secondary);
   line-height: 1.6;
 }
 
 .election-info {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 20px;
-  margin-bottom: 30px;
+  gap: var(--space-5);
+  margin-bottom: var(--space-8);
 }
 
 .info-card {
-  background-color: #fff;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  padding: 20px;
+  padding: var(--space-6);
 }
 
 .info-card h3 {
-  margin-bottom: 15px;
-  color: #2c3e50;
-  font-size: 1.2rem;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+  font-size: 1.1rem;
+  color: var(--text-primary);
 }
 
 .date-item {
-  margin-bottom: 10px;
-}
-
-.date-label {
-  font-weight: bold;
-  color: #34495e;
-  margin-right: 5px;
-}
-
-.date-value {
-  color: #7f8c8d;
-}
-
-.registered-status {
-  color: #27ae60;
-  font-weight: bold;
-}
-
-.registration-note {
-  margin-top: 10px;
-  color: #e74c3c;
+  margin-bottom: var(--space-2);
   font-size: 0.9rem;
 }
 
-.candidates-section, .results-section {
-  margin-bottom: 30px;
+.date-label {
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-right: var(--space-2);
 }
 
-.candidates-section h2, .results-section h2 {
-  margin-bottom: 20px;
-  color: #2c3e50;
+.date-value {
+  color: var(--text-muted);
 }
 
-.no-candidates {
-  background-color: #f8f9fa;
-  padding: 20px;
-  border-radius: 8px;
-  text-align: center;
-  color: #7f8c8d;
+.registered-status {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--success);
+  font-weight: 600;
 }
 
-.candidates-list {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 20px;
+.registration-note {
+  margin-top: var(--space-3);
+  color: var(--error);
+  font-size: 0.9rem;
 }
 
-.candidate-card {
-  background-color: #fff;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  padding: 20px;
-  transition: transform 0.2s ease;
+.results-section {
+  margin-bottom: var(--space-8);
 }
 
-.candidate-card:hover {
-  transform: translateY(-3px);
-}
-
-.candidate-card h3 {
-  margin-bottom: 10px;
-  color: #2c3e50;
-}
-
-.candidate-card p {
-  color: #7f8c8d;
-  margin-bottom: 15px;
-  line-height: 1.5;
-}
-
-.btn-vote {
-  background-color: #2ecc71;
-  color: white;
-  border: none;
-  padding: 8px 15px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-weight: bold;
-  transition: background-color 0.3s;
-}
-
-.btn-vote:hover {
-  background-color: #27ae60;
+.results-section h2 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin-bottom: var(--space-5);
 }
 
 .results-summary {
-  display: flex;
-  gap: 16px;
-  margin-bottom: 20px;
+  margin-bottom: var(--space-5);
 }
+
 .stat-box {
-  background: linear-gradient(135deg, #6c63ff, #a855f7);
-  color: #fff;
-  border-radius: 10px;
-  padding: 14px 28px;
-  display: flex;
+  display: inline-flex;
   flex-direction: column;
   align-items: center;
-  min-width: 120px;
+  padding: var(--space-4) var(--space-8);
+  border-radius: var(--radius-lg);
 }
-.stat-label { font-size: 0.8rem; opacity: 0.85; }
-.stat-value { font-size: 1.8rem; font-weight: 700; }
+
+.stat-label {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+.stat-value {
+  font-size: 1.8rem;
+  font-weight: 700;
+}
+
+.results-chart {
+  padding: var(--space-6);
+}
 
 .result-bar {
-  margin-bottom: 18px;
+  margin-bottom: var(--space-4);
 }
+
 .result-rank-name {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-2);
   margin-bottom: 6px;
 }
-.rank { font-weight: 700; color: #6c63ff; min-width: 24px; }
-.cname { font-weight: 600; flex: 1; color: #2c3e50; }
-.vcount { font-size: 0.85rem; color: #6c63ff; font-weight: 600; }
+
+.rank {
+  font-weight: 700;
+  color: var(--accent);
+  min-width: 24px;
+}
+.cname {
+  font-weight: 600;
+  flex: 1;
+  color: var(--text-primary);
+}
+.vcount {
+  font-size: 0.85rem;
+  color: var(--accent);
+  font-weight: 600;
+}
 
 .bar-container {
-  position: relative;
   height: 14px;
-  background-color: #ecf0f1;
+  background: var(--bg-secondary);
   border-radius: 8px;
   overflow: hidden;
 }
+
 .bar {
   height: 100%;
-  background: linear-gradient(90deg, #6c63ff, #a855f7);
+  background: var(--accent-gradient);
   border-radius: 8px;
   transition: width 0.6s ease;
 }
+
 .bar-pct {
   font-size: 0.8rem;
-  color: #888;
+  color: var(--text-muted);
   text-align: right;
   margin-top: 2px;
 }
@@ -434,52 +445,22 @@ h1 {
 .actions {
   display: flex;
   justify-content: space-between;
-  margin-top: 30px;
+  margin-top: var(--space-8);
 }
 
-.btn {
-  display: inline-block;
-  padding: 10px 20px;
-  border-radius: 4px;
-  text-decoration: none;
-  font-weight: bold;
-  transition: all 0.3s ease;
-  border: none;
-  cursor: pointer;
-}
-
-.btn-primary {
-  background-color: #3498db;
-  color: white;
-}
-
-.btn-primary:hover {
-  background-color: #2980b9;
-}
-
-.btn-secondary {
-  background-color: #ecf0f1;
-  color: #2c3e50;
-}
-
-.btn-secondary:hover {
-  background-color: #bdc3c7;
-}
-
-.btn:disabled {
-  background-color: #95a5a6;
-  cursor: not-allowed;
+.spinning {
+  animation: spin 0.7s linear infinite;
 }
 
 .alert {
-  padding: 15px;
-  margin-bottom: 20px;
-  border-radius: 4px;
+  padding: var(--space-4);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-6);
 }
 
 .alert-danger {
-  background-color: #f8d7da;
-  color: #721c24;
-  border: 1px solid #f5c6cb;
+  background: color-mix(in srgb, var(--error) 10%, transparent);
+  color: var(--error);
+  border: 1px solid color-mix(in srgb, var(--error) 25%, transparent);
 }
 </style>

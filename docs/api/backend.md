@@ -162,8 +162,26 @@ Authenticate and receive JWT.
 **Body:**
 
 ```json
-{ "institutionId": "STU00001", "password": "strongPassword123" }
+{
+  "institutionId": "STU00001",
+  "password": "strongPassword123",
+  "loginType": "voter"
+}
 ```
+
+| Field           | Type   | Required | Description                                                                             |
+| --------------- | ------ | -------- | --------------------------------------------------------------------------------------- |
+| `institutionId` | string | yes      | Institution ID                                                                          |
+| `password`      | string | yes      | Account password                                                                        |
+| `loginType`     | string | no       | `"voter"` or `"admin"` — filters by role. Omit for any-role login (backward compatible) |
+
+**Error responses:**
+
+| Status | Condition                                               |
+| ------ | ------------------------------------------------------- |
+| 401    | Invalid credentials                                     |
+| 403    | `loginType: "voter"` but user is admin/board_member     |
+| 403    | `loginType: "admin"` but user is not admin/board_member |
 
 **Response 200:**
 

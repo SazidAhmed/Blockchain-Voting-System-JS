@@ -1,69 +1,101 @@
 <template>
-  <div class="results-page">
-    <h1>Election Results</h1>
+  <div class="page">
+    <h1 class="page-title">Election Results</h1>
 
     <div v-if="loading" class="loading">
       <div class="spinner"></div>
       <p>Loading results...</p>
     </div>
 
-    <div v-else-if="elections.length === 0" class="empty">
+    <div v-else-if="elections.length === 0" class="empty-state card glass">
+      <PhChartBar :size="48" color="var(--text-muted)" />
       <p>No elections found.</p>
     </div>
 
     <div v-else>
-      <!-- Election selector -->
       <div class="selector-bar">
-        <label for="electionPicker">Select Election:</label>
-        <select id="electionPicker" v-model="selectedId" @change="loadElection" class="election-select">
+        <label class="form-label" for="electionPicker">Select Election:</label>
+        <select
+          id="electionPicker"
+          v-model="selectedId"
+          @change="loadElection"
+          class="form-input"
+        >
           <option v-for="e in elections" :key="e.id" :value="e.id">
             {{ e.title }} ({{ formatStatus(e.status) }})
           </option>
         </select>
       </div>
 
-      <!-- Results card -->
-      <div v-if="current" class="results-card">
+      <div v-if="current" class="results-card card glass">
         <div class="card-header">
           <div>
             <h2>{{ current.title }}</h2>
             <p class="sub">{{ current.description }}</p>
           </div>
-          <span class="status-badge" :class="current.status">{{ formatStatus(current.status) }}</span>
+          <span class="badge" :class="'badge-' + current.status">{{
+            formatStatus(current.status)
+          }}</span>
         </div>
 
         <div class="stats-row">
-          <div class="stat-box">
+          <div class="stat-box glass">
+            <PhCheckSquare :size="18" color="var(--accent)" />
             <span class="stat-label">Total Votes</span>
-            <span class="stat-value">{{ totalVotes }}</span>
+            <span class="stat-value gradient-text">{{ totalVotes }}</span>
           </div>
-          <div class="stat-box">
+          <div class="stat-box glass">
+            <PhUsers :size="18" color="var(--accent)" />
             <span class="stat-label">Candidates</span>
-            <span class="stat-value">{{ current.candidates ? current.candidates.length : 0 }}</span>
+            <span class="stat-value gradient-text">{{
+              current.candidates ? current.candidates.length : 0
+            }}</span>
           </div>
-          <div class="stat-box">
+          <div class="stat-box glass">
+            <PhCalendarCheck :size="18" color="var(--accent)" />
             <span class="stat-label">Start Date</span>
-            <span class="stat-value date">{{ formatDate(current.start_date) }}</span>
+            <span class="stat-value date">{{
+              formatDate(current.start_date)
+            }}</span>
           </div>
-          <div class="stat-box">
+          <div class="stat-box glass">
+            <PhCalendarCheck :size="18" color="var(--accent)" />
             <span class="stat-label">End Date</span>
-            <span class="stat-value date">{{ formatDate(current.end_date) }}</span>
+            <span class="stat-value date">{{
+              formatDate(current.end_date)
+            }}</span>
           </div>
         </div>
 
-        <div v-if="!current.candidates || current.candidates.length === 0" class="empty">
+        <div
+          v-if="!current.candidates || current.candidates.length === 0"
+          class="empty-state"
+        >
           <p>No candidates for this election.</p>
         </div>
 
         <div v-else class="chart">
-          <div v-for="(candidate, idx) in sortedCandidates" :key="candidate.id" class="result-row">
+          <div
+            v-for="(candidate, idx) in sortedCandidates"
+            :key="candidate.id"
+            class="result-row"
+          >
             <div class="row-header">
-              <span class="rank" :class="{ gold: idx === 0, silver: idx === 1, bronze: idx === 2 }">{{ idx + 1 }}</span>
+              <span
+                class="rank"
+                :class="[
+                  'rank-' + (idx < 3 ? ['gold', 'silver', 'bronze'][idx] : ''),
+                ]"
+                >{{ idx + 1 }}</span
+              >
               <span class="cname">{{ candidate.name }}</span>
               <span class="vcount">{{ candidate.votes_count || 0 }} votes</span>
             </div>
             <div class="bar-track">
-              <div class="bar-fill" :style="{ width: pct(candidate) + '%' }"></div>
+              <div
+                class="bar-fill"
+                :style="{ width: pct(candidate) + '%' }"
+              ></div>
             </div>
             <div class="bar-pct">{{ pct(candidate) }}%</div>
           </div>
@@ -78,10 +110,18 @@
 </template>
 
 <script>
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'
+import {
+  PhChartBar,
+  PhCheckSquare,
+  PhUsers,
+  PhCalendarCheck,
+} from "@phosphor-icons/vue";
+
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
 
 export default {
-  name: 'ResultsView',
+  name: "ResultsView",
+  components: { PhChartBar, PhCheckSquare, PhUsers, PhCalendarCheck },
   data() {
     return {
       elections: [],
@@ -89,207 +129,254 @@ export default {
       current: null,
       loading: true,
       detailLoading: false,
-    }
+    };
   },
   computed: {
     totalVotes() {
-      if (!this.current || !this.current.candidates) return 0
-      return this.current.candidates.reduce((s, c) => s + (c.votes_count || 0), 0)
+      if (!this.current || !this.current.candidates) return 0;
+      return this.current.candidates.reduce(
+        (s, c) => s + (c.votes_count || 0),
+        0,
+      );
     },
     sortedCandidates() {
-      if (!this.current || !this.current.candidates) return []
-      return [...this.current.candidates].sort((a, b) => (b.votes_count || 0) - (a.votes_count || 0))
-    }
+      if (!this.current || !this.current.candidates) return [];
+      return [...this.current.candidates].sort(
+        (a, b) => (b.votes_count || 0) - (a.votes_count || 0),
+      );
+    },
   },
   methods: {
     pct(candidate) {
-      if (!this.totalVotes) return 0
-      return Math.round(((candidate.votes_count || 0) / this.totalVotes) * 100)
+      if (!this.totalVotes) return 0;
+      return Math.round(((candidate.votes_count || 0) / this.totalVotes) * 100);
     },
     formatStatus(s) {
-      return { pending: 'Upcoming', active: 'Active', completed: 'Completed', cancelled: 'Cancelled' }[s] || s
+      return (
+        {
+          pending: "Upcoming",
+          active: "Active",
+          completed: "Completed",
+          cancelled: "Cancelled",
+        }[s] || s
+      );
     },
     formatDate(d) {
-      return new Date(d).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+      return new Date(d).toLocaleDateString(undefined, {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
     },
     async loadElection() {
-      if (!this.selectedId) return
-      this.detailLoading = true
-      this.current = null
+      if (!this.selectedId) return;
+      this.detailLoading = true;
+      this.current = null;
       try {
-        const token = localStorage.getItem('token')
-        const res = await fetch(`${API_BASE}/api/elections/${this.selectedId}`, {
-          headers: { 'x-auth-token': token }
-        })
-        if (!res.ok) throw new Error('Failed to load election')
-        this.current = await res.json()
+        const token = localStorage.getItem("token");
+        const res = await fetch(
+          `${API_BASE}/api/elections/${this.selectedId}`,
+          {
+            headers: { "x-auth-token": token },
+          },
+        );
+        if (!res.ok) throw new Error("Failed to load election");
+        this.current = await res.json();
       } catch (e) {
-        console.error(e)
+        console.error(e);
       } finally {
-        this.detailLoading = false
+        this.detailLoading = false;
       }
-    }
+    },
   },
   async mounted() {
     try {
-      const token = localStorage.getItem('token')
-        const res = await fetch(`${API_BASE}/api/elections`, {
-          headers: { 'x-auth-token': token }
-        })
-        if (!res.ok) throw new Error('Failed to fetch elections')
-        this.elections = await res.json()
+      const token = localStorage.getItem("token");
+      const res = await fetch(`${API_BASE}/api/elections`, {
+        headers: { "x-auth-token": token },
+      });
+      if (!res.ok) throw new Error("Failed to fetch elections");
+      this.elections = await res.json();
 
       if (this.elections.length > 0) {
-        // Default: most recent active, else most recent overall
-        const active = this.elections.find(e => e.status === 'active')
-        this.selectedId = active ? active.id : this.elections[0].id
-        await this.loadElection()
+        const active = this.elections.find((e) => e.status === "active");
+        this.selectedId = active ? active.id : this.elections[0].id;
+        await this.loadElection();
       }
     } catch (e) {
-      console.error(e)
+      console.error(e);
     } finally {
-      this.loading = false
+      this.loading = false;
     }
-  }
-}
+  },
+};
 </script>
 
 <style scoped>
-.results-page {
-  max-width: 860px;
-  margin: 0 auto;
-  padding: 28px 20px;
-}
-
-h1 {
-  font-size: 1.8rem;
-  color: #2c3e50;
-  margin-bottom: 24px;
+.page-title {
+  text-align: center;
+  font-size: 1.75rem;
+  font-weight: 700;
+  margin-bottom: var(--space-8);
 }
 
 .loading {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 40px;
-  gap: 12px;
-  color: #888;
+  padding: var(--space-10);
+  gap: var(--space-3);
+  color: var(--text-muted);
 }
-.spinner {
-  border: 4px solid rgba(0,0,0,0.1);
-  width: 36px; height: 36px;
-  border-radius: 50%;
-  border-left-color: #6c63ff;
-  animation: spin 1s linear infinite;
-}
-@keyframes spin { to { transform: rotate(360deg); } }
 
-.empty { text-align: center; color: #888; padding: 40px; }
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-12);
+  text-align: center;
+}
 
 .selector-bar {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 24px;
+  gap: var(--space-3);
+  margin-bottom: var(--space-6);
 }
-.selector-bar label { font-weight: 600; color: #444; white-space: nowrap; }
-.election-select {
+
+.selector-bar .form-label {
+  white-space: nowrap;
+}
+
+.selector-bar .form-input {
   flex: 1;
-  padding: 10px 14px;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  font-size: 1rem;
-  background: #fff;
-  cursor: pointer;
 }
 
 .results-card {
-  background: #fff;
-  border-radius: 12px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-  padding: 28px;
+  padding: var(--space-8);
 }
 
 .card-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 24px;
+  margin-bottom: var(--space-6);
 }
-.card-header h2 { font-size: 1.5rem; color: #2c3e50; margin: 0 0 4px; }
-.card-header .sub { color: #888; font-size: 0.9rem; margin: 0; }
 
-.status-badge {
-  padding: 5px 14px;
-  border-radius: 20px;
-  font-size: 0.82rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  white-space: nowrap;
+.card-header h2 {
+  font-size: 1.5rem;
+  color: var(--text-primary);
+  margin: 0 0 4px;
 }
-.status-badge.active   { background: #d4edda; color: #155724; }
-.status-badge.pending  { background: #fff3cd; color: #856404; }
-.status-badge.completed{ background: #ede7f6; color: #5e35b1; }
-.status-badge.cancelled{ background: #ffebee; color: #d32f2f; }
+.card-header .sub {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  margin: 0;
+}
 
 .stats-row {
   display: flex;
-  gap: 14px;
+  gap: var(--space-4);
   flex-wrap: wrap;
-  margin-bottom: 28px;
+  margin-bottom: var(--space-8);
 }
+
 .stat-box {
-  background: linear-gradient(135deg, #6c63ff, #a855f7);
-  color: #fff;
-  border-radius: 10px;
-  padding: 14px 22px;
   display: flex;
   flex-direction: column;
   align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-4) var(--space-5);
+  border-radius: var(--radius-lg);
   min-width: 100px;
   flex: 1;
 }
-.stat-label { font-size: 0.75rem; opacity: 0.85; }
-.stat-value { font-size: 1.7rem; font-weight: 700; }
-.stat-value.date { font-size: 0.85rem; text-align: center; margin-top: 2px; }
 
-.chart { display: flex; flex-direction: column; gap: 18px; }
+.stat-label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+.stat-value {
+  font-size: 1.7rem;
+  font-weight: 700;
+}
+.stat-value.date {
+  font-size: 0.85rem;
+  text-align: center;
+}
 
-.result-row {}
+.chart {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
 .row-header {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--space-3);
   margin-bottom: 6px;
 }
+
 .rank {
-  width: 28px; height: 28px;
-  display: flex; align-items: center; justify-content: center;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   border-radius: 50%;
   font-weight: 700;
   font-size: 0.9rem;
-  background: #ecf0f1;
-  color: #555;
+  background: var(--bg-secondary);
+  color: var(--text-muted);
   flex-shrink: 0;
 }
-.rank.gold   { background: #FFD700; color: #7a5800; }
-.rank.silver { background: #C0C0C0; color: #444; }
-.rank.bronze { background: #CD7F32; color: #fff; }
 
-.cname { font-weight: 600; flex: 1; color: #2c3e50; }
-.vcount { font-size: 0.85rem; color: #6c63ff; font-weight: 600; }
+.rank-gold {
+  background: #ffd700;
+  color: #7a5800;
+}
+.rank-silver {
+  background: #c0c0c0;
+  color: #444;
+}
+.rank-bronze {
+  background: #cd7f32;
+  color: #fff;
+}
+
+.cname {
+  font-weight: 600;
+  flex: 1;
+  color: var(--text-primary);
+}
+.vcount {
+  font-size: 0.85rem;
+  color: var(--accent);
+  font-weight: 600;
+}
 
 .bar-track {
   height: 14px;
-  background: #ecf0f1;
+  background: var(--bg-secondary);
   border-radius: 8px;
   overflow: hidden;
 }
+
 .bar-fill {
   height: 100%;
-  background: linear-gradient(90deg, #6c63ff, #a855f7);
+  background: var(--accent-gradient);
   border-radius: 8px;
   transition: width 0.6s ease;
 }
-.bar-pct { font-size: 0.78rem; color: #999; text-align: right; margin-top: 2px; }
+
+.bar-pct {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  text-align: right;
+  margin-top: 2px;
+}
 </style>

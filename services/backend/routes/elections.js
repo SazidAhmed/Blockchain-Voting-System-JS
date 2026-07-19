@@ -387,10 +387,10 @@ router.post('/:id/register', auth, async (req, res) => {
 router.get('/:id/registration-status', auth, async (req, res) => {
   try {
     const [rows] = await pool.query(
-      'SELECT id FROM voter_registrations WHERE user_id = ? AND election_id = ?',
+      'SELECT id, status FROM voter_registrations WHERE user_id = ? AND election_id = ?',
       [req.user.id, req.params.id]
     );
-    res.json({ registered: rows.length > 0 });
+    res.json({ registered: rows.length > 0, status: rows.length > 0 ? rows[0].status : null });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'Server error' });

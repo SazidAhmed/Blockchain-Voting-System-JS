@@ -16,9 +16,9 @@
             type="text"
             id="username"
             class="form-control"
-            placeholder="e.g., ADMIN001"
+            placeholder="admin"
             required
-          >
+          />
         </div>
 
         <div class="form-group">
@@ -30,65 +30,59 @@
             class="form-control"
             placeholder="••••••••"
             required
-          >
+          />
         </div>
 
         <button type="submit" class="btn btn-primary" :disabled="loading">
-          {{ loading ? 'Logging in...' : 'Login' }}
+          {{ loading ? "Logging in..." : "Login" }}
         </button>
       </form>
-
-      <div class="demo-credentials">
-        <p><strong>Demo Credentials:</strong></p>
-        <small>Username: ADMIN001</small><br>
-        <small>Password: admin123</small>
-      </div>
     </div>
   </div>
 </template>
 
 <script>
-import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
-import { useAuthStore } from '../store/auth'
+import { ref, computed, onMounted } from "vue";
+import { useRouter } from "vue-router";
+import { useAuthStore } from "../store/auth";
 
 export default {
-  name: 'LoginView',
+  name: "LoginView",
   setup() {
-    const router = useRouter()
-    const authStore = useAuthStore()
-    
-    const username = ref('ADMIN001')
-    const password = ref('admin123')
-    
-    const error = computed(() => authStore.error)
-    const loading = computed(() => authStore.loading)
+    const router = useRouter();
+    const authStore = useAuthStore();
+
+    const username = ref("");
+    const password = ref("");
+
+    const error = computed(() => authStore.error);
+    const loading = computed(() => authStore.loading);
 
     const handleLogin = async () => {
       try {
         await authStore.login({
           institutionId: username.value,
-          password: password.value
-        })
-        await router.push('/dashboard')
+          password: password.value,
+        });
+        await router.push("/dashboard");
       } catch (err) {
-        console.error('Login error:', err)
+        console.error("Login error:", err);
       }
-    }
+    };
 
     onMounted(() => {
-      authStore.clearError()
-    })
+      authStore.clearError();
+    });
 
     return {
       username,
       password,
       error,
       loading,
-      handleLogin
-    }
-  }
-}
+      handleLogin,
+    };
+  },
+};
 </script>
 
 <style scoped>
@@ -97,15 +91,15 @@ export default {
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: var(--accent-gradient);
   padding: 20px;
 }
 
 .login-card {
   width: 100%;
   max-width: 450px;
-  background: white;
-  border-radius: 12px;
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
   padding: 40px;
 }
@@ -117,13 +111,13 @@ export default {
 
 .login-header h1 {
   margin: 0 0 10px 0;
-  color: #2c3e50;
+  color: var(--text-primary);
   font-size: 1.8rem;
 }
 
 .login-header p {
   margin: 0;
-  color: #7f8c8d;
+  color: var(--text-secondary);
   font-size: 0.95rem;
 }
 
@@ -135,33 +129,35 @@ export default {
   display: block;
   margin-bottom: 8px;
   font-weight: 600;
-  color: #2c3e50;
+  color: var(--text-primary);
 }
 
 .form-control {
   width: 100%;
   padding: 12px;
-  border: 2px solid #ddd;
-  border-radius: 6px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
   font-size: 1rem;
   font-family: inherit;
+  background: var(--bg-card);
+  color: var(--text-primary);
   transition: border-color 0.3s ease;
 }
 
 .form-control:focus {
   outline: none;
-  border-color: #667eea;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 15%, transparent);
 }
 
 .btn {
   display: block;
   width: 100%;
   padding: 12px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: var(--accent-gradient);
   color: white;
   border: none;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
@@ -171,7 +167,7 @@ export default {
 
 .btn:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--accent) 30%, transparent);
 }
 
 .btn:disabled {
@@ -182,33 +178,13 @@ export default {
 .alert {
   padding: 12px;
   margin-bottom: 20px;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   border-left: 4px solid;
 }
 
 .alert-danger {
-  background-color: #f8d7da;
-  color: #721c24;
-  border-left-color: #dc3545;
-}
-
-.demo-credentials {
-  margin-top: 30px;
-  padding-top: 20px;
-  border-top: 1px solid #e0e0e0;
-  text-align: center;
-  color: #7f8c8d;
-  font-size: 0.9rem;
-}
-
-.demo-credentials p {
-  margin: 0 0 8px 0;
-  font-weight: 600;
-  color: #2c3e50;
-}
-
-.demo-credentials small {
-  display: block;
-  margin: 4px 0;
+  background-color: color-mix(in srgb, var(--error) 10%, transparent);
+  color: var(--error);
+  border-left-color: var(--error);
 }
 </style>

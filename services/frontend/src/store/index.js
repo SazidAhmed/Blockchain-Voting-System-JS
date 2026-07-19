@@ -18,7 +18,7 @@ api.interceptors.request.use(config => {
 
 export default createStore({
   state: {
-    user: null,
+    user: JSON.parse(localStorage.getItem('user') || 'null'),
     token: localStorage.getItem('token') || null,
     elections: [],
     currentElection: null,
@@ -27,7 +27,6 @@ export default createStore({
   },
   getters: {
     isAuthenticated: state => !!state.token,
-    isAdmin: state => state.user && state.user.role === 'admin',
     currentUser: state => state.user,
     getElections: state => state.elections,
     getCurrentElection: state => state.currentElection,
@@ -37,6 +36,11 @@ export default createStore({
   mutations: {
     SET_USER(state, user) {
       state.user = user
+      if (user) {
+        localStorage.setItem('user', JSON.stringify(user))
+      } else {
+        localStorage.removeItem('user')
+      }
     },
     SET_TOKEN(state, token) {
       state.token = token
@@ -46,6 +50,7 @@ export default createStore({
       state.user = null
       state.token = null
       localStorage.removeItem('token')
+      localStorage.removeItem('user')
     },
     SET_ELECTIONS(state, elections) {
       state.elections = elections
@@ -83,13 +88,13 @@ export default createStore({
       commit('SET_LOADING', true)
       commit('CLEAR_ERROR')
       try {
-        const response = await api.post('/users/login', credentials)
+        const response = await api.post('/users/login', { ...credentials, loginType: 'voter' })
         commit('SET_USER', response.data.user)
         commit('SET_TOKEN', response.data.token)
         
         // Load user's cryptographic keys
         try {
-          const userId = response.data.user.institutionId || response.data.user.id
+          const userId = (response.data.user.institutionId || response.data.user.id || '').toUpperCase()
           await keyManager.loadUserKeys(userId, credentials.password)
           console.log('✅ User keys loaded successfully')
         } catch (keyError) {
@@ -127,6 +132,27 @@ export default createStore({
       commit('CLEAR_AUTH')
       // Clear cryptographic keys from memory
       keyManager.clearKeys()
+    },
+
+    // Reload cryptographic keys from localStorage on app init
+    restoreKeys({ commit, state }) {
+      if (!state.user) {
+        const savedUser = localStorage.getItem('user')
+        if (savedUser) {
+          commit('SET_USER', JSON.parse(savedUser))
+        }
+      }
+      const user = state.user
+      if (!user) return
+
+      const userId = (user.institutionId || user.studentId || user.id || '').toUpperCase()
+      if (!userId) return
+
+      if (keyManager.getCurrentKeys()) return
+
+      if (keyManager.hasStoredKeys(userId)) {
+        keyManager.loadUserKeys(userId, '').catch(() => {})
+      }
     },
     
     // Election actions

@@ -1,5 +1,5 @@
 {
-  "name": "vue-project",
+  "name": "cryptopoll",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -12,6 +12,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@phosphor-icons/vue": "^2.2.1",
     "axios": "^1.12.2",
     "vue": "^3.5.22",
     "vue-router": "^4.6.3",

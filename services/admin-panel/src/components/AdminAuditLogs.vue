@@ -1,7 +1,7 @@
 <template>
   <div class="audit-logs-section">
     <h3>📋 Admin Audit Logs</h3>
-    
+
     <div class="logs-filters">
       <div class="filter-group">
         <label for="logFilter">Filter by Action:</label>
@@ -26,17 +26,32 @@
         </select>
       </div>
 
-      <button @click="fetchLogs" class="btn btn-primary btn-small">Refresh</button>
+      <button @click="fetchLogs" class="btn btn-primary btn-small">
+        Refresh
+      </button>
     </div>
 
     <div v-if="loading" class="loading">Loading audit logs...</div>
-    <div v-else-if="filteredLogs.length === 0" class="alert alert-info">No audit logs found</div>
+    <div v-else-if="filteredLogs.length === 0" class="alert alert-info">
+      No audit logs found
+    </div>
     <div v-else class="logs-container">
-      <div v-for="log in filteredLogs" :key="log.id" class="log-entry" :class="`status-${log.status}`">
+      <div
+        v-for="log in filteredLogs"
+        :key="log.id"
+        class="log-entry"
+        :class="`status-${log.status}`"
+      >
         <div class="log-header">
           <span class="log-timestamp">{{ formatDate(log.timestamp) }}</span>
           <span class="log-action">{{ log.action_type }}</span>
-          <span class="log-status" :class="{ success: log.status === 'success', failed: log.status === 'failed' }">
+          <span
+            class="log-status"
+            :class="{
+              success: log.status === 'success',
+              failed: log.status === 'failed',
+            }"
+          >
             {{ log.status.toUpperCase() }}
           </span>
         </div>
@@ -44,7 +59,9 @@
         <div class="log-details">
           <div class="detail-row">
             <span class="label">Resource:</span>
-            <span class="value">{{ log.resource_type }} #{{ log.resource_id }}</span>
+            <span class="value"
+              >{{ log.resource_type }} #{{ log.resource_id }}</span
+            >
           </div>
           <div class="detail-row">
             <span class="label">IP Address:</span>
@@ -63,8 +80,13 @@
 
           <div class="detail-row">
             <span class="label">Hash:</span>
-            <span class="value monospace">{{ log.change_hash?.substring(0, 16) }}...</span>
-            <button @click="verifyIntegrity(log.id)" class="btn btn-small btn-secondary">
+            <span class="value monospace"
+              >{{ log.change_hash?.substring(0, 16) }}...</span
+            >
+            <button
+              @click="verifyIntegrity(log.id)"
+              class="btn btn-small btn-secondary"
+            >
               Verify
             </button>
           </div>
@@ -73,115 +95,137 @@
     </div>
 
     <div class="pagination">
-      <button @click="previousPage" class="btn btn-secondary btn-small" :disabled="offset === 0">Previous</button>
+      <button
+        @click="previousPage"
+        class="btn btn-secondary btn-small"
+        :disabled="offset === 0"
+      >
+        Previous
+      </button>
       <span>Page {{ currentPage }} of {{ totalPages }}</span>
-      <button @click="nextPage" class="btn btn-secondary btn-small" :disabled="offset + limit >= total">Next</button>
+      <button
+        @click="nextPage"
+        class="btn btn-secondary btn-small"
+        :disabled="offset + limit >= total"
+      >
+        Next
+      </button>
     </div>
   </div>
 </template>
 
 <script>
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
 
 export default {
-  name: 'AdminAuditLogs',
+  name: "AdminAuditLogs",
   data() {
     return {
       logs: [],
-      selectedAction: '',
-      selectedStatus: '',
+      selectedAction: "",
+      selectedStatus: "",
       loading: false,
       limit: 20,
       offset: 0,
-      total: 0
-    }
+      total: 0,
+    };
   },
   computed: {
     currentPage() {
-      return Math.floor(this.offset / this.limit) + 1
+      return Math.floor(this.offset / this.limit) + 1;
     },
     totalPages() {
-      return Math.ceil(this.total / this.limit)
+      return Math.ceil(this.total / this.limit);
     },
     filteredLogs() {
-      return this.logs.filter(log => {
-        const actionMatch = !this.selectedAction || log.action_type === this.selectedAction
-        const statusMatch = !this.selectedStatus || log.status === this.selectedStatus
-        return actionMatch && statusMatch
-      })
-    }
+      return this.logs.filter((log) => {
+        const actionMatch =
+          !this.selectedAction || log.action_type === this.selectedAction;
+        const statusMatch =
+          !this.selectedStatus || log.status === this.selectedStatus;
+        return actionMatch && statusMatch;
+      });
+    },
   },
   methods: {
     async fetchLogs() {
-      this.loading = true
+      this.loading = true;
       try {
-        const response = await fetch(`${API_BASE}/api/elections/admin/audit-logs?limit=${this.limit}&offset=${this.offset}`, {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          }
-        })
-        if (!response.ok) throw new Error('Failed to fetch logs')
-        const data = await response.json()
-        this.logs = data.logs
-        this.total = data.total
+        const response = await fetch(
+          `${API_BASE}/api/elections/admin/audit-logs?limit=${this.limit}&offset=${this.offset}`,
+          {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
+          },
+        );
+        if (!response.ok) throw new Error("Failed to fetch logs");
+        const data = await response.json();
+        this.logs = data.logs;
+        this.total = data.total;
       } catch (err) {
-        console.error('Error fetching logs:', err)
+        console.error("Error fetching logs:", err);
       } finally {
-        this.loading = false
+        this.loading = false;
       }
     },
     async verifyIntegrity(logId) {
       try {
-        const response = await fetch(`${API_BASE}/api/elections/admin/verify-audit-integrity/${logId}`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          }
-        })
-        const result = await response.json()
-        
+        const response = await fetch(
+          `${API_BASE}/api/elections/admin/verify-audit-integrity/${logId}`,
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
+          },
+        );
+        const result = await response.json();
+
         if (result.valid) {
-          alert(`✓ Audit log #${logId} integrity verified - Hash matches`)
+          alert(`✓ Audit log #${logId} integrity verified - Hash matches`);
         } else {
-          alert(`✗ Audit log #${logId} integrity check failed - ${result.reason}`)
+          alert(
+            `✗ Audit log #${logId} integrity check failed - ${result.reason}`,
+          );
         }
       } catch (err) {
-        alert('Error verifying integrity: ' + err.message)
+        alert("Error verifying integrity: " + err.message);
       }
     },
     formatDate(dateString) {
-      const date = new Date(dateString)
-      return date.toLocaleString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit'
-      })
+      const date = new Date(dateString);
+      return date.toLocaleString("en-US", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+      });
     },
     formatJson(jsonString) {
       try {
-        return JSON.stringify(JSON.parse(jsonString), null, 2)
+        return JSON.stringify(JSON.parse(jsonString), null, 2);
       } catch {
-        return jsonString
+        return jsonString;
       }
     },
     nextPage() {
-      this.offset += this.limit
-      this.fetchLogs()
+      this.offset += this.limit;
+      this.fetchLogs();
     },
     previousPage() {
       if (this.offset >= this.limit) {
-        this.offset -= this.limit
-        this.fetchLogs()
+        this.offset -= this.limit;
+        this.fetchLogs();
       }
-    }
+    },
   },
   mounted() {
-    this.fetchLogs()
-  }
-}
+    this.fetchLogs();
+  },
+};
 </script>
 
 <style scoped>
@@ -191,8 +235,8 @@ export default {
 
 .audit-logs-section h3 {
   margin-top: 0;
-  color: #2c3e50;
-  border-bottom: 2px solid #667eea;
+  color: var(--text-primary);
+  border-bottom: 2px solid var(--accent);
   padding-bottom: 15px;
 }
 
@@ -211,7 +255,7 @@ export default {
 
 .filter-group label {
   font-weight: 600;
-  color: #2c3e50;
+  color: var(--text-primary);
 }
 
 .filter-group .form-control {
@@ -225,20 +269,20 @@ export default {
 }
 
 .log-entry {
-  background: white;
-  border-left: 4px solid #667eea;
+  background: var(--bg-card);
+  border-left: 4px solid var(--accent);
   padding: 15px;
   border-radius: 6px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow);
 }
 
 .log-entry.status-failed {
-  border-left-color: #dc3545;
-  background-color: #fff5f5;
+  border-left-color: var(--error);
+  background-color: color-mix(in srgb, var(--error) 5%, transparent);
 }
 
 .log-entry.status-success {
-  border-left-color: #2ecc71;
+  border-left-color: var(--success);
 }
 
 .log-header {
@@ -252,13 +296,13 @@ export default {
 
 .log-timestamp {
   font-size: 0.85rem;
-  color: #7f8c8d;
+  color: var(--text-muted);
 }
 
 .log-action {
   font-weight: 600;
-  color: #2c3e50;
-  background-color: #f0f0f0;
+  color: var(--text-primary);
+  background-color: var(--bg-secondary);
   padding: 4px 8px;
   border-radius: 4px;
 }
@@ -271,13 +315,13 @@ export default {
 }
 
 .log-status.success {
-  background-color: #d4edda;
-  color: #155724;
+  background-color: color-mix(in srgb, var(--success) 15%, transparent);
+  color: var(--success);
 }
 
 .log-status.failed {
-  background-color: #f8d7da;
-  color: #721c24;
+  background-color: color-mix(in srgb, var(--error) 15%, transparent);
+  color: var(--error);
 }
 
 .log-details {
@@ -294,29 +338,29 @@ export default {
 
 .detail-row .label {
   font-weight: 600;
-  color: #34495e;
+  color: var(--text-secondary);
   min-width: 100px;
 }
 
 .detail-row .value {
-  color: #2c3e50;
+  color: var(--text-primary);
   flex: 1;
 }
 
 .detail-row .value.error {
-  color: #dc3545;
+  color: var(--error);
 }
 
 .detail-row .value.monospace {
-  font-family: 'Courier New', monospace;
-  background-color: #f5f5f5;
+  font-family: "Courier New", monospace;
+  background-color: var(--bg-secondary);
   padding: 4px 8px;
   border-radius: 4px;
   font-size: 0.9rem;
 }
 
 .detail-row .value.changes {
-  background-color: #f5f5f5;
+  background-color: var(--bg-secondary);
   padding: 10px;
   border-radius: 4px;
   font-size: 0.85rem;
@@ -327,7 +371,7 @@ export default {
 .loading {
   text-align: center;
   padding: 40px;
-  color: #7f8c8d;
+  color: var(--text-muted);
 }
 
 .pagination {
@@ -348,21 +392,21 @@ export default {
 }
 
 .btn-primary {
-  background-color: #667eea;
+  background-color: var(--accent);
   color: white;
 }
 
 .btn-primary:hover {
-  background-color: #5568d3;
+  background-color: color-mix(in srgb, var(--accent) 85%, black);
 }
 
 .btn-secondary {
-  background-color: #e8e8f0;
-  color: #2c3e50;
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
 }
 
 .btn-secondary:hover {
-  background-color: #d8d8e0;
+  background-color: color-mix(in srgb, var(--bg-secondary) 85%, black);
 }
 
 .btn-small {
@@ -378,8 +422,8 @@ export default {
 .alert {
   padding: 15px;
   border-radius: 6px;
-  background-color: #d1ecf1;
-  color: #0c5460;
-  border: 1px solid #bee5eb;
+  background-color: color-mix(in srgb, var(--accent) 10%, transparent);
+  color: var(--accent);
+  border: 1px solid var(--border);
 }
 </style>
