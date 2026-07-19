@@ -115,6 +115,9 @@ tests/
 - `package-lock.json` is gitignored — run `npm install` in each service dir after cloning
 - Express 5 is used in backend/blockchain-node (not 4) — middleware API differs
 - Institution API uses Express 4 (different from backend)
+- Frontend devtools (`vite-plugin-vue-devtools`) is off by default — enable with `VITE_DEVTOOLS=true npm run dev`
+- Theme toggle: NavBar has sun/moon button. Persists to `localStorage('theme')`. Falls back to system `prefers-color-scheme`
+- **Auth separation**: Frontend (5173) sends `loginType: 'voter'` — only voters can log in. Admin panel (5174) sends `loginType: 'admin'` — only admins. Backend rejects role mismatch with 403
 
 ## Forbidden Directories
 

@@ -19,7 +19,6 @@
             ├── pr-automation.yml
         ├── labeler.yml
     └── 📁.opencode
-    └── 📁.vscode
     └── 📁docs
         └── 📁api
             ├── backend.md
@@ -57,6 +56,8 @@
             ├── REPORT_FORMATTING_CHECKLIST.md
             ├── SOURCE_OF_TRUTH.md
             ├── WORD_EXPORT_STEPS.md
+        └── 📁frontend
+            ├── README.md
         └── 📁knowledge
             ├── blockchain.md
             ├── cryptography.md
@@ -139,9 +140,12 @@
     └── 📁services
         └── 📁admin-panel
             └── 📁src
+                └── 📁assets
+                    ├── tokens.css
                 └── 📁components
                     ├── AdminAuditLogs.vue
                     ├── AdminInstituteMembersTab.vue
+                    ├── AdminNavBar.vue
                 └── 📁router
                     ├── index.js
                 └── 📁store
@@ -212,6 +216,7 @@
                 ├── test-rate-limiting.js
                 ├── test-receipt-ui.js
                 ├── test-security.js
+                ├── test-smtp.js
                 ├── test.js
             └── 📁utils
                 ├── adminAuditLogger.js
@@ -254,14 +259,13 @@
                 ├── favicon.ico
                 ├── test-script.js
             └── 📁src
-                └── 📁__tests__
-                    ├── crypto.test.js
                 └── 📁assets
-                    ├── base.css
-                    ├── logo.svg
                     ├── main.css
+                    ├── tokens.css
                 └── 📁components
-                    ├── AdminAuditLogs.vue
+                    ├── AppFooter.vue
+                    ├── AppModal.vue
+                    ├── NavBar.vue
                     ├── VoteReceipt.vue
                 └── 📁router
                     ├── index.js
@@ -271,16 +275,13 @@
                 └── 📁store
                     ├── index.js
                 └── 📁views
-                    ├── AdminDashboard.vue
                     ├── BlockchainExplorer.vue
-                    ├── BlockchainMonitor.vue
                     ├── ElectionDetailView.vue
                     ├── ElectionsView.vue
                     ├── HomeView.vue
                     ├── LoginView.vue
                     ├── RegisterView.vue
                     ├── ResultsView.vue
-                    ├── VoterPickerView.vue
                     ├── VoteView.vue
                 ├── App.vue
                 ├── main.js
