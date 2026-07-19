@@ -66,7 +66,7 @@ class KeyManager {
     try {
       console.log('Loading user keys...')
       
-      const keypairs = await cryptoService.retrieveKeypairs(userId)
+      const keypairs = await cryptoService.retrieveKeypairs((userId || '').toUpperCase())
       
       // Keep keys in memory for this session
       this.currentKeys = keypairs
@@ -191,7 +191,7 @@ class KeyManager {
    * @returns {boolean} True if keys exist
    */
   hasStoredKeys(userId) {
-    return localStorage.getItem(`voting_keys_${userId}`) !== null
+    return localStorage.getItem(`voting_keys_${(userId || '').toUpperCase()}`) !== null
   }
 
   /**
