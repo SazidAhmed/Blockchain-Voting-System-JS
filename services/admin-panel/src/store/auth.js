@@ -1,103 +1,103 @@
-import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
+import { defineStore } from "pinia";
+import { computed, ref } from "vue";
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
 
-export const useAuthStore = defineStore('auth', () => {
+export const useAuthStore = defineStore("auth", () => {
   // State
-  const user = ref(null)
-  const token = ref(localStorage.getItem('token') || null)
-  const loading = ref(false)
-  const error = ref(null)
+  const user = ref(null);
+  const token = ref(localStorage.getItem("token") || null);
+  const loading = ref(false);
+  const error = ref(null);
 
   // Computed
-  const isAuthenticated = computed(() => !!token.value)
-  const isAdmin = computed(() => user.value && user.value.role === 'admin')
-  const currentUser = computed(() => user.value)
+  const isAuthenticated = computed(() => !!token.value);
+  const isAdmin = computed(() => user.value && user.value.role === "admin");
+  const currentUser = computed(() => user.value);
 
   // Actions
   async function login(credentials) {
-    loading.value = true
-    error.value = null
+    loading.value = true;
+    error.value = null;
     try {
       const response = await fetch(`${API_BASE}/api/users/login`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json'
+          "Content-Type": "application/json",
         },
-        body: JSON.stringify(credentials)
-      })
+        body: JSON.stringify({ ...credentials, loginType: "admin" }),
+      });
 
       if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.message || 'Login failed')
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Login failed");
       }
 
-      const data = await response.json()
-      user.value = data.user
-      token.value = data.token
-      
-      // Persist to localStorage
-      localStorage.setItem('token', data.token)
-      localStorage.setItem('user', JSON.stringify(data.user))
+      const data = await response.json();
+      user.value = data.user;
+      token.value = data.token;
 
-      return data
+      // Persist to localStorage
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("user", JSON.stringify(data.user));
+
+      return data;
     } catch (err) {
-      error.value = err.message
-      throw err
+      error.value = err.message;
+      throw err;
     } finally {
-      loading.value = false
+      loading.value = false;
     }
   }
 
   async function fetchCurrentUser() {
-    if (!token.value) return
+    if (!token.value) return;
 
-    loading.value = true
+    loading.value = true;
     try {
       const response = await fetch(`${API_BASE}/api/users/me`, {
         headers: {
-          'Authorization': `Bearer ${token.value}`
-        }
-      })
+          Authorization: `Bearer ${token.value}`,
+        },
+      });
 
-      if (!response.ok) throw new Error('Failed to fetch user')
-      user.value = await response.json()
-      return user.value
+      if (!response.ok) throw new Error("Failed to fetch user");
+      user.value = await response.json();
+      return user.value;
     } catch (err) {
-      error.value = err.message
-      logout()
+      error.value = err.message;
+      logout();
     } finally {
-      loading.value = false
+      loading.value = false;
     }
   }
 
   function logout() {
-    user.value = null
-    token.value = null
-    localStorage.removeItem('token')
-    localStorage.removeItem('user')
-    error.value = null
+    user.value = null;
+    token.value = null;
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    error.value = null;
   }
 
   function clearError() {
-    error.value = null
+    error.value = null;
   }
 
   // Initialize from localStorage
   function initializeAuth() {
-    const storedUser = localStorage.getItem('user')
-    const storedToken = localStorage.getItem('token')
-    
+    const storedUser = localStorage.getItem("user");
+    const storedToken = localStorage.getItem("token");
+
     if (storedToken) {
-      token.value = storedToken
+      token.value = storedToken;
     }
-    
+
     if (storedUser) {
       try {
-        user.value = JSON.parse(storedUser)
+        user.value = JSON.parse(storedUser);
       } catch (e) {
-        console.error('Failed to parse stored user', e)
+        console.error("Failed to parse stored user", e);
       }
     }
   }
@@ -117,6 +117,6 @@ export const useAuthStore = defineStore('auth', () => {
     logout,
     fetchCurrentUser,
     clearError,
-    initializeAuth
-  }
-})
+    initializeAuth,
+  };
+});
