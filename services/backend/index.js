@@ -1,7 +1,6 @@
 const path = require("path");
 require("dotenv").config({ path: path.resolve(__dirname, "../../.env") });
 const express = require("express");
-const bodyParser = require("body-parser");
 const cors = require("cors");
 const helmet = require("helmet");
 const { pool } = require("./config/db");
@@ -65,8 +64,8 @@ const corsOptions = {
 app.use(cors(corsOptions));
 
 // Body Parser with size limits
-app.use(bodyParser.json({ limit: "10mb" }));
-app.use(bodyParser.urlencoded({ extended: true, limit: "10mb" }));
+app.use(express.json({ limit: "10mb" }));
+app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
 // Request timeout middleware (30 seconds)
 app.use((req, res, next) => {

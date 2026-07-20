@@ -1,5 +1,4 @@
 const express = require('express');
-const bodyParser = require('body-parser');
 const cors = require('cors');
 const crypto = require('crypto-js');
 const http = require('http');
@@ -19,7 +18,7 @@ const PORT = process.env.PORT || 3001;
 
 // Create express app
 const app = express();
-app.use(bodyParser.json());
+app.use(express.json());
 app.use(cors());
 
 // Create HTTP server
