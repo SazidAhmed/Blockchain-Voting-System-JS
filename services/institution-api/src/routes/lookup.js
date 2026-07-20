@@ -1,5 +1,6 @@
 const { Router } = require('express');
 const { getPool } = require('../config/database');
+const { apiKeyAuth } = require('../middleware/auth');
 
 const router = Router();
 
@@ -15,7 +16,7 @@ router.get('/api/lookup/:institutionId', async (req, res) => {
   } catch (e) { res.status(500).json({ message: e.message }); }
 });
 
-router.get('/api/search', async (req, res) => {
+router.get('/api/search', apiKeyAuth, async (req, res) => {
   try {
     const q = (req.query.q || '').trim();
     if (q.length < 2) return res.status(400).json({ message: 'Query must be at least 2 characters' });
