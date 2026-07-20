@@ -1,5 +1,8 @@
 const Block = require('./block');
 const crypto = require('crypto-js');
+const EC = require('elliptic').ec;
+const ec = new EC('p256');
+const nodeCrypto = require('crypto');
 const level = require('levelup');
 const leveldown = require('leveldown');
 
@@ -186,43 +189,36 @@ class Blockchain {
         return false;
     }
 
-    // Verify transaction signature
+    // Verify transaction signature using ECDSA P-256
     verifyTransactionSignature(transaction) {
-        // In a real implementation, this would verify cryptographic signatures
-        // For now, we'll simulate it
-        if (!transaction.signature) {
+        if (!transaction.signature || !transaction.publicKey) {
             return false;
         }
-        
-        // Simple simulation of signature verification
-        const txHash = crypto.SHA256(
-            transaction.fromAddress + 
-            transaction.toAddress + 
-            transaction.amount
-        ).toString();
-        
-        // In reality, we would verify the signature using the sender's public key
-        return true; // Simplified for development
+        try {
+            const key = ec.keyFromPublic(transaction.publicKey, 'hex');
+            const hash = nodeCrypto.createHash('sha256')
+                .update(transaction.fromAddress + transaction.toAddress + transaction.amount + transaction.timestamp)
+                .digest();
+            return key.verify(hash, Buffer.from(transaction.signature, 'hex'));
+        } catch (e) {
+            return false;
+        }
     }
 
-    // Verify vote signature
+    // Verify vote signature using ECDSA P-256
     verifyVoteSignature(vote) {
-        // In a real implementation, this would verify cryptographic signatures
-        // For now, we'll simulate it
-        if (!vote.signature) {
+        if (!vote.signature || !vote.publicKey) {
             return false;
         }
-        
-        // Simple simulation of signature verification
-        const voteHash = crypto.SHA256(
-            vote.voterId + 
-            vote.electionId + 
-            vote.encryptedBallot +
-            vote.nullifier
-        ).toString();
-        
-        // In reality, we would verify the signature using the voter's public key
-        return true; // Simplified for development
+        try {
+            const key = ec.keyFromPublic(vote.publicKey, 'hex');
+            const hash = nodeCrypto.createHash('sha256')
+                .update(vote.voterId + vote.electionId + vote.encryptedBallot + vote.nullifier)
+                .digest();
+            return key.verify(hash, Buffer.from(vote.signature, 'hex'));
+        } catch (e) {
+            return false;
+        }
     }
 
     // Validate the chain
