@@ -363,7 +363,33 @@ class CryptoService {
    */
   async storeKeypairs(keypairs, password, userId) {
     try {
-      // Export keys
+      if (!password) {
+        throw new Error('Password required to encrypt keys for storage')
+      }
+
+      const encoded = new TextEncoder()
+      const keyMaterial = await crypto.subtle.importKey(
+        'raw',
+        encoded.encode(password),
+        'PBKDF2',
+        false,
+        ['deriveKey']
+      )
+
+      const salt = encoded.encode(`voting_keys_${userId}`)
+      const aesKey = await crypto.subtle.deriveKey(
+        {
+          name: 'PBKDF2',
+          salt,
+          iterations: 100000,
+          hash: 'SHA-256'
+        },
+        keyMaterial,
+        { name: 'AES-GCM', length: 256 },
+        false,
+        ['encrypt', 'decrypt']
+      )
+
       const exported = {
         signing: {
           publicKey: await this.exportPublicKey(keypairs.signing.publicKey),
@@ -374,14 +400,16 @@ class CryptoService {
           privateKey: await this.exportPrivateKey(keypairs.encryption.privateKey)
         }
       }
-      
-      // In production, encrypt with password-derived key
-      // For now, storing as JSON (DEMO ONLY)
-      const keyData = JSON.stringify(exported)
-      localStorage.setItem(`voting_keys_${userId}`, keyData)
-      
-      console.warn('Keys stored in localStorage (DEMO ONLY - not secure for production)')
-      
+
+      const iv = crypto.getRandomValues(new Uint8Array(12))
+      const payload = encoded.encode(JSON.stringify(exported))
+      const encrypted = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, aesKey, payload)
+      const combined = new Uint8Array(iv.length + encrypted.byteLength)
+      combined.set(iv, 0)
+      combined.set(new Uint8Array(encrypted), iv.length)
+
+      localStorage.setItem(`voting_keys_${userId}`, btoa(String.fromCharCode(...combined)))
+
       return true
     } catch (error) {
       console.error('Failed to store keypairs:', error)
@@ -395,14 +423,50 @@ class CryptoService {
    * @param {string} userId - User identifier
    * @returns {Promise<Object>} Keypairs object
    */
-  async retrieveKeypairs(userId) {
+  async retrieveKeypairs(userId, password) {
     try {
       const keyData = localStorage.getItem(`voting_keys_${userId}`)
       if (!keyData) {
         throw new Error('No keys found for user')
       }
-      
-      const exported = JSON.parse(keyData)
+
+      if (!password) {
+        throw new Error('Password required to decrypt keys')
+      }
+
+      const encoded = new TextEncoder()
+      const keyMaterial = await crypto.subtle.importKey(
+        'raw',
+        encoded.encode(password),
+        'PBKDF2',
+        false,
+        ['deriveKey']
+      )
+
+      const salt = encoded.encode(`voting_keys_${userId}`)
+      const aesKey = await crypto.subtle.deriveKey(
+        {
+          name: 'PBKDF2',
+          salt,
+          iterations: 100000,
+          hash: 'SHA-256'
+        },
+        keyMaterial,
+        { name: 'AES-GCM', length: 256 },
+        false,
+        ['encrypt', 'decrypt']
+      )
+
+      const binary = atob(keyData)
+      const bytes = new Uint8Array(binary.length)
+      for (let i = 0; i < binary.length; i++) {
+        bytes[i] = binary.charCodeAt(i)
+      }
+
+      const iv = bytes.slice(0, 12)
+      const encrypted = bytes.slice(12)
+      const decrypted = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, aesKey, encrypted)
+      const exported = JSON.parse(new TextDecoder().decode(decrypted))
       
       // Re-import keys
       const keypairs = {
