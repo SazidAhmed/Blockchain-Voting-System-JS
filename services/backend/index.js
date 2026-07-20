@@ -1,5 +1,17 @@
 const path = require("path");
 require("dotenv").config({ path: path.resolve(__dirname, "../../.env") });
+
+if (
+  process.env.NODE_ENV === "production" &&
+  process.env.JWT_SECRET ===
+    "your-super-secret-jwt-key-change-in-production-minimum-32-chars"
+) {
+  console.error(
+    "CRITICAL: Default JWT_SECRET detected. Generate a random secret and update .env",
+  );
+  process.exit(1);
+}
+
 const express = require("express");
 const cors = require("cors");
 const helmet = require("helmet");
