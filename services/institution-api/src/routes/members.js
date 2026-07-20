@@ -1,9 +1,10 @@
 const { Router } = require('express');
 const { getPool } = require('../config/database');
+const { apiKeyAuth } = require('../middleware/auth');
 
 const router = Router();
 
-router.patch('/api/members/:institutionId/voter', async (req, res) => {
+router.patch('/api/members/:institutionId/voter', apiKeyAuth, async (req, res) => {
   try {
     const id = req.params.institutionId.toUpperCase();
     const isVoter = req.body.is_voter !== false;
@@ -16,7 +17,7 @@ router.patch('/api/members/:institutionId/voter', async (req, res) => {
   } catch (e) { res.status(500).json({ message: e.message }); }
 });
 
-router.post('/api/members', async (req, res) => {
+router.post('/api/members', apiKeyAuth, async (req, res) => {
   try {
     const { institution_id, full_name, email, role, department, year_level } = req.body;
     if (!institution_id || !full_name || !email || !role || !department) {
@@ -36,7 +37,7 @@ router.post('/api/members', async (req, res) => {
   } catch (e) { res.status(500).json({ message: e.message }); }
 });
 
-router.put('/api/members/:institutionId', async (req, res) => {
+router.put('/api/members/:institutionId', apiKeyAuth, async (req, res) => {
   try {
     const id = req.params.institutionId.toUpperCase();
     const { full_name, email, role, department, year_level } = req.body;
@@ -56,7 +57,7 @@ router.put('/api/members/:institutionId', async (req, res) => {
   } catch (e) { res.status(500).json({ message: e.message }); }
 });
 
-router.delete('/api/members/:institutionId', async (req, res) => {
+router.delete('/api/members/:institutionId', apiKeyAuth, async (req, res) => {
   try {
     const id = req.params.institutionId.toUpperCase();
     const [[row]] = await getPool().query('SELECT is_voter FROM institution_members WHERE institution_id = ?', [id]);
