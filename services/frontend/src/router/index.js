@@ -55,6 +55,11 @@ const router = createRouter({
       path: '/explorer',
       name: 'explorer',
       component: BlockchainExplorer
+    },
+    {
+      path: '/:pathMatch(.*)*',
+      name: 'not-found',
+      component: () => import('../views/NotFoundView.vue')
     }
   ]
 })

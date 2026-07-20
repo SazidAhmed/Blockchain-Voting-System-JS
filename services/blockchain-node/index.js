@@ -814,6 +814,26 @@ app.get('/security/report', (req, res) => {
     res.json(securityMonitor.generateSecurityReport());
 });
 
+// 404 handler
+app.use((req, res) => {
+    res.status(404).json({
+        error: "Not Found",
+        message: `${req.method} ${req.originalUrl} does not exist`,
+        status: 404,
+        availableEndpoints: [
+            "GET /",
+            "GET /chain",
+            "GET /node",
+            "GET /peers",
+            "GET /mine",
+            "POST /vote",
+            "POST /transactions",
+            "GET /transactions/pending",
+            "GET /elections/:electionId/results",
+        ],
+    });
+});
+
 // Start the server
 server.listen(PORT, () => {
     console.log(`
