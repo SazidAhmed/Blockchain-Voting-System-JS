@@ -235,11 +235,11 @@ List all elections, ordered by created_at descending.
 
 ### `GET /api/elections/:id`
 
-Get a single election with candidates and vote tally.
+Get a single election with candidates and vote tally. Results are encrypted until released.
 
 **Auth:** none
 
-**Response 200:**
+**Response 200 (results not released):**
 
 ```json
 {
@@ -252,9 +252,25 @@ Get a single election with candidates and vote tally.
   "public_key": "...",
   "created_at": "2026-07-15T12:00:00.000Z",
   "candidates": [
+    { "id": 1, "name": "Alice", "description": "...", "votes_count": null }
+  ],
+  "totalVotes": null,
+  "encryptedTally": "base64-aes-256-gcm-ciphertext",
+  "resultsReleased": false
+}
+```
+
+**Response 200 (results released):**
+
+```json
+{
+  "id": 1,
+  "title": "Student Union President",
+  "candidates": [
     { "id": 1, "name": "Alice", "description": "...", "votes_count": 42 }
   ],
-  "totalVotes": 100
+  "totalVotes": 100,
+  "resultsReleased": true
 }
 ```
 
@@ -336,6 +352,25 @@ Delete an election and all related data. Cannot delete an active election that h
 
 **Auth:** adminAuth
 
+### `POST /api/elections/:id/release`
+
+Release election results — makes plaintext vote tallies publicly visible. Once released, the `encryptedTally` field is replaced with actual `votes_count` values. Cannot release results that are already released.
+
+**Auth:** adminAuth
+
+**Response 200:**
+
+```json
+{
+  "message": "Results released successfully",
+  "resultsReleased": true
+}
+```
+
+**Response 400:** `{ "message": "Results already released" }`
+
+**Response 404:** `{ "message": "Election not found" }`
+
 ### `POST /api/elections/:id/register`
 
 Register the authenticated user for an election.
@@ -376,7 +411,7 @@ Remove a candidate. Fails if election is locked or active.
 
 ### `GET /api/elections/admin/all`
 
-Get all elections with statistics (candidates count, registrations, votes, per-candidate tallies).
+Get all elections with statistics (candidates count, registrations, votes, per-candidate tallies). Results are encrypted per-election based on `results_released` status — each election includes `encryptedTally` (base64 AES-256-GCM) or plaintext `votes_count` accordingly.
 
 **Auth:** adminAuth
 

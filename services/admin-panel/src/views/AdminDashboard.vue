@@ -366,6 +366,26 @@
               </div>
 
               <div v-if="selectedResultsElectionId" class="results-section">
+                <div
+                  v-if="
+                    selectedResultsElectionId &&
+                    selectedResultsElection &&
+                    !selectedResultsElection.resultsReleased
+                  "
+                  class="release-bar"
+                >
+                  <button
+                    @click="releaseResults"
+                    class="btn btn-warning"
+                    :disabled="releasing"
+                  >
+                    {{ releasing ? "Releasing..." : "Release Results" }}
+                  </button>
+                  <p class="release-note">
+                    Results are currently encrypted. Click to make them public.
+                  </p>
+                </div>
+
                 <div v-if="!selectedResultsElection" class="loading">
                   Loading results...
                 </div>
@@ -770,6 +790,30 @@ export default {
       await router.push("/login");
     };
 
+    const releasing = ref(false);
+
+    const releaseResults = async () => {
+      if (!selectedResultsElectionId.value) return;
+      releasing.value = true;
+      try {
+        const API_BASE =
+          import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
+        const response = await fetch(
+          `${API_BASE}/api/elections/${selectedResultsElectionId.value}/release`,
+          {
+            method: "POST",
+            headers: { Authorization: `Bearer ${authStore.token}` },
+          },
+        );
+        if (!response.ok) throw new Error("Failed to release results");
+        await electionsStore.fetchElections();
+      } catch (err) {
+        alert(err.message);
+      } finally {
+        releasing.value = false;
+      }
+    };
+
     // Lifecycle
     onMounted(async () => {
       if (!authStore.token) {
@@ -809,6 +853,7 @@ export default {
       selectedResultsElection,
       showActivateModal,
       pendingActivateElection,
+      releasing,
       getCurrentTabLabel,
       hasElectionStarted,
       createElectionHandler,
@@ -823,6 +868,7 @@ export default {
       resetForm,
       formatDate,
       logout,
+      releaseResults,
     };
   },
 };
@@ -1424,6 +1470,22 @@ export default {
   font-weight: 700;
   color: var(--accent);
   font-size: 0.95rem;
+}
+
+.release-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+  padding: 16px;
+  background: color-mix(in srgb, var(--warning) 10%, transparent);
+  border-radius: var(--radius-md);
+  border-left: 4px solid var(--warning);
+}
+.release-note {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  margin: 0;
 }
 
 .add-candidate-form {

@@ -75,30 +75,46 @@
         </div>
 
         <div v-else class="chart">
-          <div
-            v-for="(candidate, idx) in sortedCandidates"
-            :key="candidate.id"
-            class="result-row"
-          >
-            <div class="row-header">
-              <span
-                class="rank"
-                :class="[
-                  'rank-' + (idx < 3 ? ['gold', 'silver', 'bronze'][idx] : ''),
-                ]"
-                >{{ idx + 1 }}</span
-              >
-              <span class="cname">{{ candidate.name }}</span>
-              <span class="vcount">{{ candidate.votes_count || 0 }} votes</span>
-            </div>
-            <div class="bar-track">
-              <div
-                class="bar-fill"
-                :style="{ width: pct(candidate) + '%' }"
-              ></div>
-            </div>
-            <div class="bar-pct">{{ pct(candidate) }}%</div>
+          <div v-if="!current.resultsReleased" class="pending-results">
+            <PhLock :size="48" color="var(--text-muted)" />
+            <h3>Results Not Yet Released</h3>
+            <p>
+              Results will be available after voting ends or the admin releases
+              them.
+            </p>
           </div>
+
+          <template
+            v-else-if="current.candidates && current.candidates.length > 0"
+          >
+            <div
+              v-for="(candidate, idx) in sortedCandidates"
+              :key="candidate.id"
+              class="result-row"
+            >
+              <div class="row-header">
+                <span
+                  class="rank"
+                  :class="[
+                    'rank-' +
+                      (idx < 3 ? ['gold', 'silver', 'bronze'][idx] : ''),
+                  ]"
+                  >{{ idx + 1 }}</span
+                >
+                <span class="cname">{{ candidate.name }}</span>
+                <span class="vcount"
+                  >{{ candidate.votes_count || 0 }} votes</span
+                >
+              </div>
+              <div class="bar-track">
+                <div
+                  class="bar-fill"
+                  :style="{ width: pct(candidate) + '%' }"
+                ></div>
+              </div>
+              <div class="bar-pct">{{ pct(candidate) }}%</div>
+            </div>
+          </template>
         </div>
       </div>
 
@@ -115,13 +131,14 @@ import {
   PhCheckSquare,
   PhUsers,
   PhCalendarCheck,
+  PhLock,
 } from "@phosphor-icons/vue";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
 
 export default {
   name: "ResultsView",
-  components: { PhChartBar, PhCheckSquare, PhUsers, PhCalendarCheck },
+  components: { PhChartBar, PhCheckSquare, PhUsers, PhCalendarCheck, PhLock },
   data() {
     return {
       elections: [],
@@ -129,6 +146,7 @@ export default {
       current: null,
       loading: true,
       detailLoading: false,
+      resultsReleased: false,
     };
   },
   computed: {
@@ -174,6 +192,7 @@ export default {
       if (!this.selectedId) return;
       this.detailLoading = true;
       this.current = null;
+      this.resultsReleased = false;
       try {
         const token = localStorage.getItem("token");
         const res = await fetch(
@@ -184,6 +203,7 @@ export default {
         );
         if (!res.ok) throw new Error("Failed to load election");
         this.current = await res.json();
+        this.resultsReleased = this.current.resultsReleased;
       } catch (e) {
         console.error(e);
       } finally {
@@ -378,5 +398,22 @@ export default {
   color: var(--text-muted);
   text-align: right;
   margin-top: 2px;
+}
+
+.pending-results {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-12);
+  text-align: center;
+  color: var(--text-muted);
+}
+.pending-results h3 {
+  color: var(--text-primary);
+  margin: 0;
+}
+.pending-results p {
+  margin: 0;
 }
 </style>

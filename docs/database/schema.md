@@ -45,25 +45,28 @@ Registered voters and administrators.
 
 Election configurations and threshold encryption parameters.
 
-| Column               | Type         | Constraints                 | Description                                     |
-| -------------------- | ------------ | --------------------------- | ----------------------------------------------- |
-| `id`                 | INT          | PK, AUTO_INCREMENT          |                                                 |
-| `title`              | VARCHAR(255) | NOT NULL                    |                                                 |
-| `description`        | TEXT         |                             |                                                 |
-| `start_date`         | DATETIME     | NOT NULL                    | Voting window start                             |
-| `end_date`           | DATETIME     | NOT NULL                    | Voting window end                               |
-| `status`             | ENUM         | DEFAULT 'pending'           | pending, active, completed, cancelled, tallying |
-| `public_key`         | TEXT         | NOT NULL                    | Threshold encryption public key (ElGamal)       |
-| `threshold_params`   | JSON         |                             | {t, n, shares}                                  |
-| `eligible_roles`     | JSON         |                             | Array of allowed roles                          |
-| `created_by`         | INT          | FK → users.id, NOT NULL     | Admin who created                               |
-| `created_at`         | TIMESTAMP    | DEFAULT CURRENT_TIMESTAMP   |                                                 |
-| `updated_at`         | TIMESTAMP    | ON UPDATE CURRENT_TIMESTAMP |                                                 |
-| `tally_completed_at` | TIMESTAMP    | NULL                        |                                                 |
-| `results_hash`       | VARCHAR(64)  |                             | SHA-256 of final tally                          |
-| `is_locked`          | BOOLEAN      | DEFAULT FALSE               | Locked for editing                              |
-| `locked_at`          | TIMESTAMP    | NULL                        |                                                 |
-| `locked_by`          | INT          | FK → users.id, NULL         |                                                 |
+| Column                | Type         | Constraints                 | Description                                     |
+| --------------------- | ------------ | --------------------------- | ----------------------------------------------- |
+| `id`                  | INT          | PK, AUTO_INCREMENT          |                                                 |
+| `title`               | VARCHAR(255) | NOT NULL                    |                                                 |
+| `description`         | TEXT         |                             |                                                 |
+| `start_date`          | DATETIME     | NOT NULL                    | Voting window start                             |
+| `end_date`            | DATETIME     | NOT NULL                    | Voting window end                               |
+| `status`              | ENUM         | DEFAULT 'pending'           | pending, active, completed, cancelled, tallying |
+| `public_key`          | TEXT         | NOT NULL                    | Threshold encryption public key (ElGamal)       |
+| `threshold_params`    | JSON         |                             | {t, n, shares}                                  |
+| `eligible_roles`      | JSON         |                             | Array of allowed roles                          |
+| `created_by`          | INT          | FK → users.id, NOT NULL     | Admin who created                               |
+| `created_at`          | TIMESTAMP    | DEFAULT CURRENT_TIMESTAMP   |                                                 |
+| `updated_at`          | TIMESTAMP    | ON UPDATE CURRENT_TIMESTAMP |                                                 |
+| `tally_completed_at`  | TIMESTAMP    | NULL                        |                                                 |
+| `results_hash`        | VARCHAR(64)  |                             | SHA-256 of final tally                          |
+| `is_locked`           | BOOLEAN      | DEFAULT FALSE               | Locked for editing                              |
+| `locked_at`           | TIMESTAMP    | NULL                        |                                                 |
+| `locked_by`           | INT          | FK → users.id, NULL         |                                                 |
+| `tally_key`           | VARCHAR(64)  | NULL                        | AES-256-GCM key for encrypting vote tallies     |
+| `results_released`    | BOOLEAN      | DEFAULT FALSE               | Whether plaintext results are publicly visible  |
+| `results_released_at` | TIMESTAMP    | NULL                        | When results were released                      |
 
 **Indexes:** `status`, `(start_date, end_date)`, `created_by`
 
@@ -375,10 +378,11 @@ votes_meta ──< tally_partial_decryptions (vote_meta_id, CASCADE)
 
 ## Migrations
 
-| Migration | File                                                    | Changes                                                                                                     |
-| --------- | ------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| 001       | `services/backend/migrations/001_initial_schema.sql`    | All 13 tables, 3 views, default config, schema_migrations tracking                                          |
-| 002       | `services/backend/migrations/002_add_crypto_fields.sql` | Adds `encryption_public_key` to users, `signature` and `voter_public_key` to votes_meta, index on signature |
+| Migration | File                                                       | Changes                                                                                                     |
+| --------- | ---------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| 001       | `services/backend/migrations/001_initial_schema.sql`       | All 13 tables, 3 views, default config, schema_migrations tracking                                          |
+| 002       | `services/backend/migrations/002_add_crypto_fields.sql`    | Adds `encryption_public_key` to users, `signature` and `voter_public_key` to votes_meta, index on signature |
+| 003       | `services/backend/migrations/003_add_tally_encryption.sql` | Adds `tally_key`, `results_released`, `results_released_at` to elections for encrypted result tallying      |
 
 ## See Also
 

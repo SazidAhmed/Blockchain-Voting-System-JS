@@ -6,6 +6,7 @@ const { auth, adminAuth } = require('../middleware/auth');
 const { voteLimiter } = require('../middleware/rateLimiter');
 const { validateVote, validateElectionId, validateCreateElection } = require('../middleware/validation');
 const { generateToken, generateNullifier, encryptBallot, signData, verifyECDSASignature } = require('../utils/crypto');
+const { encryptTally } = require('../utils/tallyEncryption');
 const auditLogger = require('../utils/auditLogger');
 const AdminAuditLogger = require('../utils/adminAuditLogger');
 const axios = require('axios');
@@ -57,11 +58,12 @@ router.post('/', adminAuth, async (req, res) => {
 
     // Generate a public key for the election
     const electionPublicKey = crypto.randomBytes(32).toString('hex');
+    const tallyKey = crypto.randomBytes(32).toString('hex');
 
     // Insert election into database
     const [result] = await pool.query(
-      'INSERT INTO elections (title, description, start_date, end_date, status, created_by, public_key, is_locked) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-      [title, description, startDate, endDate, 'pending', adminId, electionPublicKey, false]
+      'INSERT INTO elections (title, description, start_date, end_date, status, created_by, public_key, tally_key, is_locked) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      [title, description, startDate, endDate, 'pending', adminId, electionPublicKey, tallyKey, false]
     );
 
     const electionId = result.insertId;
@@ -120,7 +122,8 @@ router.post('/', adminAuth, async (req, res) => {
       title,
       startDate,
       endDate,
-      publicKey: electionPublicKey
+      publicKey: electionPublicKey,
+      tallyKey
     });
   } catch (err) {
     console.error(err);
@@ -165,9 +168,15 @@ router.get('/:id', validateElectionId, async (req, res) => {
 
     const election = elections[0];
 
-    // Get candidates with vote tally
+    // Get candidates
     const [candidates] = await pool.query(
       'SELECT id, name, description FROM candidates WHERE election_id = ?',
+      [req.params.id]
+    );
+
+    // Check if results are released
+    const [[electionMeta]] = await pool.query(
+      'SELECT results_released, tally_key FROM elections WHERE id = ?',
       [req.params.id]
     );
 
@@ -184,14 +193,33 @@ router.get('/:id', validateElectionId, async (req, res) => {
         if (cid) tally[cid] = (tally[cid] || 0) + 1;
       } catch (_) { /* skip unreadable ballots */ }
     }
-    const candidatesWithVotes = candidates.map(c => ({ ...c, votes_count: tally[c.id] || 0 }));
-    const totalVotes = Object.values(tally).reduce((s, n) => s + n, 0);
 
-    res.json({
-      ...election,
-      candidates: candidatesWithVotes,
-      totalVotes,
-    });
+    if (electionMeta && electionMeta.results_released) {
+      // Results released — return plaintext tally
+      const candidatesWithVotes = candidates.map(c => ({ ...c, votes_count: tally[c.id] || 0 }));
+      const totalVotes = Object.values(tally).reduce((s, n) => s + n, 0);
+
+      res.json({
+        ...election,
+        candidates: candidatesWithVotes,
+        totalVotes,
+        resultsReleased: true,
+      });
+    } else {
+      // Results not released — return encrypted tally
+      let encryptedTally = null;
+      if (electionMeta && electionMeta.tally_key) {
+        encryptedTally = encryptTally(tally, electionMeta.tally_key);
+      }
+
+      res.json({
+        ...election,
+        candidates: candidates.map(c => ({ ...c, votes_count: null })),
+        totalVotes: null,
+        encryptedTally,
+        resultsReleased: false,
+      });
+    }
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'Server error' });
@@ -708,7 +736,18 @@ router.get('/admin/all', adminAuth, async (req, res) => {
         } catch (_) { /* skip unreadable ballots */ }
       }
 
-      election.candidates = candidates.map(c => ({ ...c, votes_count: tally[c.id] || 0 }));
+      if (election.results_released) {
+        // Plaintext tally
+        election.candidates = candidates.map(c => ({ ...c, votes_count: tally[c.id] || 0 }));
+        election.resultsReleased = true;
+      } else {
+        // Encrypted tally
+        if (election.tally_key) {
+          election.encryptedTally = encryptTally(tally, election.tally_key);
+        }
+        election.candidates = candidates.map(c => ({ ...c, votes_count: null }));
+        election.resultsReleased = false;
+      }
     }
 
     res.json(elections);
@@ -1043,6 +1082,41 @@ router.delete('/:id', adminAuth, async (req, res) => {
     await pool.query('DELETE FROM elections WHERE id = ?', [electionId]);
 
     res.json({ message: 'Election deleted successfully' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// @route   POST /api/elections/:id/release
+// @desc    Release election results (decrypt tally)
+// @access  Admin only
+router.post('/:id/release', adminAuth, async (req, res) => {
+  try {
+    const electionId = req.params.id;
+
+    const [elections] = await pool.query(
+      'SELECT id, results_released FROM elections WHERE id = ?',
+      [electionId],
+    );
+
+    if (elections.length === 0) {
+      return res.status(404).json({ message: 'Election not found' });
+    }
+
+    if (elections[0].results_released) {
+      return res.status(400).json({ message: 'Results already released' });
+    }
+
+    await pool.query(
+      'UPDATE elections SET results_released = TRUE, results_released_at = NOW() WHERE id = ?',
+      [electionId],
+    );
+
+    res.json({
+      message: 'Results released successfully',
+      resultsReleased: true,
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'Server error' });

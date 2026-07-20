@@ -17,6 +17,21 @@ app.use(membersRoute);
 app.use(lookupRoute);
 app.use(voterPickerRoute);
 
+// 404 handler
+app.use((req, res) => {
+    res.status(404).json({
+        error: "Not Found",
+        message: `${req.method} ${req.originalUrl} does not exist`,
+        status: 404,
+        availableEndpoints: [
+            "GET /health",
+            "GET /members",
+            "GET /lookup",
+            "GET /voter-picker",
+        ],
+    });
+});
+
 app.use(errorHandler);
 
 module.exports = app;
