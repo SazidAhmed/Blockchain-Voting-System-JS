@@ -122,8 +122,7 @@ router.post('/', adminAuth, async (req, res) => {
       title,
       startDate,
       endDate,
-      publicKey: electionPublicKey,
-      tallyKey
+      publicKey: electionPublicKey
     });
   } catch (err) {
     console.error(err);
