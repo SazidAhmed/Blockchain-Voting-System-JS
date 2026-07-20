@@ -164,48 +164,6 @@ function verifyECDSASignature(publicKeyBase64, signatureBase64, data) {
   }
 }
 
-/**
- * Alternative ECDSA verification using DER format
- * This is compatible with Web Crypto API ECDSA signatures
- */
-function verifyECDSASignatureSimple(publicKeyBase64, signatureBase64, data) {
-  try {
-    // For now, we'll use a simplified verification
-    // In production, you'd want to use a proper crypto library like node-jose or elliptic
-    
-    // The public key might be in SPKI format (base64) or JWK format (base64-encoded JSON)
-    // For development mode, we'll just validate the signature format
-    
-    // Create data hash
-    const dataStr = typeof data === 'object' ? JSON.stringify(data) : String(data);
-    const dataHash = crypto.createHash('sha256').update(dataStr).digest();
-    
-    // Validate signature format
-    const signatureBuffer = Buffer.from(signatureBase64, 'base64');
-    
-    // Basic validation: P-256 signatures are typically 64-72 bytes
-    if (signatureBuffer.length < 64 || signatureBuffer.length > 72) {
-      console.warn('Invalid signature length:', signatureBuffer.length);
-      return false;
-    }
-    
-    // Validate public key is valid base64
-    const publicKeyBuffer = Buffer.from(publicKeyBase64, 'base64');
-    if (publicKeyBuffer.length < 50) {
-      console.warn('Invalid public key length:', publicKeyBuffer.length);
-      return false;
-    }
-    
-    // For development, accept signatures with valid format
-    // TODO: Implement full ECDSA verification in production
-    console.log('⚠️  Using simplified signature verification (development mode)');
-    return true;
-  } catch (error) {
-    console.error('Error verifying ECDSA signature:', error);
-    return false;
-  }
-}
-
 module.exports = {
   generateToken,
   hashPassword,
@@ -215,6 +173,5 @@ module.exports = {
   encryptBallot,
   signData,
   verifySignature,
-  verifyECDSASignature,
-  verifyECDSASignatureSimple
+  verifyECDSASignature
 };
