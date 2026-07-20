@@ -10,6 +10,7 @@ const { PeerManager, MessageTypes } = require('./src/network/peerManager');
 const NodeMonitor = require('./src/monitoring/nodeMonitor');
 const PrometheusMetrics = require('./src/monitoring/prometheusMetrics');
 const SecurityMonitor = require('./src/security/securityMonitor');
+const { apiKeyAuth } = require('./middleware/auth');
 
 // Get node ID from environment or use default
 const nodeId = process.env.NODE_ID || 'node1';
@@ -19,7 +20,9 @@ const PORT = process.env.PORT || 3001;
 // Create express app
 const app = express();
 app.use(express.json());
-app.use(cors());
+app.use(cors({
+  origin: process.env.BACKEND_URL || "http://localhost:3000",
+}));
 
 // Create HTTP server
 const server = http.createServer(app);
@@ -27,8 +30,8 @@ const server = http.createServer(app);
 // Initialize Socket.io for P2P communication
 const io = socketIo(server, {
     cors: {
-        origin: "*",
-        methods: ["GET", "POST"]
+        origin: process.env.PEERS ? process.env.PEERS.split(',') : [],
+        methods: ['GET', 'POST']
     }
 });
 
@@ -374,7 +377,7 @@ app.get('/metrics/json', (req, res) => {
 });
 
 // Register a new node
-app.post('/nodes/register', (req, res) => {
+app.post('/nodes/register', apiKeyAuth, (req, res) => {
     const nodes = req.body.nodes;
     
     if (!nodes || nodes.length === 0) {
@@ -392,7 +395,7 @@ app.post('/nodes/register', (req, res) => {
 });
 
 // Register a new validator
-app.post('/validators/register', (req, res) => {
+app.post('/validators/register', apiKeyAuth, (req, res) => {
     const { validatorId, publicKey } = req.body;
     
     if (!validatorId || !publicKey) {
@@ -408,7 +411,7 @@ app.post('/validators/register', (req, res) => {
 });
 
 // Create a new transaction
-app.post('/transactions/new', (req, res) => {
+app.post('/transactions/new', apiKeyAuth, (req, res) => {
     const transaction = req.body;
     
     try {
@@ -430,7 +433,7 @@ app.post('/transactions/new', (req, res) => {
 });
 
 // Submit a vote
-app.post('/vote', (req, res) => {
+app.post('/vote', apiKeyAuth, (req, res) => {
     const vote = req.body;
     
     try {
@@ -468,7 +471,7 @@ app.post('/vote', (req, res) => {
 });
 
 // Mine a new block
-app.get('/mine', (req, res) => {
+app.get('/mine', apiKeyAuth, (req, res) => {
     const { block: newBlock, pendingSnapshot } = blockchain.createBlock(nodeId);
     newBlock.signBlock(nodeKeyPair.privateKey);
     

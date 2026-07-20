@@ -63,6 +63,7 @@ services:
       PORT: 3001
       NODE_ENV: ${NODE_ENV:-development}
       PEERS: http://blockchain-node-2:3002,http://blockchain-node-3:3003,http://blockchain-node-4:3004
+      BLOCKCHAIN_API_KEY: ${BLOCKCHAIN_API_KEY:-dev-blockchain-key-change-in-prod}
     ports:
       - "3001:3001"
     volumes:
@@ -208,6 +209,7 @@ services:
       DB_NAME: ${MYSQL_DATABASE:-voting_db}
       JWT_SECRET: ${JWT_SECRET:-your-super-secret-jwt-key-change-in-production}
       BLOCKCHAIN_NODE_URL: http://blockchain-node:3001
+      BLOCKCHAIN_API_KEY: ${BLOCKCHAIN_API_KEY:-dev-blockchain-key-change-in-prod}
       FRONTEND_URL: http://localhost:5173
       INSTITUTION_API_URL: http://institution-api:4000
     env_file: ../../.env
