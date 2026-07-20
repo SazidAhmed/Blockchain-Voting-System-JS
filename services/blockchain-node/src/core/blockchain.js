@@ -117,12 +117,6 @@ class Blockchain {
         this.pendingTransactions = this.pendingTransactions.filter(tx => !pendingSnapshot.includes(tx));
     }
 
-    // Rollback pending transactions on failed block
-    rollbackPendingTransactions(pendingSnapshot) {
-        // pendingSnapshot is already in the array since we cleared after addBlock
-        // No-op — they were never removed
-    }
-
     // Add a new transaction to pending transactions
     addTransaction(transaction) {
         // Validate transaction
@@ -289,26 +283,6 @@ class Blockchain {
     // Register a peer node
     registerNode(address) {
         this.nodes.add(address);
-    }
-
-    // Consensus algorithm - resolve conflicts between nodes
-    // In a real BFT implementation, this would be more complex
-    async resolveConflicts() {
-        const neighbors = Array.from(this.nodes);
-        let newChain = null;
-        let maxLength = this.chain.length;
-        
-        // For development, we'll use a simple longest chain rule
-        // In production, this would be replaced with proper BFT consensus
-        
-        // Simplified for development - in reality, would fetch chains from other nodes
-        if (newChain) {
-            this.chain = newChain;
-            this.saveChain();
-            return true;
-        }
-        
-        return false;
     }
 
     // Get all votes for a specific election

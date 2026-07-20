@@ -6,13 +6,11 @@ const http = require('http');
 const socketIo = require('socket.io');
 const Blockchain = require('./src/core/blockchain');
 const Block = require('./src/core/block');
-const { MerkleTree, MerkleTreeUtils } = require('./src/core/merkleTree');
+const { MerkleTree } = require('./src/core/merkleTree');
 const { PeerManager, MessageTypes } = require('./src/network/peerManager');
 const NodeMonitor = require('./src/monitoring/nodeMonitor');
 const PrometheusMetrics = require('./src/monitoring/prometheusMetrics');
 const SecurityMonitor = require('./src/security/securityMonitor');
-const ByzantineValidator = require('./src/security/byzantineValidator');
-const RecoveryManager = require('./src/security/recoveryManager');
 
 // Get node ID from environment or use default
 const nodeId = process.env.NODE_ID || 'node1';
@@ -49,8 +47,6 @@ const metrics = new PrometheusMetrics(nodeId, nodeType);
 
 // Initialize Security Modules
 const securityMonitor = new SecurityMonitor({ nodeId });
-const byzantineValidator = new ByzantineValidator();
-const recoveryManager = new RecoveryManager();
 // In production, this would use proper cryptographic key generation
 const nodeKeyPair = {
     privateKey: crypto.lib.WordArray.random(32).toString(),
@@ -804,8 +800,6 @@ app.get('/security/status', (req, res) => {
     res.json({
         metrics: securityMonitor.getBehavioralMetrics(),
         quarantined: securityMonitor.getQuarantinedPeers(),
-        bft: byzantineValidator.getBFTMetrics(),
-        recovery: recoveryManager.getRecoveryStatus(),
         timestamp: Date.now()
     });
 });

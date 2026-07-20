@@ -388,6 +388,5 @@ class MerkleTreeUtils {
 
 module.exports = {
     MerkleTree,
-    MerkleNode,
-    MerkleTreeUtils
+    MerkleNode
 };
