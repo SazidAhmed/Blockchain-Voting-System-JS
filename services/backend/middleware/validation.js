@@ -261,6 +261,5 @@ module.exports = {
   validateLogin,
   validateVote,
   validateElectionId,
-  validateCreateElection,
-  sanitizeText,
+  validateCreateElection
 };

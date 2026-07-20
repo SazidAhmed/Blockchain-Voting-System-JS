@@ -95,6 +95,5 @@ module.exports = {
   registerLimiter,
   loginLimiter,
   voteLimiter,
-  generalLimiter,
   otpLimiter
 };
