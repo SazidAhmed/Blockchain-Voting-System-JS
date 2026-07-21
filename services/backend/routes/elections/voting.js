@@ -103,16 +103,6 @@ router.post('/:id/vote', voteLimiter, auth, validateVote, async (req, res) => {
     // Server-side nullifier derivation (prevents client from generating multiple nullifiers)
     const nullifier = generateNullifier(userId.toString(), electionId.toString(), process.env.JWT_SECRET);
 
-    console.log('📥 Received vote request:', {
-      hasEncryptedBallot: !!encryptedBallot,
-      hasNullifier: !!nullifier,
-      hasSignature: !!signature,
-      hasPublicKey: !!publicKey,
-      hasTimestamp: !!timestamp,
-      hasCandidateId: !!candidateId,
-      bodyKeys: Object.keys(req.body)
-    });
-
     // Reject base64-encoded plaintext ballots
     if (encryptedBallot) {
       try {
@@ -252,8 +242,6 @@ router.post('/:id/vote', voteLimiter, auth, validateVote, async (req, res) => {
       finalNullifier = nullifier;
       finalSignature = signature;
       finalPublicKey = publicKey;
-
-      console.log('✅ Signature verified, nullifier checked');
     } else {
       // LEGACY FLOW - Server-side encryption and signing
       console.log('Processing vote with legacy server-side cryptography');
