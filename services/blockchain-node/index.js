@@ -378,18 +378,28 @@ app.get('/metrics/json', (req, res) => {
 
 // Register a new node
 app.post('/nodes/register', apiKeyAuth, (req, res) => {
-    const nodes = req.body.nodes;
+    const nodes = req.body.nodes || [];
     
-    if (!nodes || nodes.length === 0) {
+    if (nodes.length === 0) {
         return res.status(400).json({ message: 'Error: Please supply a valid list of nodes' });
     }
     
-    nodes.forEach(node => {
+    const validNodes = nodes.filter((n) => {
+        try {
+            new URL(n);
+            return true;
+        } catch {
+            return false;
+        }
+    });
+    
+    validNodes.forEach(node => {
         blockchain.registerNode(node);
     });
     
     res.json({
         message: 'New nodes have been added',
+        total: validNodes.length,
         totalNodes: Array.from(blockchain.nodes)
     });
 });
