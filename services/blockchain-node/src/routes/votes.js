@@ -1,12 +1,13 @@
 const express = require('express');
 const crypto = require('crypto-js');
 const { apiKeyAuth } = require('../../middleware/auth');
+const { voteLimiter } = require('../../middleware/rateLimiter');
 
 module.exports = function createVotesRoutes(blockchain, nodeMonitor, metrics, peerManager, nodeKeyPair) {
     const router = express.Router();
     const nodeId = process.env.NODE_ID || 'node1';
 
-    router.post('/vote', apiKeyAuth, (req, res) => {
+    router.post('/vote', apiKeyAuth, voteLimiter, (req, res) => {
         const vote = req.body;
 
         try {
