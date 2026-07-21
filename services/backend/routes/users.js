@@ -17,8 +17,8 @@ const {
 const {
   hashPassword,
   comparePassword,
-  generateKeypair,
-} = require("../utils/crypto");
+} = require("../utils/password");
+const { generateKeypair } = require("../utils/signing");
 const auditLogger = require("../utils/auditLogger");
 const otpService = require("../services/otpService");
 const emailService = require("../services/emailService");

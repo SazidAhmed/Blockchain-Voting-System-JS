@@ -5,7 +5,7 @@ const { pool } = require('../../config/db');
 const { auth } = require('../../middleware/auth');
 const { voteLimiter } = require('../../middleware/rateLimiter');
 const { validateVote } = require('../../middleware/validation');
-const { generateToken, generateNullifier, encryptBallot, signData, verifyECDSASignature } = require('../../utils/crypto');
+const { generateToken, generateNullifier, encryptBallot, signData, verifyECDSASignature } = require('../../utils/signing');
 const auditLogger = require('../../utils/auditLogger');
 const axios = require('axios');
 require('dotenv').config();
