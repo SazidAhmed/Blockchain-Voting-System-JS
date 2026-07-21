@@ -414,7 +414,7 @@ router.post("/login", loginLimiter, validateLogin, async (req, res) => {
     const token = jwt.sign(
       { id: user.id, role: user.role, institutionId: user.institution_id },
       process.env.JWT_SECRET,
-      { expiresIn: "1h" },
+      { algorithm: "HS256", expiresIn: "1h" },
     );
 
     // Set httpOnly cookie
