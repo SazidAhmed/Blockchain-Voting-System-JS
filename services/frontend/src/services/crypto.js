@@ -517,9 +517,7 @@ class CryptoService {
         console.log('Encrypting ballot with election public key...')
         encryptedBallot = await this.encryptBallot(ballot, electionPublicKey)
       } else {
-        console.warn('⚠️ No valid election public key - sending ballot as JSON (development mode)')
-        // For testing: send ballot as Base64-encoded JSON
-        encryptedBallot = btoa(JSON.stringify(ballot))
+        throw new Error('No valid election public key available — cannot encrypt ballot');
       }
       
       // 4. Create vote package

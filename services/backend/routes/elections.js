@@ -56,9 +56,13 @@ router.post('/', adminAuth, async (req, res) => {
       return res.status(400).json({ message: 'Start date must be before end date' });
     }
 
-    // Generate a public key for the election
-    const electionPublicKey = crypto.randomBytes(32).toString('hex');
-    const tallyKey = crypto.randomBytes(32).toString('hex');
+    // Generate RSA keypair for election ballot encryption
+    const { generateKeyPairSync } = require("crypto");
+    const { publicKey: electionPublicKey, privateKey: tallyKey } = generateKeyPairSync("rsa", {
+      modulusLength: 2048,
+      publicKeyEncoding: { type: "spki", format: "pem" },
+      privateKeyEncoding: { type: "pkcs8", format: "pem" },
+    });
 
     // Insert election into database
     const [result] = await pool.query(
@@ -450,6 +454,16 @@ router.post('/:id/vote', voteLimiter, auth, validateVote, async (req, res) => {
       hasCandidateId: !!candidateId,
       bodyKeys: Object.keys(req.body)
     });
+
+    // Reject base64-encoded plaintext ballots
+    if (encryptedBallot) {
+      try {
+        JSON.parse(Buffer.from(encryptedBallot, "base64").toString());
+        return res.status(400).json({ error: "Plaintext ballots not accepted" });
+      } catch (e) {
+        // Not base64 JSON — proceed (it's encrypted)
+      }
+    }
 
     // Determine if this is a new crypto flow or legacy flow
     const isNewCryptoFlow = encryptedBallot && nullifier && signature && publicKey;
