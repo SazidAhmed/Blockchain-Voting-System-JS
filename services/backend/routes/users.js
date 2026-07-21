@@ -18,7 +18,7 @@ const {
   hashPassword,
   comparePassword,
 } = require("../utils/password");
-const { generateKeypair } = require("../utils/signing");
+
 const auditLogger = require("../utils/auditLogger");
 const otpService = require("../services/otpService");
 const emailService = require("../services/emailService");
@@ -210,21 +210,13 @@ router.post(
       // Hash password
       const hashedPassword = await hashPassword(password);
 
-      // Use client-provided keys if available, otherwise generate server-side (legacy support)
-      let userPublicKey = publicKey;
-      let userEncryptionPublicKey = encryptionPublicKey;
-      let privateKeyToReturn = null;
-
+      // Require client-side key generation
       if (!publicKey || !encryptionPublicKey) {
-        // Legacy mode: generate keys server-side (not recommended for production)
-        const keypair = generateKeypair();
-        userPublicKey = keypair.publicKey;
-        userEncryptionPublicKey = keypair.publicKey; // In legacy mode, use same key
-        privateKeyToReturn = keypair.privateKey;
-        console.warn(
-          "Warning: Keys generated server-side. Client-side key generation is preferred.",
-        );
+        return res.status(400).json({ message: 'Client-side key generation required. Please generate keys in your browser.' });
       }
+
+      const userPublicKey = publicKey;
+      const userEncryptionPublicKey = encryptionPublicKey;
 
       // Generate pseudonym ID (deterministic hash of institution ID for privacy)
       const pseudonymId = crypto
@@ -292,11 +284,6 @@ router.post(
         electionsRegistered: electionsRegisteredCount,
       };
 
-      // Only return private key if it was generated server-side (legacy mode)
-      if (privateKeyToReturn) {
-        response.privateKey = privateKeyToReturn;
-      }
-
       // Log successful registration
       await auditLogger.logUserRegistration(
         userId,
@@ -306,7 +293,7 @@ router.post(
           username,
           role,
           email,
-          keysGeneratedBy: privateKeyToReturn ? "server" : "client",
+          keysGeneratedBy: "client",
           electionsAutoRegistered: electionsRegisteredCount,
         },
         req,
