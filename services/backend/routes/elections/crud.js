@@ -220,38 +220,6 @@ router.get('/:id', validateElectionId, async (req, res) => {
 // @route   PUT /api/elections/:id/status
 // @desc    Update election status
 // @access  Admin only
-router.put('/:id/status', adminAuth, async (req, res) => {
-  try {
-    const { status } = req.body;
-    const validStatuses = ['pending', 'active', 'completed', 'cancelled'];
-
-    if (!status || !validStatuses.includes(status)) {
-      return res.status(400).json({ message: 'Invalid status' });
-    }
-
-    // Prevent deactivating an already-active election
-    const [[current]] = await pool.query('SELECT status FROM elections WHERE id = ?', [req.params.id]);
-    if (!current) return res.status(404).json({ message: 'Election not found' });
-    if (current.status === 'active' && status !== 'active') {
-      return res.status(403).json({ message: 'Cannot deactivate an active election' });
-    }
-
-    const [result] = await pool.query(
-      'UPDATE elections SET status = ? WHERE id = ?',
-      [status, req.params.id]
-    );
-
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ message: 'Election not found' });
-    }
-
-    res.json({ message: 'Election status updated successfully' });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: 'Server error' });
-  }
-});
-
 // @route   PUT /api/elections/:id
 // @desc    Update election details
 // @access  Admin only
@@ -356,6 +324,13 @@ router.patch('/:id/status', adminAuth, async (req, res) => {
 
     if (!['pending', 'active', 'completed'].includes(status)) {
       return res.status(400).json({ message: 'Invalid status' });
+    }
+
+    // Prevent deactivating an already-active election
+    const [[current]] = await pool.query('SELECT status FROM elections WHERE id = ?', [electionId]);
+    if (!current) return res.status(404).json({ message: 'Election not found' });
+    if (current.status === 'active' && status !== 'active') {
+      return res.status(403).json({ message: 'Cannot deactivate an active election' });
     }
 
     await pool.query(

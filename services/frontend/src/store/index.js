@@ -226,7 +226,7 @@ export default createStore({
       commit('SET_LOADING', true)
       commit('CLEAR_ERROR')
       try {
-        const response = await api.put(`/elections/${electionId}/status`, { status })
+        const response = await api.patch(`/elections/${electionId}/status`, { status })
         return response.data
       } catch (error) {
         commit('SET_ERROR', error.response?.data?.message || 'Failed to update election status')
