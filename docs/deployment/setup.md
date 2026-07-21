@@ -24,7 +24,7 @@ cd Blockchain-Voting-System-JS
 cp .env.example .env
 ```
 
-Edit `.env` to change secrets (JWT_SECRET, DB passwords). Defaults work for local dev.
+Edit `.env` to change secrets (JWT_SECRET, DB passwords, BLOCKCHAIN_API_KEY, INSTITUTION_API_KEY). Defaults work for local dev.
 
 ### 3. Start
 
@@ -93,7 +93,7 @@ npm install
 npm run dev
 ```
 
-Listens on port 3001. LevelDB data in `./data/`.
+Listens on port 3001. LevelDB data in `./data/`. Requires `BLOCKCHAIN_API_KEY` env var for API access.
 
 ---
 

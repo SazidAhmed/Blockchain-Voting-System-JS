@@ -51,9 +51,18 @@ These are baked at build time for production (Dockerfile.prod uses `ARG`).
 | Variable              | Default                       | Description               |
 | --------------------- | ----------------------------- | ------------------------- |
 | `BLOCKCHAIN_NODE_URL` | `http://blockchain-node:3001` | Internal node URL         |
+| `BLOCKCHAIN_API_KEY`  | _(required)_                  | API key for node access (`x-api-key` header) |
+| `BACKEND_URL`         | `http://backend:3000`         | Backend URL for CORS restriction |
 | `NODE_ID`             | `node1`                       | Node identifier           |
 | `NODE_TYPE`           | `validator`                   | `validator` or `observer` |
 | `PEERS`               | _(empty)_                     | Comma-separated peer URLs |
+
+### Institution API (port 4000)
+
+| Variable                | Default                        | Description               |
+| ----------------------- | ------------------------------ | ------------------------- |
+| `INSTITUTION_API_KEY`   | _(required)_                   | API key for institution-api access (`x-api-key` header) |
+| `BACKEND_URL`           | `http://backend:3000`          | Backend URL for CORS restriction |
 
 ### SMTP (Optional)
 
@@ -111,6 +120,8 @@ These are commented out in `.env.example`:
 - `JWT_SECRET`
 - `FRONTEND_URL`
 - `VITE_API_BASE_URL`, `VITE_BLOCKCHAIN_URL`
+- `BLOCKCHAIN_API_KEY`
+- `INSTITUTION_API_KEY`
 
 ## Test Stack
 

@@ -10,6 +10,14 @@ Mock directory service for voter registration. Provides the institutional member
 http://localhost:4000
 ```
 
+## Authentication
+
+All endpoints require an API key via `x-api-key` header. Set via `INSTITUTION_API_KEY` env var.
+
+## CORS
+
+Restricted to the backend service URL only (set via `BACKEND_URL` env var). No browser origins permitted.
+
 ## Error Response Shape
 
 ```json
