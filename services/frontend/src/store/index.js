@@ -4,7 +4,7 @@ import keyManager from '@/services/keyManager'
 
 export default createStore({
   state: {
-    user: JSON.parse(localStorage.getItem('user') || 'null'),
+    user: JSON.parse(localStorage.getItem('voter_user') || 'null'),
     elections: [],
     currentElection: null,
     loading: false,
@@ -22,7 +22,7 @@ export default createStore({
     SET_USER(state, user) {
       state.user = user
       if (user) {
-        localStorage.setItem('user', JSON.stringify(user))
+        localStorage.setItem('voter_user', JSON.stringify(user))
       } else {
         localStorage.removeItem('user')
       }
@@ -115,7 +115,7 @@ export default createStore({
     // Reload cryptographic keys from localStorage on app init
     restoreKeys({ commit, state }) {
       if (!state.user) {
-        const savedUser = localStorage.getItem('user')
+        const savedUser = localStorage.getItem('voter_user')
         if (savedUser) {
           commit('SET_USER', JSON.parse(savedUser))
         }

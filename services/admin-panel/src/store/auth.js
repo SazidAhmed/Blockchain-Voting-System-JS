@@ -35,7 +35,7 @@ export const useAuthStore = defineStore("auth", () => {
       const data = await response.json();
       user.value = data.user;
 
-      localStorage.setItem("user", JSON.stringify(data.user));
+      localStorage.setItem("admin_user", JSON.stringify(data.user));
 
       return data;
     } catch (err) {
@@ -68,7 +68,7 @@ export const useAuthStore = defineStore("auth", () => {
 
   function logout() {
     user.value = null;
-    localStorage.removeItem("user");
+    localStorage.removeItem("admin_user");
     error.value = null;
   }
 
@@ -78,7 +78,7 @@ export const useAuthStore = defineStore("auth", () => {
 
   // Initialize from localStorage
   function initializeAuth() {
-    const storedUser = localStorage.getItem("user");
+    const storedUser = localStorage.getItem("admin_user");
 
     if (storedUser) {
       try {

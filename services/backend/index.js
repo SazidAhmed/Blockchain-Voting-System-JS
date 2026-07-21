@@ -17,6 +17,7 @@ const cors = require("cors");
 const helmet = require("helmet");
 const cookieParser = require("cookie-parser");
 const { csrfProtection, setCsrfToken } = require("./middleware/csrf");
+const { generalLimiter } = require("./middleware/rateLimiter");
 const { pool } = require("./config/db");
 const userRoutes = require("./routes/users");
 const electionRoutes = require("./routes/elections");
@@ -24,6 +25,9 @@ const emailService = require("./services/emailService");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// Trust proxy (required for correct IP behind reverse proxy / load balancer)
+app.set("trust proxy", 1);
 
 // Security Middleware
 app.use(
@@ -77,9 +81,12 @@ const corsOptions = {
 };
 app.use(cors(corsOptions));
 
+// Global rate limiting
+app.use(generalLimiter);
+
 // Body Parser with size limits
-app.use(express.json({ limit: "10mb" }));
-app.use(express.urlencoded({ extended: true, limit: "10mb" }));
+app.use(express.json({ limit: "1mb" }));
+app.use(express.urlencoded({ extended: true, limit: "1mb" }));
 app.use(cookieParser());
 app.use(setCsrfToken);
 app.use(csrfProtection);
