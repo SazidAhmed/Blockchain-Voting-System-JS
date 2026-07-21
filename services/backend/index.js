@@ -16,6 +16,7 @@ const express = require("express");
 const cors = require("cors");
 const helmet = require("helmet");
 const cookieParser = require("cookie-parser");
+const { csrfProtection, setCsrfToken } = require("./middleware/csrf");
 const { pool } = require("./config/db");
 const userRoutes = require("./routes/users");
 const electionRoutes = require("./routes/elections");
@@ -80,6 +81,8 @@ app.use(cors(corsOptions));
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 app.use(cookieParser());
+app.use(setCsrfToken);
+app.use(csrfProtection);
 
 // Request timeout middleware (30 seconds)
 app.use((req, res, next) => {
