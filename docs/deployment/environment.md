@@ -17,24 +17,24 @@ Source of truth: `.env.example` in project root. Copy to `.env` before starting.
 | `PORT`                | `3000`                                                            | Backend listen port  |
 | `JWT_SECRET`          | `your-super-secret-jwt-key-change-in-production-minimum-32-chars` | JWT signing key      |
 | `FRONTEND_URL`        | `http://localhost:5173`                                           | CORS allowed origin  |
-| `INSTITUTION_API_URL` | `http://institution-api:4000`                                     | Institution API host |
+| `INSTITUTION_API_URL` | `http://localhost:4000`                                           | Institution API host |
 
 ### MySQL
 
 Two sets — `DB_*` for application use, `MYSQL_*` for Docker image.
 
-| Variable              | Default            | Description                        |
-| --------------------- | ------------------ | ---------------------------------- |
-| `DB_HOST`             | `localhost`        | MySQL host (use `mysql` in Docker) |
-| `DB_PORT`             | `3306`             | MySQL port                         |
-| `DB_USER`             | `voting_user`      | Application DB user                |
-| `DB_PASSWORD`         | `voting_pass`      | Application DB password            |
-| `DB_NAME`             | `voting_db`        | Application DB name                |
-| `DB_ROOT_PASSWORD`    | `voting_root_pass` | MySQL root password                |
-| `MYSQL_ROOT_PASSWORD` | `voting_root_pass` | Docker MySQL root password         |
-| `MYSQL_DATABASE`      | `voting_db`        | Docker MySQL database              |
-| `MYSQL_USER`          | `voting_user`      | Docker MySQL user                  |
-| `MYSQL_PASSWORD`      | `voting_pass`      | Docker MySQL password              |
+| Variable              | Default            | Description                       |
+| --------------------- | ------------------ | --------------------------------- |
+| `DB_HOST`             | `localhost`        | MySQL host (use`mysql` in Docker) |
+| `DB_PORT`             | `3306`             | MySQL port                        |
+| `DB_USER`             | `voting_user`      | Application DB user               |
+| `DB_PASSWORD`         | `voting_pass`      | Application DB password           |
+| `DB_NAME`             | `voting_db`        | Application DB name               |
+| `DB_ROOT_PASSWORD`    | `voting_root_pass` | MySQL root password               |
+| `MYSQL_ROOT_PASSWORD` | `voting_root_pass` | Docker MySQL root password        |
+| `MYSQL_DATABASE`      | `voting_db`        | Docker MySQL database             |
+| `MYSQL_USER`          | `voting_user`      | Docker MySQL user                 |
+| `MYSQL_PASSWORD`      | `voting_pass`      | Docker MySQL password             |
 
 ### Frontend (port 5173)
 
@@ -48,21 +48,21 @@ These are baked at build time for production (Dockerfile.prod uses `ARG`).
 
 ### Blockchain Node (port 3001)
 
-| Variable              | Default                       | Description               |
-| --------------------- | ----------------------------- | ------------------------- |
-| `BLOCKCHAIN_NODE_URL` | `http://blockchain-node:3001` | Internal node URL         |
+| Variable              | Default                       | Description                                  |
+| --------------------- | ----------------------------- | -------------------------------------------- |
+| `BLOCKCHAIN_NODE_URL` | `http://blockchain-node:3001` | Internal node URL                            |
 | `BLOCKCHAIN_API_KEY`  | _(required)_                  | API key for node access (`x-api-key` header) |
-| `BACKEND_URL`         | `http://backend:3000`         | Backend URL for CORS restriction |
-| `NODE_ID`             | `node1`                       | Node identifier           |
-| `NODE_TYPE`           | `validator`                   | `validator` or `observer` |
-| `PEERS`               | _(empty)_                     | Comma-separated peer URLs |
+| `BACKEND_URL`         | `http://backend:3000`         | Backend URL for CORS restriction             |
+| `NODE_ID`             | `node1`                       | Node identifier                              |
+| `NODE_TYPE`           | `validator`                   | `validator` or `observer`                    |
+| `PEERS`               | _(empty)_                     | Comma-separated peer URLs                    |
 
 ### Institution API (port 4000)
 
-| Variable                | Default                        | Description               |
-| ----------------------- | ------------------------------ | ------------------------- |
-| `INSTITUTION_API_KEY`   | _(required)_                   | API key for institution-api access (`x-api-key` header) |
-| `BACKEND_URL`           | `http://backend:3000`          | Backend URL for CORS restriction |
+| Variable              | Default               | Description                                             |
+| --------------------- | --------------------- | ------------------------------------------------------- |
+| `INSTITUTION_API_KEY` | _(required)_          | API key for institution-api access (`x-api-key` header) |
+| `BACKEND_URL`         | `http://backend:3000` | Backend URL for CORS restriction                        |
 
 ### SMTP (Optional)
 

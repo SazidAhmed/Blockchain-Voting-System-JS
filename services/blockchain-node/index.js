@@ -26,6 +26,30 @@ const PORT = process.env.PORT || 3001;
 // Create express app
 const app = express();
 app.use(express.json());
+
+// Root discovery route (before CORS so services are identifiable from browser)
+app.get('/', (req, res) => {
+  res.json({
+    service: 'Blockchain Node',
+    nodeId,
+    nodeType,
+    port: PORT,
+    endpoints: {
+      chain: '/chain',
+      node: '/node',
+      peers: '/peers',
+      metrics: '/metrics',
+      vote: '/vote',
+      mine: '/mine',
+      transactions: '/transactions/new',
+      merkle: '/merkle/stats',
+      elections: '/elections/:electionId/results',
+      nullifier: '/nullifier/:nullifier',
+      security: '/security/status'
+    }
+  });
+});
+
 app.use(cors({
   origin: process.env.BACKEND_URL || "http://localhost:3000",
 }));
@@ -272,28 +296,6 @@ app.use('/', createSecurityRoutes(securityMonitor));
 app.use('/', createMetricsRoutes(nodeMonitor, metrics));
 
 // ==================== REMAINING ROUTES ====================
-
-app.get('/', (req, res) => {
-  res.json({
-    service: 'Blockchain Voting System - Blockchain Node',
-    nodeId,
-    nodeType,
-    status: 'running',
-    endpoints: {
-      chain: '/chain',
-      node: '/node',
-      peers: '/peers',
-      metrics: '/metrics',
-      vote: '/vote',
-      mine: '/mine',
-      transactions: '/transactions/new',
-      merkle: '/merkle/stats',
-      elections: '/elections/:electionId/results',
-      nullifier: '/nullifier/:nullifier',
-      security: '/security/status'
-    }
-  });
-});
 
 app.get('/peers', (req, res) => {
     res.json(peerManager.getStats());

@@ -29,6 +29,25 @@ const PORT = process.env.PORT || 3000;
 // Trust proxy (required for correct IP behind reverse proxy / load balancer)
 app.set("trust proxy", 1);
 
+// Health check endpoint (before CORS so Docker healthcheck without Origin header works)
+app.get("/health", (req, res) => {
+  res.status(200).json({ status: "ok", message: "Server is running" });
+});
+
+// Root discovery route (before CORS so services are identifiable from browser)
+app.get("/", (req, res) => {
+  res.json({
+    service: "Backend API",
+    version: "1.0.0",
+    port: PORT,
+    endpoints: {
+      health: "/health",
+      users: "/api/users",
+      elections: "/api/elections",
+    },
+  });
+});
+
 // Security Middleware
 app.use(
   helmet({
@@ -108,25 +127,6 @@ app.disable("x-powered-by");
 // Routes
 app.use("/api/users", userRoutes);
 app.use("/api/elections", electionRoutes);
-
-// Root route
-app.get("/", (req, res) => {
-  res.json({
-    service: "Blockchain Voting System - Backend API",
-    version: "1.0.0",
-    status: "running",
-    endpoints: {
-      health: "/health",
-      users: "/api/users",
-      elections: "/api/elections",
-    },
-  });
-});
-
-// Basic health check endpoint
-app.get("/health", (req, res) => {
-  res.status(200).json({ status: "ok", message: "Server is running" });
-});
 
 // 404 handler
 app.use((req, res) => {

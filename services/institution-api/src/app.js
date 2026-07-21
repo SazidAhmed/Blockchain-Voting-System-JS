@@ -12,6 +12,20 @@ const app = express();
 app.use(cors({ origin: process.env.BACKEND_URL || "http://localhost:3000" }));
 app.use(express.json());
 
+// Root discovery route (before CORS so service is identifiable from browser)
+app.get("/", (_req, res) => {
+  res.json({
+    service: "Institution API",
+    port: process.env.PORT || 4000,
+    endpoints: {
+      health: "/api/health",
+      members: "/api/members",
+      lookup: "/api/lookup",
+      voterPicker: "/api/voter-picker",
+    },
+  });
+});
+
 app.use(healthRoute);
 app.use(membersRoute);
 app.use(lookupRoute);

@@ -42,6 +42,7 @@
         └── 📁development
             ├── conventions.md
             ├── crypto-implementation.md
+            ├── ethereal-email-guide.md
             ├── getting-started.md
             ├── github-workflow.md
         └── 📁Final_report
@@ -152,11 +153,12 @@
                     ├── audit.js
                     ├── auth.js
                     ├── elections.js
-                    ├── index.js
                 └── 📁views
                     ├── AdminDashboard.vue
                     ├── LoginView.vue
+                    ├── NotFoundView.vue
                 ├── App.vue
+                ├── config.js
                 ├── main.js
             ├── .dockerignore
             ├── .gitignore
@@ -167,24 +169,25 @@
         └── 📁backend
             └── 📁config
                 ├── db.js
-                ├── fileStorage.js
             └── 📁data
                 ├── .gitkeep
             └── 📁keys
             └── 📁middleware
+                ├── auditMiddleware.js
                 ├── auth.js
+                ├── csrf.js
                 ├── rateLimiter.js
                 ├── validation.js
             └── 📁migrations
                 ├── 001_initial_schema.sql
                 ├── 002_add_crypto_fields.sql
-            └── 📁models
-                ├── candidate.js
-                ├── election.js
-                ├── index.js
-                ├── user.js
-                ├── voterRegistration.js
+                ├── 003_add_tally_encryption.sql
             └── 📁routes
+                └── 📁elections
+                    ├── candidates.js
+                    ├── crud.js
+                    ├── results.js
+                    ├── voting.js
                 ├── elections.js
                 ├── users.js
             └── 📁scripts
@@ -221,7 +224,11 @@
             └── 📁utils
                 ├── adminAuditLogger.js
                 ├── auditLogger.js
-                ├── crypto.js
+                ├── password.js
+                ├── signing.js
+                ├── tallyEncryption.js
+                ├── token.js
+                ├── tokenBlacklist.js
             ├── .dockerignore
             ├── .env.example
             ├── .gitignore
@@ -231,6 +238,9 @@
         └── 📁blockchain-node
             └── 📁data
                 ├── .gitkeep
+            └── 📁middleware
+                ├── auth.js
+                ├── rateLimiter.js
             └── 📁src
                 └── 📁core
                     ├── block.js
@@ -241,9 +251,13 @@
                     ├── prometheusMetrics.js
                 └── 📁network
                     ├── peerManager.js
+                └── 📁routes
+                    ├── chain.js
+                    ├── merkle.js
+                    ├── metrics.js
+                    ├── security.js
+                    ├── votes.js
                 └── 📁security
-                    ├── byzantineValidator.js
-                    ├── recoveryManager.js
                     ├── securityMonitor.js
             └── 📁tests
                 ├── test-merkle.js
@@ -270,6 +284,7 @@
                 └── 📁router
                     ├── index.js
                 └── 📁services
+                    ├── api.js
                     ├── crypto.js
                     ├── keyManager.js
                 └── 📁store
@@ -280,6 +295,7 @@
                     ├── ElectionsView.vue
                     ├── HomeView.vue
                     ├── LoginView.vue
+                    ├── NotFoundView.vue
                     ├── RegisterView.vue
                     ├── ResultsView.vue
                     ├── VoteView.vue
@@ -300,6 +316,7 @@
                     ├── database.js
                     ├── seed.js
                 └── 📁middleware
+                    ├── auth.js
                     ├── errorHandler.js
                 └── 📁routes
                     ├── health.js

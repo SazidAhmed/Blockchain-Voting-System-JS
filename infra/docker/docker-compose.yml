@@ -211,7 +211,7 @@ services:
       BLOCKCHAIN_NODE_URL: http://blockchain-node:3001
       BLOCKCHAIN_API_KEY: ${BLOCKCHAIN_API_KEY:-dev-blockchain-key-change-in-prod}
       FRONTEND_URL: http://localhost:5173
-      INSTITUTION_API_URL: http://institution-api:4000
+      INSTITUTION_API_URL: http://localhost:4000
     env_file: ../../.env
     ports:
       - "3000:3000"
@@ -236,7 +236,7 @@ services:
           "--quiet",
           "--tries=1",
           "--spider",
-          "http://localhost:3000/api/elections",
+          "http://localhost:3000/health",
         ]
       timeout: 10s
       retries: 5
