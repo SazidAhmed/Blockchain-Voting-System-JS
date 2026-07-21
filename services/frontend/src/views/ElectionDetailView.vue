@@ -141,6 +141,7 @@
 
 <script>
 import { mapGetters } from "vuex";
+import api from "@/services/api";
 import {
   PhCheckCircle,
   PhClock,
@@ -252,17 +253,10 @@ export default {
     },
     async checkRegistrationStatus() {
       try {
-        const token = localStorage.getItem("token");
-        const res = await fetch(
-          `${import.meta.env.VITE_API_BASE_URL || "http://localhost:3000"}/api/elections/${this.$route.params.id}/registration-status`,
-          {
-            headers: { "x-auth-token": token },
-          },
+        const res = await api.get(
+          `/elections/${this.$route.params.id}/registration-status`,
         );
-        if (res.ok) {
-          const data = await res.json();
-          this.isRegistered = data.registered;
-        }
+        this.isRegistered = res.data.registered;
       } catch (e) {
         // Silently fail
       }

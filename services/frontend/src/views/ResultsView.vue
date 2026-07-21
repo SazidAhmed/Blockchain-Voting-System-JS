@@ -126,6 +126,7 @@
 </template>
 
 <script>
+import api from "@/services/api";
 import {
   PhChartBar,
   PhCheckSquare,
@@ -133,8 +134,6 @@ import {
   PhCalendarCheck,
   PhLock,
 } from "@phosphor-icons/vue";
-
-const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
 
 export default {
   name: "ResultsView",
@@ -194,15 +193,8 @@ export default {
       this.current = null;
       this.resultsReleased = false;
       try {
-        const token = localStorage.getItem("token");
-        const res = await fetch(
-          `${API_BASE}/api/elections/${this.selectedId}`,
-          {
-            headers: { "x-auth-token": token },
-          },
-        );
-        if (!res.ok) throw new Error("Failed to load election");
-        this.current = await res.json();
+        const res = await api.get(`/elections/${this.selectedId}`);
+        this.current = res.data;
         this.resultsReleased = this.current.resultsReleased;
       } catch (e) {
         console.error(e);
@@ -213,12 +205,8 @@ export default {
   },
   async mounted() {
     try {
-      const token = localStorage.getItem("token");
-      const res = await fetch(`${API_BASE}/api/elections`, {
-        headers: { "x-auth-token": token },
-      });
-      if (!res.ok) throw new Error("Failed to fetch elections");
-      this.elections = await res.json();
+      const res = await api.get("/elections");
+      this.elections = res.data;
 
       if (this.elections.length > 0) {
         const active = this.elections.find((e) => e.status === "active");

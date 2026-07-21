@@ -1,22 +1,6 @@
 import { createStore } from 'vuex'
-import axios from 'axios'
+import api from '@/services/api'
 import keyManager from '@/services/keyManager'
-
-// Configure axios
-const api = axios.create({
-  baseURL: `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'}/api`,
-  withCredentials: true
-})
-
-// CSRF interceptor
-api.interceptors.request.use((config) => {
-  const csrf = document.cookie
-    .split("; ")
-    .find((r) => r.startsWith("csrf-token="))
-    ?.split("=")[1];
-  if (csrf) config.headers["x-csrf-token"] = csrf;
-  return config;
-})
 
 export default createStore({
   state: {
