@@ -123,54 +123,10 @@ app.get("/health", (req, res) => {
 
 // 404 handler
 app.use((req, res) => {
-  const routes = [];
-  const stack = app._router && app._router.stack;
-  if (stack) {
-    stack.forEach((layer) => {
-      try {
-        if (layer.route) {
-          const methods = Object.keys(layer.route.methods)
-            .join(",")
-            .toUpperCase();
-          routes.push(`${methods} ${layer.route.path}`);
-        } else if (
-          layer.name === "router" &&
-          layer.handle &&
-          layer.handle.stack
-        ) {
-          layer.handle.stack.forEach((r) => {
-            if (r.route) {
-              const methods = Object.keys(r.route.methods)
-                .join(",")
-                .toUpperCase();
-              routes.push(`${methods} ${r.regexp}`);
-            }
-          });
-        }
-      } catch (_) {
-        // skip malformed router layers
-      }
-    });
-  }
   res.status(404).json({
     error: "Not Found",
     message: `${req.method} ${req.originalUrl} does not exist`,
     status: 404,
-    availableEndpoints:
-      routes.length > 0
-        ? routes
-        : [
-            "GET /",
-            "GET /health",
-            "GET /api/users",
-            "POST /api/users/send-otp",
-            "POST /api/users/verify-otp",
-            "GET /api/elections",
-            "GET /api/elections/:id",
-            "POST /api/elections",
-            "POST /api/elections/:id/vote",
-            "GET /api/elections/admin/all",
-          ],
   });
 });
 
