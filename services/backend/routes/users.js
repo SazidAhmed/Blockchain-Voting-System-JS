@@ -412,7 +412,7 @@ router.post("/login", loginLimiter, validateLogin, async (req, res) => {
 
     // Create JWT token
     const token = jwt.sign(
-      { id: user.id, role: user.role, institutionId: user.institution_id },
+      { id: user.id, role: user.role, institutionId: user.institution_id, jti: crypto.randomUUID() },
       process.env.JWT_SECRET,
       { algorithm: "HS256", expiresIn: "1h" },
     );
@@ -494,6 +494,18 @@ router.get("/me", auth, async (req, res) => {
     console.error(err);
     res.status(500).json({ message: "Server error" });
   }
+});
+
+// @route   POST /api/users/logout
+// @desc    Logout user, revoke token
+// @access  Private
+router.post("/auth/logout", auth, (req, res) => {
+  const tokenBlacklist = require("../utils/tokenBlacklist");
+  if (req.user.jti) {
+    tokenBlacklist.add(req.user.jti);
+  }
+  res.clearCookie("token");
+  res.json({ message: "Logged out" });
 });
 
 module.exports = router;

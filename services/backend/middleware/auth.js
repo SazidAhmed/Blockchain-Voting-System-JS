@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const tokenBlacklist = require('../utils/tokenBlacklist');
 require('dotenv').config();
 
 // Middleware to verify JWT token
@@ -27,6 +28,10 @@ function auth(req, res, next) {
     const decoded = jwt.verify(token, process.env.JWT_SECRET, {
       algorithms: ["HS256"],
     });
+
+    if (decoded.jti && tokenBlacklist.has(decoded.jti)) {
+      return res.status(401).json({ message: 'Token revoked' });
+    }
     
     // Add user from payload
     req.user = decoded;
