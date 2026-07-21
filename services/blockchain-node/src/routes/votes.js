@@ -60,7 +60,7 @@ module.exports = function createVotesRoutes(blockchain, nodeMonitor, metrics, pe
         }
     });
 
-    router.get('/mine', apiKeyAuth, (req, res) => {
+    router.post('/mine', apiKeyAuth, (req, res) => {
         const { block: newBlock, pendingSnapshot } = blockchain.createBlock(nodeId);
         newBlock.signBlock(nodeKeyPair.privateKey);
 

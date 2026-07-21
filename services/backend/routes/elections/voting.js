@@ -95,11 +95,13 @@ router.post('/:id/vote', voteLimiter, auth, validateVote, async (req, res) => {
       candidateId, 
       privateKey,          // Legacy mode
       encryptedBallot,     // New: encrypted ballot from client
-      nullifier,           // New: client-generated nullifier
       signature,           // New: ECDSA signature
       publicKey,           // New: public key for verification
       timestamp            // New: timestamp from client
     } = req.body;
+
+    // Server-side nullifier derivation (prevents client from generating multiple nullifiers)
+    const nullifier = generateNullifier(userId.toString(), electionId.toString(), process.env.JWT_SECRET);
 
     console.log('📥 Received vote request:', {
       hasEncryptedBallot: !!encryptedBallot,
