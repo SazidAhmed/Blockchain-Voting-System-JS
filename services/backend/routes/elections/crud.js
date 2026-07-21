@@ -323,15 +323,23 @@ router.patch('/:id/status', adminAuth, async (req, res) => {
     const { status } = req.body;
     const electionId = req.params.id;
 
-    if (!['pending', 'active', 'completed'].includes(status)) {
+    const VALID_TRANSITIONS = {
+      pending: ['active'],
+      active: ['completed'],
+      completed: [],
+    };
+
+    if (!VALID_TRANSITIONS[status]) {
       return res.status(400).json({ message: 'Invalid status' });
     }
 
-    // Prevent deactivating an already-active election
     const [[current]] = await pool.query('SELECT status FROM elections WHERE id = ?', [electionId]);
     if (!current) return res.status(404).json({ message: 'Election not found' });
-    if (current.status === 'active' && status !== 'active') {
-      return res.status(403).json({ message: 'Cannot deactivate an active election' });
+
+    if (!VALID_TRANSITIONS[current.status].includes(status)) {
+      return res.status(403).json({
+        message: `Cannot transition from '${current.status}' to '${status}'. Allowed: ${VALID_TRANSITIONS[current.status].join(', ') || 'none'}`,
+      });
     }
 
     await pool.query(
