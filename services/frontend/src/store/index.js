@@ -24,12 +24,12 @@ export default createStore({
       if (user) {
         localStorage.setItem('voter_user', JSON.stringify(user))
       } else {
-        localStorage.removeItem('user')
+        localStorage.removeItem('voter_user')
       }
     },
     CLEAR_AUTH(state) {
       state.user = null
-      localStorage.removeItem('user')
+      localStorage.removeItem('voter_user')
     },
     SET_ELECTIONS(state, elections) {
       state.elections = elections

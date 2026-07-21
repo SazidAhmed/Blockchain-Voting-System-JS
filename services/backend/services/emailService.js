@@ -125,11 +125,13 @@ class EmailService {
 
     if (!transporter) {
       console.error("No email transporter available");
-      console.log(`\n${"=".repeat(50)}`);
-      console.log(`📧 EMAIL FALLBACK (no transporter)`);
-      console.log(`To: ${to}`);
-      console.log(`OTP Code: ${otp}`);
-      console.log(`${"=".repeat(50)}\n`);
+      if (process.env.NODE_ENV !== "production") {
+        console.log(`\n${"=".repeat(50)}`);
+        console.log(`📧 EMAIL FALLBACK (no transporter)`);
+        console.log(`To: ${to}`);
+        console.log(`OTP Code: ${otp}`);
+        console.log(`${"=".repeat(50)}\n`);
+      }
       return { success: true, fallback: true };
     }
 
