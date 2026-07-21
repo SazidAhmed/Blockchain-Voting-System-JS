@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { API_BASE } from '../config'
+import api from '../services/api'
 
 export const useAuditStore = defineStore('audit', () => {
   // State
@@ -42,17 +42,10 @@ export const useAuditStore = defineStore('audit', () => {
     error.value = null
 
     try {
-      const response = await fetch(`${API_BASE}/api/elections/admin/audit-logs`, {
-        credentials: 'include'
-      })
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch audit logs')
-      }
-
-      auditLogs.value = await response.json()
+      const { data } = await api.get('/elections/admin/audit-logs')
+      auditLogs.value = data
     } catch (err) {
-      error.value = err.message
+      error.value = err.response?.data?.message || 'Failed to fetch audit logs'
       throw err
     } finally {
       loading.value = false
@@ -64,19 +57,10 @@ export const useAuditStore = defineStore('audit', () => {
     error.value = null
 
     try {
-      const response = await fetch(`${API_BASE}/api/elections/admin/verify-audit-integrity/${logId}`, {
-        method: 'POST',
-        credentials: 'include'
-      })
-
-      if (!response.ok) {
-        throw new Error('Failed to verify log integrity')
-      }
-
-      const result = await response.json()
-      return result.isValid
+      const { data } = await api.post(`/elections/admin/verify-audit-integrity/${logId}`)
+      return data.isValid
     } catch (err) {
-      error.value = err.message
+      error.value = err.response?.data?.message || 'Failed to verify log integrity'
       throw err
     } finally {
       loading.value = false
@@ -88,17 +72,10 @@ export const useAuditStore = defineStore('audit', () => {
     error.value = null
 
     try {
-      const response = await fetch(`${API_BASE}/api/elections/admin/security-logs`, {
-        credentials: 'include'
-      })
-
-      if (!response.ok) {
-        throw new Error('Failed to verify blockchain integrity')
-      }
-
-      return await response.json()
+      const { data } = await api.get('/elections/admin/security-logs')
+      return data
     } catch (err) {
-      error.value = err.message
+      error.value = err.response?.data?.message || 'Failed to verify blockchain integrity'
       throw err
     } finally {
       loading.value = false
@@ -109,17 +86,12 @@ export const useAuditStore = defineStore('audit', () => {
     error.value = null
 
     try {
-      const response = await fetch(`${API_BASE}/api/elections/admin/audit-logs/export?format=${format}`, {
-        credentials: 'include'
+      const { data } = await api.get(`/elections/admin/audit-logs/export?format=${format}`, {
+        responseType: 'blob'
       })
-
-      if (!response.ok) {
-        throw new Error('Failed to export logs')
-      }
-
-      return await response.blob()
+      return data
     } catch (err) {
-      error.value = err.message
+      error.value = err.response?.data?.message || 'Failed to export logs'
     }
   }
 

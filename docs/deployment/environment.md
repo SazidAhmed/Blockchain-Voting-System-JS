@@ -17,7 +17,7 @@ Source of truth: `.env.example` in project root. Copy to `.env` before starting.
 | `PORT`                | `3000`                                                            | Backend listen port  |
 | `JWT_SECRET`          | `your-super-secret-jwt-key-change-in-production-minimum-32-chars` | JWT signing key      |
 | `FRONTEND_URL`        | `http://localhost:5173`                                           | CORS allowed origin  |
-| `INSTITUTION_API_URL` | `http://localhost:4000`                                           | Institution API host |
+| `INSTITUTION_API_URL` | `http://institution-api:4000`                                     | Institution API host |
 
 ### MySQL
 

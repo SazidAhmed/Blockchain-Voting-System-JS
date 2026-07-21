@@ -533,6 +533,7 @@ import { ref, computed, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { useAuthStore } from "../store/auth";
 import { useElectionsStore } from "../store/elections";
+import api from "../services/api";
 import AdminNavBar from "../components/AdminNavBar.vue";
 import AdminAuditLogs from "../components/AdminAuditLogs.vue";
 import AdminInstituteMembersTab from "../components/AdminInstituteMembersTab.vue";
@@ -696,20 +697,10 @@ export default {
       if (!confirm("Are you sure you want to delete this candidate?")) return;
 
       try {
-        const response = await fetch(
-          `${import.meta.env.VITE_API_BASE_URL || "http://localhost:3000"}/api/elections/candidates/${candidateId}`,
-          {
-            method: "DELETE",
-            headers: {
-              Authorization: `Bearer ${authStore.token}`,
-            },
-          },
-        );
-
-        if (!response.ok) throw new Error("Failed to delete candidate");
+        await api.delete(`/elections/candidates/${candidateId}`);
         await electionsStore.fetchElections();
       } catch (err) {
-        alert(err.message);
+        alert(err.response?.data?.message || "Failed to delete candidate");
       }
     };
 
@@ -720,25 +711,14 @@ export default {
       }
 
       try {
-        const API_BASE =
-          import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
-        const response = await fetch(
-          `${API_BASE}/api/elections/${selectedElectionId.value}/candidates`,
-          {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${authStore.token}`,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(newCandidate.value),
-          },
+        await api.post(
+          `/elections/${selectedElectionId.value}/candidates`,
+          newCandidate.value,
         );
-
-        if (!response.ok) throw new Error("Failed to add candidate");
         newCandidate.value = { name: "", description: "" };
         await electionsStore.fetchElections();
       } catch (err) {
-        alert(err.message);
+        alert(err.response?.data?.message || "Failed to add candidate");
       }
     };
 
@@ -796,19 +776,12 @@ export default {
       if (!selectedResultsElectionId.value) return;
       releasing.value = true;
       try {
-        const API_BASE =
-          import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
-        const response = await fetch(
-          `${API_BASE}/api/elections/${selectedResultsElectionId.value}/release`,
-          {
-            method: "POST",
-            headers: { Authorization: `Bearer ${authStore.token}` },
-          },
+        await api.post(
+          `/elections/${selectedResultsElectionId.value}/release`,
         );
-        if (!response.ok) throw new Error("Failed to release results");
         await electionsStore.fetchElections();
       } catch (err) {
-        alert(err.message);
+        alert(err.response?.data?.message || "Failed to release results");
       } finally {
         releasing.value = false;
       }

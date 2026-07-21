@@ -3,6 +3,10 @@ const crypto = require("crypto");
 function csrfProtection(req, res, next) {
   if (["GET", "HEAD", "OPTIONS"].includes(req.method)) return next();
 
+  // Skip CSRF for non-browser requests (no Origin or Referer header)
+  // CSRF only applies to browser-initiated cross-origin requests
+  if (!req.headers.origin && !req.headers.referer) return next();
+
   const csrfCookie = req.cookies?.["csrf-token"];
   const csrfHeader = req.headers["x-csrf-token"];
 

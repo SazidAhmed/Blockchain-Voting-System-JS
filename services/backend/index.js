@@ -84,8 +84,8 @@ const allowedOrigins = [
 
 const corsOptions = {
   origin: function (origin, callback) {
-    // Reject requests with no origin
-    if (!origin) return callback(new Error("CORS: origin required"), false);
+    // Allow requests with no origin (non-browser clients: curl, Postman, server-to-server)
+    if (!origin) return callback(null, true);
 
     if (allowedOrigins.indexOf(origin) !== -1) {
       callback(null, true);
@@ -96,7 +96,7 @@ const corsOptions = {
   credentials: true,
   optionsSuccessStatus: 200,
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization", "x-auth-token"],
+  allowedHeaders: ["Content-Type", "Authorization", "x-auth-token", "x-csrf-token"],
 };
 app.use(cors(corsOptions));
 

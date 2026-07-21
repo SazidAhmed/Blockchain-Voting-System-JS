@@ -1,6 +1,6 @@
 import { defineStore } from "pinia";
 import { computed, ref } from "vue";
-import { API_BASE } from "../config";
+import api from "../services/api";
 
 export const useAuthStore = defineStore("auth", () => {
   // State
@@ -18,28 +18,17 @@ export const useAuthStore = defineStore("auth", () => {
     loading.value = true;
     error.value = null;
     try {
-      const response = await fetch(`${API_BASE}/api/users/login`, {
-        method: "POST",
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ ...credentials, loginType: "admin" }),
+      const { data } = await api.post("/users/login", {
+        ...credentials,
+        loginType: "admin",
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Login failed");
-      }
-
-      const data = await response.json();
       user.value = data.user;
-
       localStorage.setItem("admin_user", JSON.stringify(data.user));
 
       return data;
     } catch (err) {
-      error.value = err.message;
+      error.value = err.response?.data?.message || "Login failed";
       throw err;
     } finally {
       loading.value = false;
@@ -51,15 +40,11 @@ export const useAuthStore = defineStore("auth", () => {
 
     loading.value = true;
     try {
-      const response = await fetch(`${API_BASE}/api/users/me`, {
-        credentials: "include",
-      });
-
-      if (!response.ok) throw new Error("Failed to fetch user");
-      user.value = await response.json();
+      const { data } = await api.get("/users/me");
+      user.value = data;
       return user.value;
     } catch (err) {
-      error.value = err.message;
+      error.value = err.response?.data?.message || "Failed to fetch user";
       logout();
     } finally {
       loading.value = false;

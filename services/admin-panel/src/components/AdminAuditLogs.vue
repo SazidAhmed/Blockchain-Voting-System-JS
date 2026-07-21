@@ -115,7 +115,7 @@
 </template>
 
 <script>
-const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
+import api from "../services/api";
 
 export default {
   name: "AdminAuditLogs",
@@ -151,16 +151,9 @@ export default {
     async fetchLogs() {
       this.loading = true;
       try {
-        const response = await fetch(
-          `${API_BASE}/api/elections/admin/audit-logs?limit=${this.limit}&offset=${this.offset}`,
-          {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem("token")}`,
-            },
-          },
+        const { data } = await api.get(
+          `/elections/admin/audit-logs?limit=${this.limit}&offset=${this.offset}`,
         );
-        if (!response.ok) throw new Error("Failed to fetch logs");
-        const data = await response.json();
         this.logs = data.logs;
         this.total = data.total;
       } catch (err) {
@@ -171,16 +164,9 @@ export default {
     },
     async verifyIntegrity(logId) {
       try {
-        const response = await fetch(
-          `${API_BASE}/api/elections/admin/verify-audit-integrity/${logId}`,
-          {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem("token")}`,
-            },
-          },
+        const { data: result } = await api.post(
+          `/elections/admin/verify-audit-integrity/${logId}`,
         );
-        const result = await response.json();
 
         if (result.valid) {
           alert(`✓ Audit log #${logId} integrity verified - Hash matches`);

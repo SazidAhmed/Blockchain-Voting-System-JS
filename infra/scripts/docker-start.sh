@@ -50,13 +50,15 @@ if [ ! -f .env ]; then
     if [ -f .env.example ]; then
         cp .env.example .env
         echo -e "${GREEN}✅ .env file created${NC}"
-        echo -e "${YELLOW}⚠️  Please edit .env and update the JWT_SECRET and passwords!${NC}"
-        echo ""
     else
         echo -e "${RED}❌ .env.example not found!${NC}"
         exit 1
     fi
 fi
+
+# Auto-generate missing secrets (JWT_SECRET, BLOCKCHAIN_API_KEY, INSTITUTION_API_KEY)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+bash "$SCRIPT_DIR/generate-secrets.sh" .env
 
 # Ask user what to do
 echo "What would you like to do?"

@@ -301,10 +301,15 @@ router.post(
 
       // Mark this institution member as a registered voter in the directory
       try {
+        const institutionApiKey = process.env.INSTITUTION_API_KEY;
+        const patchHeaders = { timeout: 3000 };
+        if (institutionApiKey) {
+          patchHeaders.headers = { "x-api-key": institutionApiKey };
+        }
         await axios.patch(
           `${INSTITUTION_API_URL}/api/members/${institutionId.toUpperCase()}/voter`,
           { is_voter: true },
-          { timeout: 3000 },
+          patchHeaders,
         );
       } catch (markErr) {
         // Non-fatal — registration still succeeds
