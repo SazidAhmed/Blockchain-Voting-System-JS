@@ -3,7 +3,7 @@ const router = express.Router();
 const crypto = require('crypto');
 const { pool } = require('../../config/db');
 const { adminAuth } = require('../../middleware/auth');
-const { validateElectionId } = require('../../middleware/validation');
+const { validateElectionId, validateCreateElection } = require('../../middleware/validation');
 const { withAdminAudit } = require('../../middleware/auditMiddleware');
 const { encryptTally } = require('../../utils/tallyEncryption');
 const AdminAuditLogger = require('../../utils/adminAuditLogger');
@@ -17,7 +17,7 @@ function getClientIp(req) {
 // @route   POST /api/elections
 // @desc    Create a new election
 // @access  Admin only
-router.post('/', adminAuth, withAdminAudit('CREATE_ELECTION', 'elections'), async (req, res) => {
+router.post('/', adminAuth, validateCreateElection, withAdminAudit('CREATE_ELECTION', 'elections'), async (req, res) => {
   try {
     const { title, description, startDate, endDate, candidates } = req.body;
     const adminId = req.user.id;
