@@ -22,9 +22,7 @@ export const useElectionsStore = defineStore('elections', () => {
 
     try {
       const response = await fetch(`${API_BASE}/api/elections/admin/all`, {
-        headers: {
-          'Authorization': `Bearer ${authStore.token}`
-        }
+        credentials: 'include'
       })
 
       if (response.status === 401) {
@@ -46,15 +44,14 @@ export const useElectionsStore = defineStore('elections', () => {
   }
 
   async function createElection(electionData) {
-    const authStore = useAuthStore()
     loading.value = true
     error.value = null
 
     try {
       const response = await fetch(`${API_BASE}/api/elections`, {
         method: 'POST',
+        credentials: 'include',
         headers: {
-          'Authorization': `Bearer ${authStore.token}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify(electionData)
@@ -77,15 +74,14 @@ export const useElectionsStore = defineStore('elections', () => {
   }
 
   async function updateElectionStatus(electionId, status) {
-    const authStore = useAuthStore()
     loading.value = true
     error.value = null
 
     try {
       const response = await fetch(`${API_BASE}/api/elections/${electionId}/status`, {
         method: 'PATCH',
+        credentials: 'include',
         headers: {
-          'Authorization': `Bearer ${authStore.token}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({ status })
@@ -105,15 +101,14 @@ export const useElectionsStore = defineStore('elections', () => {
   }
 
   async function updateElection(electionId, electionData) {
-    const authStore = useAuthStore()
     loading.value = true
     error.value = null
 
     try {
       const response = await fetch(`${API_BASE}/api/elections/${electionId}`, {
         method: 'PUT',
+        credentials: 'include',
         headers: {
-          'Authorization': `Bearer ${authStore.token}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify(electionData)
@@ -134,16 +129,13 @@ export const useElectionsStore = defineStore('elections', () => {
   }
 
   async function deleteElection(electionId) {
-    const authStore = useAuthStore()
     loading.value = true
     error.value = null
 
     try {
       const response = await fetch(`${API_BASE}/api/elections/${electionId}`, {
         method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${authStore.token}`
-        }
+        credentials: 'include'
       })
 
       if (!response.ok) {

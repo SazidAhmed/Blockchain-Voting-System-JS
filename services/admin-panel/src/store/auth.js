@@ -6,12 +6,11 @@ const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
 export const useAuthStore = defineStore("auth", () => {
   // State
   const user = ref(null);
-  const token = ref(localStorage.getItem("token") || null);
   const loading = ref(false);
   const error = ref(null);
 
   // Computed
-  const isAuthenticated = computed(() => !!token.value);
+  const isAuthenticated = computed(() => !!user.value);
   const isAdmin = computed(() => user.value && user.value.role === "admin");
   const currentUser = computed(() => user.value);
 
@@ -22,6 +21,7 @@ export const useAuthStore = defineStore("auth", () => {
     try {
       const response = await fetch(`${API_BASE}/api/users/login`, {
         method: "POST",
+        credentials: "include",
         headers: {
           "Content-Type": "application/json",
         },
@@ -35,10 +35,7 @@ export const useAuthStore = defineStore("auth", () => {
 
       const data = await response.json();
       user.value = data.user;
-      token.value = data.token;
 
-      // Persist to localStorage
-      localStorage.setItem("token", data.token);
       localStorage.setItem("user", JSON.stringify(data.user));
 
       return data;
@@ -51,14 +48,12 @@ export const useAuthStore = defineStore("auth", () => {
   }
 
   async function fetchCurrentUser() {
-    if (!token.value) return;
+    if (!user.value) return;
 
     loading.value = true;
     try {
       const response = await fetch(`${API_BASE}/api/users/me`, {
-        headers: {
-          Authorization: `Bearer ${token.value}`,
-        },
+        credentials: "include",
       });
 
       if (!response.ok) throw new Error("Failed to fetch user");
@@ -74,8 +69,6 @@ export const useAuthStore = defineStore("auth", () => {
 
   function logout() {
     user.value = null;
-    token.value = null;
-    localStorage.removeItem("token");
     localStorage.removeItem("user");
     error.value = null;
   }
@@ -87,11 +80,6 @@ export const useAuthStore = defineStore("auth", () => {
   // Initialize from localStorage
   function initializeAuth() {
     const storedUser = localStorage.getItem("user");
-    const storedToken = localStorage.getItem("token");
-
-    if (storedToken) {
-      token.value = storedToken;
-    }
 
     if (storedUser) {
       try {
@@ -105,7 +93,6 @@ export const useAuthStore = defineStore("auth", () => {
   return {
     // State
     user,
-    token,
     loading,
     error,
     // Computed

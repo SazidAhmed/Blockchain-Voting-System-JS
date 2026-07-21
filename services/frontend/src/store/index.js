@@ -4,29 +4,20 @@ import keyManager from '@/services/keyManager'
 
 // Configure axios
 const api = axios.create({
-  baseURL: `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'}/api`
-})
-
-// Add interceptor to include auth token
-api.interceptors.request.use(config => {
-  const token = localStorage.getItem('token')
-  if (token) {
-    config.headers['x-auth-token'] = token
-  }
-  return config
+  baseURL: `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'}/api`,
+  withCredentials: true
 })
 
 export default createStore({
   state: {
     user: JSON.parse(localStorage.getItem('user') || 'null'),
-    token: localStorage.getItem('token') || null,
     elections: [],
     currentElection: null,
     loading: false,
     error: null
   },
   getters: {
-    isAuthenticated: state => !!state.token,
+    isAuthenticated: state => !!state.user,
     currentUser: state => state.user,
     getElections: state => state.elections,
     getCurrentElection: state => state.currentElection,
@@ -42,14 +33,8 @@ export default createStore({
         localStorage.removeItem('user')
       }
     },
-    SET_TOKEN(state, token) {
-      state.token = token
-      localStorage.setItem('token', token)
-    },
     CLEAR_AUTH(state) {
       state.user = null
-      state.token = null
-      localStorage.removeItem('token')
       localStorage.removeItem('user')
     },
     SET_ELECTIONS(state, elections) {
@@ -90,7 +75,6 @@ export default createStore({
       try {
         const response = await api.post('/users/login', { ...credentials, loginType: 'voter' })
         commit('SET_USER', response.data.user)
-        commit('SET_TOKEN', response.data.token)
         
         // Load user's cryptographic keys
         try {
@@ -112,8 +96,8 @@ export default createStore({
       }
     },
     
-    async fetchCurrentUser({ commit }) {
-      if (!localStorage.getItem('token')) return
+    async fetchCurrentUser({ commit, state }) {
+      if (!state.user) return
       
       commit('SET_LOADING', true)
       try {

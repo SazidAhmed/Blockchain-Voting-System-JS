@@ -1,6 +1,5 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { useAuthStore } from './auth'
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'
 
@@ -40,15 +39,12 @@ export const useAuditStore = defineStore('audit', () => {
 
   // Actions
   async function fetchAuditLogs() {
-    const authStore = useAuthStore()
     loading.value = true
     error.value = null
 
     try {
       const response = await fetch(`${API_BASE}/api/elections/admin/audit-logs`, {
-        headers: {
-          'Authorization': `Bearer ${authStore.token}`
-        }
+        credentials: 'include'
       })
 
       if (!response.ok) {
@@ -65,16 +61,13 @@ export const useAuditStore = defineStore('audit', () => {
   }
 
   async function verifyLogIntegrity(logId) {
-    const authStore = useAuthStore()
     loading.value = true
     error.value = null
 
     try {
       const response = await fetch(`${API_BASE}/api/elections/admin/verify-audit-integrity/${logId}`, {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${authStore.token}`
-        }
+        credentials: 'include'
       })
 
       if (!response.ok) {
@@ -92,15 +85,12 @@ export const useAuditStore = defineStore('audit', () => {
   }
 
   async function verifyBlockchainIntegrity() {
-    const authStore = useAuthStore()
     loading.value = true
     error.value = null
 
     try {
       const response = await fetch(`${API_BASE}/api/elections/admin/security-logs`, {
-        headers: {
-          'Authorization': `Bearer ${authStore.token}`
-        }
+        credentials: 'include'
       })
 
       if (!response.ok) {
@@ -117,14 +107,11 @@ export const useAuditStore = defineStore('audit', () => {
   }
 
   async function exportLogs(format = 'json') {
-    const authStore = useAuthStore()
     error.value = null
 
     try {
       const response = await fetch(`${API_BASE}/api/elections/admin/audit-logs/export?format=${format}`, {
-        headers: {
-          'Authorization': `Bearer ${authStore.token}`
-        }
+        credentials: 'include'
       })
 
       if (!response.ok) {
@@ -134,7 +121,6 @@ export const useAuditStore = defineStore('audit', () => {
       return await response.blob()
     } catch (err) {
       error.value = err.message
-      throw err
     }
   }
 

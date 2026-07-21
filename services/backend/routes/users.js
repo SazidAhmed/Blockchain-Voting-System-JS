@@ -417,6 +417,14 @@ router.post("/login", loginLimiter, validateLogin, async (req, res) => {
       { expiresIn: "1h" },
     );
 
+    // Set httpOnly cookie
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: 3600000,
+    });
+
     // Log successful login
     await auditLogger.logUserLogin(
       user.id,
