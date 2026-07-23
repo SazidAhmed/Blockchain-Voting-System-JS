@@ -134,6 +134,12 @@
         >
           <PhCheckSquare :size="16" /> Cast Your Vote
         </button>
+        <div
+          v-else-if="alreadyVoted"
+          class="btn btn-disabled"
+        >
+          <PhCheckCircle :size="16" weight="fill" /> Already Voted
+        </div>
       </div>
     </div>
   </div>
@@ -172,6 +178,7 @@ export default {
       registrationLoading: false,
       localError: null,
       isRegistered: false,
+      alreadyVoted: false,
     };
   },
   computed: {
@@ -196,7 +203,7 @@ export default {
     },
     canVote() {
       if (!this.election) return false;
-      return this.election.status === "active";
+      return this.election.status === "active" && !this.alreadyVoted;
     },
     totalVotes() {
       if (!this.election || !this.election.candidates) return 0;
@@ -245,6 +252,8 @@ export default {
         this.isRegistered = true;
       } catch (error) {
         this.localError =
+          error.displayMessage ||
+          error.response?.data?.message ||
           "Failed to register for this election. Please try again.";
         console.error("Registration error:", error);
       } finally {
@@ -257,6 +266,7 @@ export default {
           `/elections/${this.$route.params.id}/registration-status`,
         );
         this.isRegistered = res.data.registered;
+        this.alreadyVoted = res.data.status === "voted";
       } catch (e) {
         // Silently fail
       }
