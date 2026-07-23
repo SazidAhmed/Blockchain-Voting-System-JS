@@ -439,7 +439,7 @@ router.post("/login", loginLimiter, validateLogin, async (req, res) => {
       },
     });
   } catch (err) {
-    console.error(err);
+    console.error("Login error:", err);
 
     // Log failed login
     await auditLogger.logUserLogin(
@@ -453,7 +453,13 @@ router.post("/login", loginLimiter, validateLogin, async (req, res) => {
       req,
     );
 
-    res.status(500).json({ message: "Server error" });
+    const isDev = process.env.NODE_ENV !== "production";
+    res.status(500).json({
+      message: isDev
+        ? `Server error: ${err.message}`
+        : "Server error. Please try again later.",
+      ...(isDev && { code: err.code, type: err.name }),
+    });
   }
 });
 

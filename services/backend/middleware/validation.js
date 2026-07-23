@@ -187,21 +187,21 @@ const validateCreateElection = [
     .withMessage("Description must be 10-5000 characters")
     .escape(),
 
-  body("start_date")
+  body("startDate")
     .notEmpty()
     .withMessage("Start date is required")
     .isISO8601()
     .withMessage("Invalid start date format")
     .toDate(),
 
-  body("end_date")
+  body("endDate")
     .notEmpty()
     .withMessage("End date is required")
     .isISO8601()
     .withMessage("Invalid end date format")
     .toDate()
     .custom((value, { req }) => {
-      if (new Date(value) <= new Date(req.body.start_date)) {
+      if (new Date(value) <= new Date(req.body.startDate)) {
         throw new Error("End date must be after start date");
       }
       return true;

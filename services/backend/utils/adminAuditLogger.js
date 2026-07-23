@@ -57,7 +57,6 @@ class AdminAuditLogger {
       return result.insertId;
     } catch (error) {
       console.error('Error logging admin action:', error);
-      throw error;
     }
   }
 

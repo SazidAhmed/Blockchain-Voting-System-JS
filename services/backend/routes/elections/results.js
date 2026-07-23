@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const crypto = require('crypto');
 const { pool } = require('../../config/db');
 const { adminAuth } = require('../../middleware/auth');
 const { encryptTally } = require('../../utils/tallyEncryption');
@@ -27,7 +28,7 @@ router.get('/admin/all', adminAuth, async (req, res) => {
         [election.id]
       );
 
-      // Tally votes per candidate from encrypted_ballot (base64 JSON in dev mode)
+      // Tally votes per candidate from RSA-encrypted ballots
       const [votes] = await pool.query(
         'SELECT encrypted_ballot FROM votes_meta WHERE election_id = ?',
         [election.id]
@@ -35,7 +36,20 @@ router.get('/admin/all', adminAuth, async (req, res) => {
       const tally = {};
       for (const v of votes) {
         try {
-          const ballot = JSON.parse(Buffer.from(v.encrypted_ballot, 'base64').toString('utf8'));
+          let ballot;
+          if (election.tally_key) {
+            try {
+              const decrypted = crypto.privateDecrypt(
+                { key: election.tally_key, oaepHash: 'sha256' },
+                Buffer.from(v.encrypted_ballot, 'base64')
+              );
+              ballot = JSON.parse(decrypted.toString('utf8'));
+            } catch (_) {
+              ballot = JSON.parse(Buffer.from(v.encrypted_ballot, 'base64').toString('utf8'));
+            }
+          } else {
+            ballot = JSON.parse(Buffer.from(v.encrypted_ballot, 'base64').toString('utf8'));
+          }
           const cid = ballot.candidateId;
           if (cid) tally[cid] = (tally[cid] || 0) + 1;
         } catch (_) { /* skip unreadable ballots */ }
@@ -47,8 +61,12 @@ router.get('/admin/all', adminAuth, async (req, res) => {
         election.resultsReleased = true;
       } else {
         // Encrypted tally
-        if (election.tally_key) {
-          election.encryptedTally = encryptTally(tally, election.tally_key);
+        if (election.tally_key && election.tally_key.length <= 64 && /^[0-9a-f]+$/i.test(election.tally_key)) {
+          try {
+            election.encryptedTally = encryptTally(tally, election.tally_key);
+          } catch (_) {
+            election.encryptedTally = null;
+          }
         }
         election.candidates = candidates.map(c => ({ ...c, votes_count: null }));
         election.resultsReleased = false;

@@ -34,19 +34,21 @@ app.get("/health", (req, res) => {
   res.status(200).json({ status: "ok", message: "Server is running" });
 });
 
-// Root discovery route (before CORS so services are identifiable from browser)
-app.get("/", (req, res) => {
-  res.json({
-    service: "Backend API",
-    version: "1.0.0",
-    port: PORT,
-    endpoints: {
-      health: "/health",
-      users: "/api/users",
-      elections: "/api/elections",
-    },
+// Root discovery route — dev only (hides service details in production)
+if (process.env.NODE_ENV !== "production") {
+  app.get("/", (req, res) => {
+    res.json({
+      service: "Backend API",
+      version: "1.0.0",
+      port: PORT,
+      endpoints: {
+        health: "/health",
+        users: "/api/users",
+        elections: "/api/elections",
+      },
+    });
   });
-});
+}
 
 // Security Middleware
 app.use(
@@ -73,14 +75,21 @@ app.use(
   }),
 );
 
-// CORS Configuration - Restrict to frontend origin
-const allowedOrigins = [
-  process.env.FRONTEND_URL || "http://localhost:5173",
-  "http://localhost:5173",
-  "http://127.0.0.1:5173",
-  "http://localhost:5174",
-  "http://127.0.0.1:5174",
-];
+// CORS Configuration - Restrict to known origins
+// Set CORS_ALLOWED_ORIGINS as a comma-separated list in production.
+// Fallback: dev defaults cover both frontend (5173) and admin panel (5174).
+const allowedOrigins = (process.env.CORS_ALLOWED_ORIGINS || "")
+  .split(",")
+  .map((o) => o.trim())
+  .filter(Boolean);
+if (allowedOrigins.length === 0) {
+  allowedOrigins.push(
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "http://localhost:5174",
+    "http://127.0.0.1:5174",
+  );
+}
 
 const corsOptions = {
   origin: function (origin, callback) {
@@ -162,17 +171,22 @@ app.use((err, req, res, next) => {
   console.error("Error:", err);
 
   // Determine status code
-  const statusCode = err.statusCode || 500;
+  const statusCode = err.statusCode || err.status || 500;
 
   // Send safe error message
-  const message =
-    process.env.NODE_ENV === "production"
-      ? "An error occurred processing your request"
-      : err.message || "Internal server error";
+  const isDev = process.env.NODE_ENV !== "production";
 
   res.status(statusCode).json({
-    message,
-    ...(process.env.NODE_ENV !== "production" && { stack: err.stack }),
+    message: isDev
+      ? err.message || "Internal server error"
+      : statusCode >= 500
+        ? "An error occurred processing your request"
+        : err.message || "An error occurred",
+    ...(isDev && {
+      stack: err.stack,
+      code: err.code,
+      type: err.name,
+    }),
   });
 });
 

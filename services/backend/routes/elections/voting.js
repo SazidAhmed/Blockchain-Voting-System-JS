@@ -14,6 +14,12 @@ const blockchainApi = axios.create({
   baseURL: process.env.BLOCKCHAIN_NODE_URL
 });
 
+// Attach API key for blockchain-node requests when configured
+const blockchainApiKey = process.env.BLOCKCHAIN_API_KEY;
+if (blockchainApiKey) {
+  blockchainApi.defaults.headers.common['x-api-key'] = blockchainApiKey;
+}
+
 // @route   POST /api/elections/:id/register
 // @desc    Register to vote in an election
 // @access  Private
@@ -95,6 +101,7 @@ router.post('/:id/vote', voteLimiter, auth, validateVote, async (req, res) => {
       candidateId, 
       privateKey,          // Legacy mode
       encryptedBallot,     // New: encrypted ballot from client
+      nullifier: clientNullifier, // New: nullifier from client
       signature,           // New: ECDSA signature
       publicKey,           // New: public key for verification
       timestamp            // New: timestamp from client
@@ -114,13 +121,13 @@ router.post('/:id/vote', voteLimiter, auth, validateVote, async (req, res) => {
     }
 
     // Determine if this is a new crypto flow or legacy flow
-    const isNewCryptoFlow = encryptedBallot && nullifier && signature && publicKey;
+    const isNewCryptoFlow = encryptedBallot && clientNullifier && signature && publicKey;
 
     if (!isNewCryptoFlow && (!candidateId || !privateKey)) {
       return res.status(400).json({ message: 'Please provide all required fields' });
     }
 
-    if (isNewCryptoFlow && (!encryptedBallot || !nullifier || !signature || !publicKey)) {
+    if (isNewCryptoFlow && (!encryptedBallot || !clientNullifier || !signature || !publicKey)) {
       return res.status(400).json({ message: 'Please provide encrypted vote package' });
     }
 
@@ -191,12 +198,17 @@ router.post('/:id/vote', voteLimiter, auth, validateVote, async (req, res) => {
       // NEW CRYPTO FLOW - Client-side encryption and signing
       console.log('Processing vote with client-side cryptography');
       
+      // Use client's nullifier for verification to match what was signed on the frontend
+      if (!clientNullifier) {
+        return res.status(400).json({ message: 'Nullifier is required from client' });
+      }
+      
       // Verify the signature
       // IMPORTANT: Use the same data structure as was signed on the client
       // The client signs electionId as a string (from route param), not an integer
       const voteData = {
         encryptedBallot,
-        nullifier,
+        nullifier: clientNullifier,
         electionId: electionId, // Keep as string to match frontend signature
         timestamp
       };
@@ -211,7 +223,7 @@ router.post('/:id/vote', voteLimiter, auth, validateVote, async (req, res) => {
         { 
           signatureLength: signature?.length,
           publicKeyLength: publicKey?.length,
-          nullifierPreview: nullifier?.substring(0, 16)
+          nullifierPreview: clientNullifier?.substring(0, 16)
         },
         req
       );
@@ -224,7 +236,7 @@ router.post('/:id/vote', voteLimiter, auth, validateVote, async (req, res) => {
       // Check for duplicate nullifier (prevents double voting)
       const [existingVotes] = await pool.query(
         'SELECT id FROM votes_meta WHERE nullifier_hash = ? AND election_id = ?',
-        [nullifier, electionId]
+        [clientNullifier, electionId]
       );
 
       if (existingVotes.length > 0) {
@@ -232,14 +244,14 @@ router.post('/:id/vote', voteLimiter, auth, validateVote, async (req, res) => {
         await auditLogger.logDoubleVoteAttempt(
           userId,
           electionId,
-          { reason: 'Duplicate nullifier detected', nullifier: nullifier.substring(0, 16) + '...' },
+          { reason: 'Duplicate nullifier detected', nullifier: clientNullifier.substring(0, 16) + '...' },
           req
         );
         return res.status(400).json({ message: 'This nullifier has already been used (possible double-vote attempt)' });
       }
 
       finalEncryptedBallot = encryptedBallot;
-      finalNullifier = nullifier;
+      finalNullifier = clientNullifier;
       finalSignature = signature;
       finalPublicKey = publicKey;
     } else {
@@ -289,12 +301,13 @@ router.post('/:id/vote', voteLimiter, auth, validateVote, async (req, res) => {
         electionId,
         encryptedBallot: finalEncryptedBallot,
         nullifier: finalNullifier,
-        signature: finalSignature
+        signature: finalSignature,
+        publicKey: finalPublicKey
       });
       blockchainResponse = response;
 
       // Auto-mine the pending vote into a block immediately
-      blockchainApi.get('/mine').catch(() => {});
+      blockchainApi.post('/mine').catch(() => {});
     } catch (blockchainError) {
       console.warn('⚠️ Blockchain node not available, continuing with simulated transaction (development mode)');
       // In development, continue without blockchain

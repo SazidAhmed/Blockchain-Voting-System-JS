@@ -1,7 +1,18 @@
 const crypto = require("crypto");
 
+const CSRF_EXEMPT_PATHS = [
+  "/api/users/login",
+  "/api/users/register",
+  "/api/users/forgot-password",
+  "/api/users/reset-password",
+  "/api/users/verify-otp",
+];
+
 function csrfProtection(req, res, next) {
   if (["GET", "HEAD", "OPTIONS"].includes(req.method)) return next();
+
+  // Skip CSRF for public auth endpoints (no session to protect)
+  if (CSRF_EXEMPT_PATHS.includes(req.path)) return next();
 
   // Skip CSRF for non-browser requests (no Origin or Referer header)
   // CSRF only applies to browser-initiated cross-origin requests
@@ -11,7 +22,9 @@ function csrfProtection(req, res, next) {
   const csrfHeader = req.headers["x-csrf-token"];
 
   if (!csrfCookie || !csrfHeader || csrfCookie !== csrfHeader) {
-    return res.status(403).json({ error: "CSRF token mismatch" });
+    return res.status(403).json({
+      message: "CSRF token mismatch. Please refresh the page and try again.",
+    });
   }
   next();
 }

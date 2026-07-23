@@ -20,7 +20,14 @@ async function testConnection() {
     connection.release();
     return true;
   } catch (error) {
-    console.error('Database connection error:', error);
+    console.error('Database connection error:', error.message);
+    if (error.code === 'ECONNREFUSED') {
+      console.error('  → MySQL server is not running or not reachable at', process.env.DB_HOST || 'localhost');
+    } else if (error.code === 'ER_ACCESS_DENIED_ERROR') {
+      console.error('  → Invalid username or password');
+    } else if (error.code === 'ER_BAD_DB_ERROR') {
+      console.error('  → Database "' + (process.env.DB_NAME || 'voting_db') + '" does not exist');
+    }
     throw error;
   }
 }
