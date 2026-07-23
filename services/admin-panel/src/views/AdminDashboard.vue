@@ -151,6 +151,8 @@
                   class="form-input"
                   rows="4"
                   placeholder="Election description and details"
+                  required
+                  minlength="10"
                 ></textarea>
               </div>
 
@@ -203,7 +205,7 @@
                       type="button"
                       @click="removeCandidate(index)"
                       class="btn btn-danger btn-small"
-                      v-if="newElection.candidates.length > 1"
+                      v-if="newElection.candidates.length > 2"
                     >
                       Remove
                     </button>
@@ -212,7 +214,7 @@
                 <button
                   type="button"
                   @click="addCandidate"
-                  class="btn btn-secondary btn-small"
+                  class="btn btn-secondary btn-small add-candidate-btn"
                 >
                   + Add Candidate
                 </button>
@@ -485,12 +487,17 @@
 
           <!-- Audit Logs Tab -->
           <section v-show="activeTab === 'audit'" class="tab-content">
-            <AdminAuditLogs />
+            <AdminAuditLogs :tab-active="activeTab === 'audit'" />
           </section>
 
           <!-- Institute Members Tab -->
           <section v-show="activeTab === 'members'" class="tab-content">
             <AdminInstituteMembersTab />
+          </section>
+
+          <!-- Blockchain Explorer Tab -->
+          <section v-show="activeTab === 'explorer'" class="tab-content">
+            <AdminBlockchainExplorer />
           </section>
         </div>
       </main>
@@ -529,7 +536,7 @@
 </template>
 
 <script>
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, watch } from "vue";
 import { useRouter } from "vue-router";
 import { useAuthStore } from "../store/auth";
 import { useElectionsStore } from "../store/elections";
@@ -537,6 +544,7 @@ import api from "../services/api";
 import AdminNavBar from "../components/AdminNavBar.vue";
 import AdminAuditLogs from "../components/AdminAuditLogs.vue";
 import AdminInstituteMembersTab from "../components/AdminInstituteMembersTab.vue";
+import AdminBlockchainExplorer from "../components/AdminBlockchainExplorer.vue";
 import {
   PhList,
   PhPlusCircle,
@@ -545,6 +553,7 @@ import {
   PhShieldCheck,
   PhSignOut,
   PhGear,
+  PhMagnifyingGlass,
 } from "@phosphor-icons/vue";
 
 export default {
@@ -553,6 +562,7 @@ export default {
     AdminNavBar,
     AdminAuditLogs,
     AdminInstituteMembersTab,
+    AdminBlockchainExplorer,
     PhList,
     PhPlusCircle,
     PhUsers,
@@ -560,6 +570,7 @@ export default {
     PhShieldCheck,
     PhSignOut,
     PhGear,
+    PhMagnifyingGlass,
   },
   setup() {
     const router = useRouter();
@@ -584,6 +595,7 @@ export default {
       { id: "results", label: "Results & Stats", icon: PhChartBar },
       { id: "audit", label: "Audit Logs", icon: PhShieldCheck },
       { id: "members", label: "Institute Members", icon: PhUsers },
+      { id: "explorer", label: "Blockchain Explorer", icon: PhMagnifyingGlass },
     ];
 
     const newElection = ref({
@@ -591,7 +603,7 @@ export default {
       description: "",
       startDate: "",
       endDate: "",
-      candidates: [{ name: "", description: "" }],
+      candidates: [{ name: "", description: "" }, { name: "", description: "" }],
     });
 
     const newCandidate = ref({
@@ -658,7 +670,12 @@ export default {
           activeTab.value = "elections";
         }, 1500);
       } catch (err) {
-        createError.value = err.message;
+        const fieldErrors = err.response?.data?.errors;
+        if (fieldErrors && fieldErrors.length) {
+          createError.value = fieldErrors.map((e) => `${e.field}: ${e.message}`).join("; ");
+        } else {
+          createError.value = err.displayMessage || err.message;
+        }
       } finally {
         creating.value = false;
       }
@@ -676,7 +693,8 @@ export default {
           "active",
         );
       } catch (err) {
-        console.error("Activation error:", err);
+        const msg = err.displayMessage || err.response?.data?.message || "Failed to activate election.";
+        alert(msg);
       } finally {
         showActivateModal.value = false;
         pendingActivateElection.value = null;
@@ -689,7 +707,8 @@ export default {
       try {
         await electionsStore.deleteElection(electionId);
       } catch (err) {
-        console.error("Delete error:", err);
+        const msg = err.displayMessage || err.response?.data?.message || "Failed to delete election.";
+        alert(msg);
       }
     };
 
@@ -697,10 +716,10 @@ export default {
       if (!confirm("Are you sure you want to delete this candidate?")) return;
 
       try {
-        await api.delete(`/elections/candidates/${candidateId}`);
+        await api.delete(`/elections/${selectedElectionId.value}/candidates/${candidateId}`);
         await electionsStore.fetchElections();
       } catch (err) {
-        alert(err.response?.data?.message || "Failed to delete candidate");
+        alert(err.displayMessage || err.response?.data?.message || "Failed to delete candidate");
       }
     };
 
@@ -718,7 +737,7 @@ export default {
         newCandidate.value = { name: "", description: "" };
         await electionsStore.fetchElections();
       } catch (err) {
-        alert(err.response?.data?.message || "Failed to add candidate");
+        alert(err.displayMessage || err.response?.data?.message || "Failed to add candidate");
       }
     };
 
@@ -749,7 +768,7 @@ export default {
         description: "",
         startDate: "",
         endDate: "",
-        candidates: [{ name: "", description: "" }],
+      candidates: [{ name: "", description: "" }, { name: "", description: "" }],
       };
       createError.value = null;
       createSuccess.value = null;
@@ -781,15 +800,23 @@ export default {
         );
         await electionsStore.fetchElections();
       } catch (err) {
-        alert(err.response?.data?.message || "Failed to release results");
+        alert(err.displayMessage || err.response?.data?.message || "Failed to release results");
       } finally {
         releasing.value = false;
       }
     };
 
+    // Refresh data when switching to certain tabs
+    watch(activeTab, (tab) => {
+      if (tab === "results" || tab === "audit") {
+        electionsStore.fetchElections();
+      }
+    });
+
     // Lifecycle
     onMounted(async () => {
-      if (!authStore.token) {
+      const hasToken = localStorage.getItem("admin_token");
+      if (!hasToken) {
         await router.push("/login");
         return;
       }
@@ -1107,7 +1134,7 @@ export default {
 .form-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 20px;
+  gap: 24px;
 }
 
 .candidates-input {
@@ -1119,8 +1146,9 @@ export default {
 .candidate-input {
   display: grid;
   grid-template-columns: 1fr 1.5fr auto;
-  gap: 10px;
-  align-items: end;
+  gap: 12px;
+  align-items: center;
+  padding: 8px 0;
 }
 
 .form-actions {
@@ -1146,6 +1174,12 @@ export default {
   height: 20px;
   border-width: 2px;
 }
+
+.add-candidate-btn {
+  margin-top: 12px;
+}
+
+
 
 /* ============= TABLES ============= */
 .elections-table {
