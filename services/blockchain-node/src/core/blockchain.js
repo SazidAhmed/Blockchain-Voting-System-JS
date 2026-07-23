@@ -160,8 +160,11 @@ class Blockchain {
             electionId: vote.electionId,
             encryptedBallot: vote.encryptedBallot,
             nullifier: vote.nullifier,
+            transactionHash: vote.transactionHash || '',
             timestamp: vote.timestamp || Date.now(),
-            signature: vote.signature
+            signature: vote.signature,
+            publicKey: vote.publicKey || '',
+            voterId: vote.voterId || null
         });
         
         return this.getLatestBlock().index + 1;

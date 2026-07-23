@@ -11,15 +11,17 @@ module.exports = function createVotesRoutes(blockchain, nodeMonitor, metrics, pe
         const vote = req.body;
 
         try {
+            const voteTimestamp = vote.timestamp || Date.now();
             const txData = JSON.stringify({
                 electionId: vote.electionId,
                 nullifier: vote.nullifier,
                 encryptedBallot: vote.encryptedBallot,
-                timestamp: vote.timestamp || Date.now()
+                timestamp: voteTimestamp
             });
             const transactionHash = crypto.SHA256(txData).toString();
 
             vote.transactionHash = transactionHash;
+            vote.timestamp = voteTimestamp;
 
             const index = blockchain.addVoteTransaction(vote);
             nodeMonitor.recordVoteProcessed();
@@ -32,7 +34,7 @@ module.exports = function createVotesRoutes(blockchain, nodeMonitor, metrics, pe
                 receipt: {
                     transactionHash: transactionHash,
                     nullifier: vote.nullifier,
-                    timestamp: Date.now(),
+                    timestamp: voteTimestamp,
                     blockIndex: index
                 }
             });
