@@ -24,7 +24,9 @@
           {{ loading ? "⟳ Loading…" : "⟳ Refresh" }}
         </button>
         <label class="auto-refresh-toggle">
-          <input type="checkbox" v-model="autoRefresh" /> Auto-refresh 10s
+          <input type="checkbox" v-model="autoRefresh" class="toggle-input" />
+          <span class="toggle-track" aria-hidden="true"></span>
+          <span class="toggle-text">Auto-refresh 10s</span>
         </label>
       </div>
     </div>
@@ -72,7 +74,7 @@
         <input
           v-model="searchQuery"
           type="text"
-          placeholder="Search by block # or hash…"
+          placeholder="Search by block #, block hash, or transaction hash…"
           class="search-input"
         />
       </div>
@@ -243,6 +245,15 @@
                       >{{ tx.nullifier }}</code
                     >
                   </div>
+                  <div class="tx-row" v-if="tx.transactionHash">
+                    <span class="key">Transaction Hash</span>
+                    <code
+                      class="hash-full copyable"
+                      @click="copy(tx.transactionHash)"
+                      title="Click to copy"
+                      >{{ tx.transactionHash }}</code
+                    >
+                  </div>
                   <div class="tx-row" v-if="tx.encryptedBallot">
                     <span class="key">Encrypted Ballot</span>
                     <code
@@ -397,12 +408,7 @@ export default {
       if (!this.searchQuery.trim()) return [...this.chain].reverse();
       const q = this.searchQuery.trim().toLowerCase();
       return [...this.chain]
-        .filter(
-          (b) =>
-            b.index.toString() === q ||
-            b.hash.toLowerCase().includes(q) ||
-            b.previousHash?.toLowerCase().includes(q),
-        )
+        .filter((b) => this.blockMatchesSearch(b, q))
         .reverse();
     },
 
@@ -494,6 +500,23 @@ export default {
 
     txCount(block) {
       return block.data?.transactions?.length || 0;
+    },
+
+    blockMatchesSearch(block, query) {
+      if (!query.trim()) return true;
+      const q = query.trim().toLowerCase();
+      return (
+        block.index.toString() === q ||
+        block.hash.toLowerCase().includes(q) ||
+        block.previousHash?.toLowerCase().includes(q) ||
+        (block.data?.transactions || []).some(
+          (tx) =>
+            tx.transactionHash?.toLowerCase().includes(q) ||
+            tx.nullifier?.toLowerCase().includes(q) ||
+            tx.signature?.toLowerCase().includes(q) ||
+            tx.electionId?.toString() === q,
+        )
+      );
     },
 
     short(str, len = 16) {
@@ -646,10 +669,58 @@ export default {
 .auto-refresh-toggle {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 10px;
   font-size: 0.82rem;
   color: var(--text-secondary);
   cursor: pointer;
+  user-select: none;
+}
+
+.auto-refresh-toggle .toggle-input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.auto-refresh-toggle .toggle-track {
+  width: 44px;
+  height: 26px;
+  border-radius: 999px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  position: relative;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.auto-refresh-toggle .toggle-track::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--bg-card);
+  box-shadow: var(--shadow);
+  transform: translateY(-50%);
+  transition:
+    transform 0.2s ease,
+    background 0.2s ease;
+}
+
+.auto-refresh-toggle .toggle-input:checked + .toggle-track {
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
+  border-color: var(--accent);
+}
+
+.auto-refresh-toggle .toggle-input:checked + .toggle-track::after {
+  transform: translate(18px, -50%);
+  background: var(--accent);
+}
+
+.auto-refresh-toggle .toggle-text {
+  font-weight: 600;
 }
 
 /* ── Stats Bar ── */

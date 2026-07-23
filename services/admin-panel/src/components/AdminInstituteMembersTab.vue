@@ -496,6 +496,31 @@ export default {
   margin-left: auto;
 }
 
+.members-tab select.form-control {
+  appearance: none;
+  padding-right: 36px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background-color: var(--bg-card);
+  color: var(--text-primary);
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--text-muted) 50%),
+    linear-gradient(135deg, var(--text-muted) 50%, transparent 50%);
+  background-position:
+    calc(100% - 16px) calc(50% + 1px),
+    calc(100% - 10px) calc(50% + 1px);
+  background-size:
+    6px 6px,
+    6px 6px;
+  background-repeat: no-repeat;
+}
+
+.members-tab select.form-control:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 14%, transparent);
+}
+
 /* Table */
 .members-table-wrap {
   overflow-x: auto;

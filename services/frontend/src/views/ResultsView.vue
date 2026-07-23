@@ -81,8 +81,8 @@
             <PhLock :size="48" color="var(--text-muted)" />
             <h3>Results Not Yet Released</h3>
             <p>
-              Results will be available after voting ends or the admin releases
-              them.
+              Vote totals are shown live, but candidate breakdown stays hidden
+              until the admin releases the results.
             </p>
           </div>
 
@@ -153,7 +153,10 @@ export default {
   },
   computed: {
     totalVotes() {
-      if (!this.current || !this.current.candidates) return 0;
+      if (!this.current) return 0;
+      if (typeof this.current.totalVotes === "number")
+        return this.current.totalVotes;
+      if (!this.current.candidates) return 0;
       return this.current.candidates.reduce(
         (s, c) => s + (c.votes_count || 0),
         0,
@@ -200,7 +203,10 @@ export default {
         this.current = res.data;
         this.resultsReleased = this.current.resultsReleased;
       } catch (e) {
-        this.error = e.displayMessage || e.response?.data?.message || "Failed to load election results.";
+        this.error =
+          e.displayMessage ||
+          e.response?.data?.message ||
+          "Failed to load election results.";
         console.error(e);
       } finally {
         this.detailLoading = false;
@@ -218,7 +224,10 @@ export default {
         await this.loadElection();
       }
     } catch (e) {
-      this.error = e.displayMessage || e.response?.data?.message || "Failed to load elections.";
+      this.error =
+        e.displayMessage ||
+        e.response?.data?.message ||
+        "Failed to load elections.";
       console.error(e);
     } finally {
       this.loading = false;

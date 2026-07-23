@@ -134,10 +134,7 @@
         >
           <PhCheckSquare :size="16" /> Cast Your Vote
         </button>
-        <div
-          v-else-if="alreadyVoted"
-          class="btn btn-disabled"
-        >
+        <div v-else-if="alreadyVoted" class="btn btn-disabled">
           <PhCheckCircle :size="16" weight="fill" /> Already Voted
         </div>
       </div>
@@ -206,7 +203,10 @@ export default {
       return this.election.status === "active" && !this.alreadyVoted;
     },
     totalVotes() {
-      if (!this.election || !this.election.candidates) return 0;
+      if (!this.election) return 0;
+      if (typeof this.election.totalVotes === "number")
+        return this.election.totalVotes;
+      if (!this.election.candidates) return 0;
       return this.election.candidates.reduce(
         (s, c) => s + (c.votes_count || 0),
         0,

@@ -60,19 +60,19 @@
           </div>
         </div>
         <div class="election-actions">
+          <span
+            v-if="isElectionVoted(election.id)"
+            class="btn btn-ghost voted-badge"
+          >
+            <PhChecks :size="16" /> Already Voted
+          </span>
           <router-link
-            v-if="election.status === 'active' && !election._userVoted"
+            v-else-if="election.status === 'active'"
             :to="`/elections/${election.id}/vote`"
             class="btn btn-primary"
           >
             <PhCheckSquare :size="16" /> Cast Your Vote
           </router-link>
-          <span
-            v-else-if="election.status === 'active' && election._userVoted"
-            class="btn btn-ghost voted-badge"
-          >
-            <PhChecks :size="16" /> Already Voted
-          </span>
           <span v-else class="btn btn-ghost" style="cursor: default">
             {{ formatStatus(election.status) }}
           </span>
@@ -120,7 +120,16 @@ export default {
       return this.getError;
     },
   },
+  data() {
+    return {
+      voteStatusMap: {},
+      refreshTimer: null,
+    };
+  },
   methods: {
+    isElectionVoted(electionId) {
+      return !!this.voteStatusMap[electionId];
+    },
     formatDate(dateString) {
       const options = {
         year: "numeric",
@@ -140,13 +149,19 @@ export default {
       };
       return statusMap[status] || status;
     },
+    async loadElections({ silent = false } = {}) {
+      await this.$store.dispatch("fetchElections", { silent });
+      await this.checkVoteStatuses();
+    },
     async checkVoteStatuses() {
       const token = localStorage.getItem("token");
-      if (!token) return;
-      const activeElections = this.getElections.filter(
-        (e) => e.status === "active",
-      );
-      for (const election of activeElections) {
+      if (!token) {
+        this.voteStatusMap = {};
+        return;
+      }
+
+      const votedMap = {};
+      for (const election of [...this.getElections]) {
         try {
           const res = await fetch(
             `${import.meta.env.VITE_API_BASE_URL || "http://localhost:3000"}/api/elections/${election.id}/registration-status`,
@@ -155,18 +170,36 @@ export default {
           if (res.ok) {
             const data = await res.json();
             if (data.status === "voted") {
-              election._userVoted = true;
+              votedMap[election.id] = true;
             }
           }
         } catch (e) {
           /* silent */
         }
       }
+      this.voteStatusMap = votedMap;
+    },
+    startAutoRefresh() {
+      this.stopAutoRefresh();
+      this.refreshTimer = setInterval(() => {
+        if (document.visibilityState === "visible") {
+          this.loadElections({ silent: true }).catch(() => {});
+        }
+      }, 15000);
+    },
+    stopAutoRefresh() {
+      if (this.refreshTimer) {
+        clearInterval(this.refreshTimer);
+        this.refreshTimer = null;
+      }
     },
   },
   async created() {
-    await this.$store.dispatch("fetchElections");
-    await this.checkVoteStatuses();
+    await this.loadElections();
+    this.startAutoRefresh();
+  },
+  beforeUnmount() {
+    this.stopAutoRefresh();
   },
 };
 </script>
@@ -267,5 +300,10 @@ export default {
 .voted-badge {
   color: var(--accent-secondary);
   cursor: default;
+}
+
+.voted-badge:hover {
+  transform: none;
+  box-shadow: none;
 }
 </style>

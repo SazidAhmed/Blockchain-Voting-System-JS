@@ -140,6 +140,7 @@
                   class="form-input"
                   placeholder="e.g., Student Council President 2025"
                   required
+                  :disabled="creating"
                 />
               </div>
 
@@ -153,6 +154,7 @@
                   placeholder="Election description and details"
                   required
                   minlength="10"
+                  :disabled="creating"
                 ></textarea>
               </div>
 
@@ -165,6 +167,7 @@
                     id="startDate"
                     class="form-input"
                     required
+                    :disabled="creating"
                   />
                 </div>
 
@@ -176,6 +179,7 @@
                     id="endDate"
                     class="form-input"
                     required
+                    :disabled="creating"
                   />
                 </div>
               </div>
@@ -194,18 +198,21 @@
                       class="form-input"
                       placeholder="Candidate name"
                       required
+                      :disabled="creating"
                     />
                     <input
                       v-model="candidate.description"
                       type="text"
                       class="form-input"
                       placeholder="Candidate description"
+                      :disabled="creating"
                     />
                     <button
                       type="button"
                       @click="removeCandidate(index)"
                       class="btn btn-danger btn-small"
                       v-if="newElection.candidates.length > 2"
+                      :disabled="creating"
                     >
                       Remove
                     </button>
@@ -215,6 +222,7 @@
                   type="button"
                   @click="addCandidate"
                   class="btn btn-secondary btn-small add-candidate-btn"
+                  :disabled="creating"
                 >
                   + Add Candidate
                 </button>
@@ -256,6 +264,7 @@
                   type="button"
                   @click="resetForm"
                   class="btn btn-secondary"
+                  :disabled="creating"
                 >
                   Cancel
                 </button>
@@ -431,20 +440,14 @@
                       class="candidates-results"
                     >
                       <div
-                        v-for="candidate in selectedResultsElection.candidates"
+                        v-for="(
+                          candidate, index
+                        ) in sortedSelectedResultsCandidates"
                         :key="candidate.id"
                         class="candidate-result"
                       >
                         <div class="result-header">
-                          <span class="candidate-rank">
-                            {{
-                              selectedResultsElection.candidates.filter(
-                                (c) =>
-                                  (c.votes_count || 0) >
-                                  (candidate.votes_count || 0),
-                              ).length + 1
-                            }}.
-                          </span>
+                          <span class="candidate-rank"> {{ index + 1 }}. </span>
                           <h4>{{ candidate.name }}</h4>
                           <span class="vote-count"
                             >{{ candidate.votes_count || 0 }} votes</span
@@ -497,7 +500,7 @@
 
           <!-- Blockchain Explorer Tab -->
           <section v-show="activeTab === 'explorer'" class="tab-content">
-            <AdminBlockchainExplorer />
+            <AdminBlockchainExplorer :tab-active="activeTab === 'explorer'" />
           </section>
         </div>
       </main>
@@ -603,7 +606,10 @@ export default {
       description: "",
       startDate: "",
       endDate: "",
-      candidates: [{ name: "", description: "" }, { name: "", description: "" }],
+      candidates: [
+        { name: "", description: "" },
+        { name: "", description: "" },
+      ],
     });
 
     const newCandidate = ref({
@@ -626,6 +632,16 @@ export default {
       return elections.value.find(
         (e) => e.id === parseInt(selectedResultsElectionId.value),
       );
+    });
+
+    const sortedSelectedResultsCandidates = computed(() => {
+      if (!selectedResultsElection.value?.candidates) return [];
+
+      return [...selectedResultsElection.value.candidates].sort((a, b) => {
+        const voteDiff = (b.votes_count || 0) - (a.votes_count || 0);
+        if (voteDiff !== 0) return voteDiff;
+        return (a.name || "").localeCompare(b.name || "");
+      });
     });
 
     // Methods
@@ -664,15 +680,17 @@ export default {
           createSuccess.value = "Election created successfully!";
         }
 
-        resetForm();
         await electionsStore.fetchElections();
         setTimeout(() => {
           activeTab.value = "elections";
+          resetForm();
         }, 1500);
       } catch (err) {
         const fieldErrors = err.response?.data?.errors;
         if (fieldErrors && fieldErrors.length) {
-          createError.value = fieldErrors.map((e) => `${e.field}: ${e.message}`).join("; ");
+          createError.value = fieldErrors
+            .map((e) => `${e.field}: ${e.message}`)
+            .join("; ");
         } else {
           createError.value = err.displayMessage || err.message;
         }
@@ -693,7 +711,10 @@ export default {
           "active",
         );
       } catch (err) {
-        const msg = err.displayMessage || err.response?.data?.message || "Failed to activate election.";
+        const msg =
+          err.displayMessage ||
+          err.response?.data?.message ||
+          "Failed to activate election.";
         alert(msg);
       } finally {
         showActivateModal.value = false;
@@ -707,7 +728,10 @@ export default {
       try {
         await electionsStore.deleteElection(electionId);
       } catch (err) {
-        const msg = err.displayMessage || err.response?.data?.message || "Failed to delete election.";
+        const msg =
+          err.displayMessage ||
+          err.response?.data?.message ||
+          "Failed to delete election.";
         alert(msg);
       }
     };
@@ -716,10 +740,12 @@ export default {
       if (!confirm("Are you sure you want to delete this candidate?")) return;
 
       try {
-        await api.delete(`/elections/${selectedElectionId.value}/candidates/${candidateId}`);
+        await api.delete(
+          `/elections/${selectedElectionId.value}/candidates/${candidateId}`,
+        );
         await electionsStore.fetchElections();
       } catch (err) {
-        alert(err.displayMessage || err.response?.data?.message || "Failed to delete candidate");
+        alert(err.response?.data?.message || "Failed to delete candidate");
       }
     };
 
@@ -737,7 +763,11 @@ export default {
         newCandidate.value = { name: "", description: "" };
         await electionsStore.fetchElections();
       } catch (err) {
-        alert(err.displayMessage || err.response?.data?.message || "Failed to add candidate");
+        alert(
+          err.displayMessage ||
+            err.response?.data?.message ||
+            "Failed to add candidate",
+        );
       }
     };
 
@@ -768,7 +798,10 @@ export default {
         description: "",
         startDate: "",
         endDate: "",
-      candidates: [{ name: "", description: "" }, { name: "", description: "" }],
+        candidates: [
+          { name: "", description: "" },
+          { name: "", description: "" },
+        ],
       };
       createError.value = null;
       createSuccess.value = null;
@@ -795,12 +828,14 @@ export default {
       if (!selectedResultsElectionId.value) return;
       releasing.value = true;
       try {
-        await api.post(
-          `/elections/${selectedResultsElectionId.value}/release`,
-        );
+        await api.post(`/elections/${selectedResultsElectionId.value}/release`);
         await electionsStore.fetchElections();
       } catch (err) {
-        alert(err.displayMessage || err.response?.data?.message || "Failed to release results");
+        alert(
+          err.displayMessage ||
+            err.response?.data?.message ||
+            "Failed to release results",
+        );
       } finally {
         releasing.value = false;
       }
@@ -851,6 +886,7 @@ export default {
       error,
       selectedElection,
       selectedResultsElection,
+      sortedSelectedResultsCandidates,
       showActivateModal,
       pendingActivateElection,
       releasing,
@@ -1127,6 +1163,20 @@ export default {
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 15%, transparent);
 }
 
+.form-input[type="datetime-local"] {
+  color-scheme: light dark;
+}
+
+:root[data-theme="dark"]
+  .form-input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+  filter: invert(1) brightness(1.35);
+}
+
+:root[data-theme="light"]
+  .form-input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+  filter: none;
+}
+
 .form-input::placeholder {
   color: var(--text-muted);
 }
@@ -1134,7 +1184,7 @@ export default {
 .form-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 24px;
+  gap: 28px;
 }
 
 .candidates-input {
@@ -1145,10 +1195,34 @@ export default {
 
 .candidate-input {
   display: grid;
-  grid-template-columns: 1fr 1.5fr auto;
-  gap: 12px;
-  align-items: center;
-  padding: 8px 0;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr) auto;
+  gap: 16px;
+  align-items: start;
+  padding: 10px 0;
+}
+
+.candidate-input .form-input {
+  min-width: 0;
+}
+
+.candidate-input .btn-danger {
+  align-self: stretch;
+  white-space: nowrap;
+}
+
+.candidate-input .form-input:first-child {
+  min-width: 180px;
+}
+
+.candidate-input .form-input:nth-child(2) {
+  min-width: 240px;
+}
+
+@media (max-width: 720px) {
+  .form-row,
+  .candidate-input {
+    grid-template-columns: 1fr;
+  }
 }
 
 .form-actions {
@@ -1178,8 +1252,6 @@ export default {
 .add-candidate-btn {
   margin-top: 12px;
 }
-
-
 
 /* ============= TABLES ============= */
 .elections-table {

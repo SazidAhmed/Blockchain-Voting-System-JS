@@ -32,7 +32,9 @@
     </div>
 
     <div v-if="loading" class="loading">Loading audit logs...</div>
-    <div v-else-if="fetchError" class="alert alert-danger">{{ fetchError }}</div>
+    <div v-else-if="fetchError" class="alert alert-danger">
+      {{ fetchError }}
+    </div>
     <div v-else-if="filteredLogs.length === 0" class="alert alert-info">
       No audit logs found
     </div>
@@ -191,7 +193,8 @@ export default {
           );
         }
       } catch (err) {
-        const msg = err.displayMessage || err.response?.data?.message || err.message;
+        const msg =
+          err.displayMessage || err.response?.data?.message || err.message;
         alert("Error verifying integrity: " + msg);
       }
     },
@@ -262,6 +265,33 @@ export default {
 
 .filter-group .form-control {
   min-width: 180px;
+}
+
+.filter-group select.form-control {
+  appearance: none;
+  padding: 10px 36px 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background-color: var(--bg-card);
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  box-shadow: var(--shadow-sm);
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--text-muted) 50%),
+    linear-gradient(135deg, var(--text-muted) 50%, transparent 50%);
+  background-position:
+    calc(100% - 16px) calc(50% + 1px),
+    calc(100% - 10px) calc(50% + 1px);
+  background-size:
+    6px 6px,
+    6px 6px;
+  background-repeat: no-repeat;
+}
+
+.filter-group select.form-control:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 14%, transparent);
 }
 
 .logs-container {

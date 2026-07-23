@@ -145,8 +145,11 @@ export default createStore({
     },
     
     // Election actions
-    async fetchElections({ commit }) {
-      commit('SET_LOADING', true)
+    async fetchElections({ commit }, options = {}) {
+      const { silent = false } = options
+      if (!silent) {
+        commit('SET_LOADING', true)
+      }
       commit('CLEAR_ERROR')
       try {
         const response = await api.get('/elections')
@@ -160,7 +163,9 @@ export default createStore({
         )
         throw error
       } finally {
-        commit('SET_LOADING', false)
+        if (!silent) {
+          commit('SET_LOADING', false)
+        }
       }
     },
     
