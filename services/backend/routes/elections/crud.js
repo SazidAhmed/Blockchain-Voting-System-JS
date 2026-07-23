@@ -88,20 +88,6 @@ router.post('/', adminAuth, validateCreateElection, withAdminAudit('CREATE_ELECT
       console.warn('Warning: Could not auto-register existing users for new election:', regErr.message);
     }
 
-    // Log the election creation
-    await adminLogger.logAdminAction(
-      adminId, 'CREATE_ELECTION', 'elections', electionId,
-      {
-        title,
-        description,
-        startDate,
-        endDate,
-        candidatesCount: candidates.length,
-        candidateIds
-      },
-      { ipAddress: clientIp, userAgent: req.get('user-agent') }
-    );
-
     // Log security event
     await adminLogger.logSecurityEvent(
       adminId, 'ELECTION_CREATED', 'LOW',
@@ -172,7 +158,7 @@ router.get('/:id', validateElectionId, async (req, res) => {
       [req.params.id]
     );
 
-    // Tally votes per candidate from votes_meta (base64 JSON ballots)
+    // Tally votes per candidate from votes_meta (RSA-encrypted ballots)
     const [votes] = await pool.query(
       'SELECT encrypted_ballot FROM votes_meta WHERE election_id = ?',
       [req.params.id]
@@ -180,7 +166,20 @@ router.get('/:id', validateElectionId, async (req, res) => {
     const tally = {};
     for (const v of votes) {
       try {
-        const ballot = JSON.parse(Buffer.from(v.encrypted_ballot, 'base64').toString('utf8'));
+        let ballot;
+        if (electionMeta && electionMeta.tally_key) {
+          try {
+            const decrypted = crypto.privateDecrypt(
+              { key: electionMeta.tally_key, oaepHash: 'sha256' },
+              Buffer.from(v.encrypted_ballot, 'base64')
+            );
+            ballot = JSON.parse(decrypted.toString('utf8'));
+          } catch (_) {
+            ballot = JSON.parse(Buffer.from(v.encrypted_ballot, 'base64').toString('utf8'));
+          }
+        } else {
+          ballot = JSON.parse(Buffer.from(v.encrypted_ballot, 'base64').toString('utf8'));
+        }
         const cid = ballot.candidateId;
         if (cid) tally[cid] = (tally[cid] || 0) + 1;
       } catch (_) { /* skip unreadable ballots */ }
@@ -200,8 +199,12 @@ router.get('/:id', validateElectionId, async (req, res) => {
     } else {
       // Results not released — return encrypted tally
       let encryptedTally = null;
-      if (electionMeta && electionMeta.tally_key) {
-        encryptedTally = encryptTally(tally, electionMeta.tally_key);
+      if (electionMeta && electionMeta.tally_key && electionMeta.tally_key.length <= 64 && /^[0-9a-f]+$/i.test(electionMeta.tally_key)) {
+        try {
+          encryptedTally = encryptTally(tally, electionMeta.tally_key);
+        } catch (_) {
+          encryptedTally = null;
+        }
       }
 
       res.json({
