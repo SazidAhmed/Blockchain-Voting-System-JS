@@ -18,7 +18,7 @@ RESP=$(curl -s -X POST "$BACKEND_URL/elections" -H "Authorization: Bearer $ADMIN
   -H "Content-Type: application/json" \
   -d "{\"title\":\"Smoke Test Election\",\"description\":\"For smoke tests\",\"startDate\":\"2025-01-01 00:00:00\",\"endDate\":\"2027-12-31 23:59:59\",\"candidates\":$CAND_JSON}")
 EID=$(echo "$RESP" | "$JQ_CMD" -r '.id // empty')
-[ -n "$EID" ] && curl -s -X PUT "$BACKEND_URL/elections/$EID/status" \
+[ -n "$EID" ] && curl -s -X PATCH "$BACKEND_URL/elections/$EID/status" \
   -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
   -d '{"status":"active"}' > /dev/null && echo -e "${GREEN}✓ Election $EID created + activated${NC}"
 
