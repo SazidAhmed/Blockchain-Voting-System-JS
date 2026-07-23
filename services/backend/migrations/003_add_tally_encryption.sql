@@ -14,7 +14,7 @@ SET @sql_tally_key = IF(
       AND COLUMN_NAME = 'tally_key'
   ),
   'SELECT 1',
-  'ALTER TABLE elections ADD COLUMN tally_key VARCHAR(64) NULL AFTER public_key'
+  'ALTER TABLE elections ADD COLUMN tally_key TEXT NULL AFTER public_key'
 );
 PREPARE stmt_tally_key FROM @sql_tally_key;
 EXECUTE stmt_tally_key;

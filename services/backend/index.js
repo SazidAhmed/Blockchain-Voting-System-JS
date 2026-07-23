@@ -1,9 +1,23 @@
 const path = require("path");
 require("dotenv").config({ path: path.resolve(__dirname, "../../.env") });
+
+if (
+  process.env.NODE_ENV === "production" &&
+  process.env.JWT_SECRET ===
+    "your-super-secret-jwt-key-change-in-production-minimum-32-chars"
+) {
+  console.error(
+    "CRITICAL: Default JWT_SECRET detected. Generate a random secret and update .env",
+  );
+  process.exit(1);
+}
+
 const express = require("express");
-const bodyParser = require("body-parser");
 const cors = require("cors");
 const helmet = require("helmet");
+const cookieParser = require("cookie-parser");
+const { csrfProtection, setCsrfToken } = require("./middleware/csrf");
+const { generalLimiter } = require("./middleware/rateLimiter");
 const { pool } = require("./config/db");
 const userRoutes = require("./routes/users");
 const electionRoutes = require("./routes/elections");
@@ -11,6 +25,30 @@ const emailService = require("./services/emailService");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// Trust proxy (required for correct IP behind reverse proxy / load balancer)
+app.set("trust proxy", 1);
+
+// Health check endpoint (before CORS so Docker healthcheck without Origin header works)
+app.get("/health", (req, res) => {
+  res.status(200).json({ status: "ok", message: "Server is running" });
+});
+
+// Root discovery route — dev only (hides service details in production)
+if (process.env.NODE_ENV !== "production") {
+  app.get("/", (req, res) => {
+    res.json({
+      service: "Backend API",
+      version: "1.0.0",
+      port: PORT,
+      endpoints: {
+        health: "/health",
+        users: "/api/users",
+        elections: "/api/elections",
+      },
+    });
+  });
+}
 
 // Security Middleware
 app.use(
@@ -37,18 +75,25 @@ app.use(
   }),
 );
 
-// CORS Configuration - Restrict to frontend origin
-const allowedOrigins = [
-  process.env.FRONTEND_URL || "http://localhost:5173",
-  "http://localhost:5173",
-  "http://127.0.0.1:5173",
-  "http://localhost:5174",
-  "http://127.0.0.1:5174",
-];
+// CORS Configuration - Restrict to known origins
+// Set CORS_ALLOWED_ORIGINS as a comma-separated list in production.
+// Fallback: dev defaults cover both frontend (5173) and admin panel (5174).
+const allowedOrigins = (process.env.CORS_ALLOWED_ORIGINS || "")
+  .split(",")
+  .map((o) => o.trim())
+  .filter(Boolean);
+if (allowedOrigins.length === 0) {
+  allowedOrigins.push(
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "http://localhost:5174",
+    "http://127.0.0.1:5174",
+  );
+}
 
 const corsOptions = {
   origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps, curl, Postman)
+    // Allow requests with no origin (non-browser clients: curl, Postman, server-to-server)
     if (!origin) return callback(null, true);
 
     if (allowedOrigins.indexOf(origin) !== -1) {
@@ -60,13 +105,19 @@ const corsOptions = {
   credentials: true,
   optionsSuccessStatus: 200,
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization", "x-auth-token"],
+  allowedHeaders: ["Content-Type", "Authorization", "x-auth-token", "x-csrf-token"],
 };
 app.use(cors(corsOptions));
 
+// Global rate limiting
+app.use(generalLimiter);
+
 // Body Parser with size limits
-app.use(bodyParser.json({ limit: "10mb" }));
-app.use(bodyParser.urlencoded({ extended: true, limit: "10mb" }));
+app.use(express.json({ limit: "1mb" }));
+app.use(express.urlencoded({ extended: true, limit: "1mb" }));
+app.use(cookieParser());
+app.use(setCsrfToken);
+app.use(csrfProtection);
 
 // Request timeout middleware (30 seconds)
 app.use((req, res, next) => {
@@ -86,75 +137,12 @@ app.disable("x-powered-by");
 app.use("/api/users", userRoutes);
 app.use("/api/elections", electionRoutes);
 
-// Root route
-app.get("/", (req, res) => {
-  res.json({
-    service: "Blockchain Voting System - Backend API",
-    version: "1.0.0",
-    status: "running",
-    endpoints: {
-      health: "/health",
-      users: "/api/users",
-      elections: "/api/elections",
-    },
-  });
-});
-
-// Basic health check endpoint
-app.get("/health", (req, res) => {
-  res.status(200).json({ status: "ok", message: "Server is running" });
-});
-
 // 404 handler
 app.use((req, res) => {
-  const routes = [];
-  const stack = app._router && app._router.stack;
-  if (stack) {
-    stack.forEach((layer) => {
-      try {
-        if (layer.route) {
-          const methods = Object.keys(layer.route.methods)
-            .join(",")
-            .toUpperCase();
-          routes.push(`${methods} ${layer.route.path}`);
-        } else if (
-          layer.name === "router" &&
-          layer.handle &&
-          layer.handle.stack
-        ) {
-          layer.handle.stack.forEach((r) => {
-            if (r.route) {
-              const methods = Object.keys(r.route.methods)
-                .join(",")
-                .toUpperCase();
-              routes.push(`${methods} ${r.regexp}`);
-            }
-          });
-        }
-      } catch (_) {
-        // skip malformed router layers
-      }
-    });
-  }
   res.status(404).json({
     error: "Not Found",
     message: `${req.method} ${req.originalUrl} does not exist`,
     status: 404,
-    availableEndpoints:
-      routes.length > 0
-        ? routes
-        : [
-            "GET /",
-            "GET /health",
-            "GET /api/users",
-            "POST /api/users/send-otp",
-            "POST /api/users/verify-otp",
-            "GET /api/elections",
-            "GET /api/elections/:id",
-            "POST /api/elections",
-            "POST /api/elections/:id/vote",
-            "GET /api/elections/admin/all",
-          ],
   });
 });
 
@@ -183,17 +171,22 @@ app.use((err, req, res, next) => {
   console.error("Error:", err);
 
   // Determine status code
-  const statusCode = err.statusCode || 500;
+  const statusCode = err.statusCode || err.status || 500;
 
   // Send safe error message
-  const message =
-    process.env.NODE_ENV === "production"
-      ? "An error occurred processing your request"
-      : err.message || "Internal server error";
+  const isDev = process.env.NODE_ENV !== "production";
 
   res.status(statusCode).json({
-    message,
-    ...(process.env.NODE_ENV !== "production" && { stack: err.stack }),
+    message: isDev
+      ? err.message || "Internal server error"
+      : statusCode >= 500
+        ? "An error occurred processing your request"
+        : err.message || "An error occurred",
+    ...(isDev && {
+      stack: err.stack,
+      code: err.code,
+      type: err.name,
+    }),
   });
 });
 

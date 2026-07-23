@@ -17,8 +17,8 @@ const {
 const {
   hashPassword,
   comparePassword,
-  generateKeypair,
-} = require("../utils/crypto");
+} = require("../utils/password");
+
 const auditLogger = require("../utils/auditLogger");
 const otpService = require("../services/otpService");
 const emailService = require("../services/emailService");
@@ -210,21 +210,13 @@ router.post(
       // Hash password
       const hashedPassword = await hashPassword(password);
 
-      // Use client-provided keys if available, otherwise generate server-side (legacy support)
-      let userPublicKey = publicKey;
-      let userEncryptionPublicKey = encryptionPublicKey;
-      let privateKeyToReturn = null;
-
+      // Require client-side key generation
       if (!publicKey || !encryptionPublicKey) {
-        // Legacy mode: generate keys server-side (not recommended for production)
-        const keypair = generateKeypair();
-        userPublicKey = keypair.publicKey;
-        userEncryptionPublicKey = keypair.publicKey; // In legacy mode, use same key
-        privateKeyToReturn = keypair.privateKey;
-        console.warn(
-          "Warning: Keys generated server-side. Client-side key generation is preferred.",
-        );
+        return res.status(400).json({ message: 'Client-side key generation required. Please generate keys in your browser.' });
       }
+
+      const userPublicKey = publicKey;
+      const userEncryptionPublicKey = encryptionPublicKey;
 
       // Generate pseudonym ID (deterministic hash of institution ID for privacy)
       const pseudonymId = crypto
@@ -292,11 +284,6 @@ router.post(
         electionsRegistered: electionsRegisteredCount,
       };
 
-      // Only return private key if it was generated server-side (legacy mode)
-      if (privateKeyToReturn) {
-        response.privateKey = privateKeyToReturn;
-      }
-
       // Log successful registration
       await auditLogger.logUserRegistration(
         userId,
@@ -306,7 +293,7 @@ router.post(
           username,
           role,
           email,
-          keysGeneratedBy: privateKeyToReturn ? "server" : "client",
+          keysGeneratedBy: "client",
           electionsAutoRegistered: electionsRegisteredCount,
         },
         req,
@@ -314,10 +301,15 @@ router.post(
 
       // Mark this institution member as a registered voter in the directory
       try {
+        const institutionApiKey = process.env.INSTITUTION_API_KEY;
+        const patchHeaders = { timeout: 3000 };
+        if (institutionApiKey) {
+          patchHeaders.headers = { "x-api-key": institutionApiKey };
+        }
         await axios.patch(
           `${INSTITUTION_API_URL}/api/members/${institutionId.toUpperCase()}/voter`,
           { is_voter: true },
-          { timeout: 3000 },
+          patchHeaders,
         );
       } catch (markErr) {
         // Non-fatal — registration still succeeds
@@ -412,10 +404,18 @@ router.post("/login", loginLimiter, validateLogin, async (req, res) => {
 
     // Create JWT token
     const token = jwt.sign(
-      { id: user.id, role: user.role, institutionId: user.institution_id },
+      { id: user.id, role: user.role, institutionId: user.institution_id, jti: crypto.randomUUID() },
       process.env.JWT_SECRET,
-      { expiresIn: "1h" },
+      { algorithm: "HS256", expiresIn: "1h" },
     );
+
+    // Set httpOnly cookie
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: 3600000,
+    });
 
     // Log successful login
     await auditLogger.logUserLogin(
@@ -439,7 +439,7 @@ router.post("/login", loginLimiter, validateLogin, async (req, res) => {
       },
     });
   } catch (err) {
-    console.error(err);
+    console.error("Login error:", err);
 
     // Log failed login
     await auditLogger.logUserLogin(
@@ -453,7 +453,13 @@ router.post("/login", loginLimiter, validateLogin, async (req, res) => {
       req,
     );
 
-    res.status(500).json({ message: "Server error" });
+    const isDev = process.env.NODE_ENV !== "production";
+    res.status(500).json({
+      message: isDev
+        ? `Server error: ${err.message}`
+        : "Server error. Please try again later.",
+      ...(isDev && { code: err.code, type: err.name }),
+    });
   }
 });
 
@@ -486,6 +492,18 @@ router.get("/me", auth, async (req, res) => {
     console.error(err);
     res.status(500).json({ message: "Server error" });
   }
+});
+
+// @route   POST /api/users/logout
+// @desc    Logout user, revoke token
+// @access  Private
+router.post("/auth/logout", auth, (req, res) => {
+  const tokenBlacklist = require("../utils/tokenBlacklist");
+  if (req.user.jti) {
+    tokenBlacklist.add(req.user.jti);
+  }
+  res.clearCookie("token");
+  res.json({ message: "Logged out" });
 });
 
 module.exports = router;

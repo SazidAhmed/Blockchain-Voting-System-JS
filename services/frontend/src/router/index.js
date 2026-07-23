@@ -66,8 +66,8 @@ const router = createRouter({
 
 // Navigation guard
 router.beforeEach((to, from, next) => {
-  const token = localStorage.getItem('token')
-  const isAuthenticated = !!token
+  const user = JSON.parse(localStorage.getItem('voter_user') || 'null')
+  const isAuthenticated = !!user
 
   if (to.matched.some(record => record.meta.requiresAuth)) {
     if (!isAuthenticated) {

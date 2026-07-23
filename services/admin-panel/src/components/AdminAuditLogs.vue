@@ -32,6 +32,7 @@
     </div>
 
     <div v-if="loading" class="loading">Loading audit logs...</div>
+    <div v-else-if="fetchError" class="alert alert-danger">{{ fetchError }}</div>
     <div v-else-if="filteredLogs.length === 0" class="alert alert-info">
       No audit logs found
     </div>
@@ -115,16 +116,25 @@
 </template>
 
 <script>
-const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
+import api from "../services/api";
 
 export default {
   name: "AdminAuditLogs",
+  props: {
+    tabActive: { type: Boolean, default: false },
+  },
+  watch: {
+    tabActive(active) {
+      if (active) this.fetchLogs();
+    },
+  },
   data() {
     return {
       logs: [],
       selectedAction: "",
       selectedStatus: "",
       loading: false,
+      fetchError: null,
       limit: 20,
       offset: 0,
       total: 0,
@@ -150,20 +160,18 @@ export default {
   methods: {
     async fetchLogs() {
       this.loading = true;
+      this.fetchError = null;
       try {
-        const response = await fetch(
-          `${API_BASE}/api/elections/admin/audit-logs?limit=${this.limit}&offset=${this.offset}`,
-          {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem("token")}`,
-            },
-          },
+        const { data } = await api.get(
+          `/elections/admin/audit-logs?limit=${this.limit}&offset=${this.offset}`,
         );
-        if (!response.ok) throw new Error("Failed to fetch logs");
-        const data = await response.json();
         this.logs = data.logs;
         this.total = data.total;
       } catch (err) {
+        this.fetchError =
+          err.displayMessage ||
+          err.response?.data?.message ||
+          "Failed to load audit logs. Please try again.";
         console.error("Error fetching logs:", err);
       } finally {
         this.loading = false;
@@ -171,16 +179,9 @@ export default {
     },
     async verifyIntegrity(logId) {
       try {
-        const response = await fetch(
-          `${API_BASE}/api/elections/admin/verify-audit-integrity/${logId}`,
-          {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem("token")}`,
-            },
-          },
+        const { data: result } = await api.post(
+          `/elections/admin/verify-audit-integrity/${logId}`,
         );
-        const result = await response.json();
 
         if (result.valid) {
           alert(`✓ Audit log #${logId} integrity verified - Hash matches`);
@@ -190,7 +191,8 @@ export default {
           );
         }
       } catch (err) {
-        alert("Error verifying integrity: " + err.message);
+        const msg = err.displayMessage || err.response?.data?.message || err.message;
+        alert("Error verifying integrity: " + msg);
       }
     },
     formatDate(dateString) {
@@ -425,5 +427,12 @@ export default {
   background-color: color-mix(in srgb, var(--accent) 10%, transparent);
   color: var(--accent);
   border: 1px solid var(--border);
+  border-left: 4px solid;
+}
+
+.alert-danger {
+  background-color: color-mix(in srgb, var(--error) 10%, transparent);
+  color: var(--error);
+  border-left-color: var(--error);
 }
 </style>

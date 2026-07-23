@@ -1,8 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { useAuthStore } from './auth'
-
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'
+import api from '../services/api'
 
 export const useAuditStore = defineStore('audit', () => {
   // State
@@ -40,24 +38,14 @@ export const useAuditStore = defineStore('audit', () => {
 
   // Actions
   async function fetchAuditLogs() {
-    const authStore = useAuthStore()
     loading.value = true
     error.value = null
 
     try {
-      const response = await fetch(`${API_BASE}/api/elections/admin/audit-logs`, {
-        headers: {
-          'Authorization': `Bearer ${authStore.token}`
-        }
-      })
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch audit logs')
-      }
-
-      auditLogs.value = await response.json()
+      const { data } = await api.get('/elections/admin/audit-logs')
+      auditLogs.value = data
     } catch (err) {
-      error.value = err.message
+      error.value = err.response?.data?.message || 'Failed to fetch audit logs'
       throw err
     } finally {
       loading.value = false
@@ -65,26 +53,14 @@ export const useAuditStore = defineStore('audit', () => {
   }
 
   async function verifyLogIntegrity(logId) {
-    const authStore = useAuthStore()
     loading.value = true
     error.value = null
 
     try {
-      const response = await fetch(`${API_BASE}/api/elections/admin/verify-audit-integrity/${logId}`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${authStore.token}`
-        }
-      })
-
-      if (!response.ok) {
-        throw new Error('Failed to verify log integrity')
-      }
-
-      const result = await response.json()
-      return result.isValid
+      const { data } = await api.post(`/elections/admin/verify-audit-integrity/${logId}`)
+      return data.isValid
     } catch (err) {
-      error.value = err.message
+      error.value = err.response?.data?.message || 'Failed to verify log integrity'
       throw err
     } finally {
       loading.value = false
@@ -92,24 +68,14 @@ export const useAuditStore = defineStore('audit', () => {
   }
 
   async function verifyBlockchainIntegrity() {
-    const authStore = useAuthStore()
     loading.value = true
     error.value = null
 
     try {
-      const response = await fetch(`${API_BASE}/api/elections/admin/security-logs`, {
-        headers: {
-          'Authorization': `Bearer ${authStore.token}`
-        }
-      })
-
-      if (!response.ok) {
-        throw new Error('Failed to verify blockchain integrity')
-      }
-
-      return await response.json()
+      const { data } = await api.get('/elections/admin/security-logs')
+      return data
     } catch (err) {
-      error.value = err.message
+      error.value = err.response?.data?.message || 'Failed to verify blockchain integrity'
       throw err
     } finally {
       loading.value = false
@@ -117,24 +83,15 @@ export const useAuditStore = defineStore('audit', () => {
   }
 
   async function exportLogs(format = 'json') {
-    const authStore = useAuthStore()
     error.value = null
 
     try {
-      const response = await fetch(`${API_BASE}/api/elections/admin/audit-logs/export?format=${format}`, {
-        headers: {
-          'Authorization': `Bearer ${authStore.token}`
-        }
+      const { data } = await api.get(`/elections/admin/audit-logs/export?format=${format}`, {
+        responseType: 'blob'
       })
-
-      if (!response.ok) {
-        throw new Error('Failed to export logs')
-      }
-
-      return await response.blob()
+      return data
     } catch (err) {
-      error.value = err.message
-      throw err
+      error.value = err.response?.data?.message || 'Failed to export logs'
     }
   }
 

@@ -1,17 +1,15 @@
 import { defineStore } from "pinia";
 import { computed, ref } from "vue";
-
-const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
+import api from "../services/api";
 
 export const useAuthStore = defineStore("auth", () => {
   // State
   const user = ref(null);
-  const token = ref(localStorage.getItem("token") || null);
   const loading = ref(false);
   const error = ref(null);
 
   // Computed
-  const isAuthenticated = computed(() => !!token.value);
+  const isAuthenticated = computed(() => !!user.value);
   const isAdmin = computed(() => user.value && user.value.role === "admin");
   const currentUser = computed(() => user.value);
 
@@ -20,30 +18,22 @@ export const useAuthStore = defineStore("auth", () => {
     loading.value = true;
     error.value = null;
     try {
-      const response = await fetch(`${API_BASE}/api/users/login`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ ...credentials, loginType: "admin" }),
+      const { data } = await api.post("/users/login", {
+        ...credentials,
+        loginType: "admin",
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Login failed");
-      }
-
-      const data = await response.json();
       user.value = data.user;
-      token.value = data.token;
-
-      // Persist to localStorage
-      localStorage.setItem("token", data.token);
-      localStorage.setItem("user", JSON.stringify(data.user));
+      localStorage.setItem("admin_user", JSON.stringify(data.user));
+      localStorage.setItem("admin_token", data.token);
 
       return data;
     } catch (err) {
-      error.value = err.message;
+      error.value =
+        err.displayMessage ||
+        err.response?.data?.message ||
+        err.response?.data?.error ||
+        "Login failed. Please try again.";
       throw err;
     } finally {
       loading.value = false;
@@ -51,21 +41,18 @@ export const useAuthStore = defineStore("auth", () => {
   }
 
   async function fetchCurrentUser() {
-    if (!token.value) return;
+    if (!user.value) return;
 
     loading.value = true;
     try {
-      const response = await fetch(`${API_BASE}/api/users/me`, {
-        headers: {
-          Authorization: `Bearer ${token.value}`,
-        },
-      });
-
-      if (!response.ok) throw new Error("Failed to fetch user");
-      user.value = await response.json();
+      const { data } = await api.get("/users/me");
+      user.value = data;
       return user.value;
     } catch (err) {
-      error.value = err.message;
+      error.value =
+        err.displayMessage ||
+        err.response?.data?.message ||
+        "Failed to fetch user.";
       logout();
     } finally {
       loading.value = false;
@@ -74,9 +61,8 @@ export const useAuthStore = defineStore("auth", () => {
 
   function logout() {
     user.value = null;
-    token.value = null;
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
+    localStorage.removeItem("admin_user");
+    localStorage.removeItem("admin_token");
     error.value = null;
   }
 
@@ -86,12 +72,7 @@ export const useAuthStore = defineStore("auth", () => {
 
   // Initialize from localStorage
   function initializeAuth() {
-    const storedUser = localStorage.getItem("user");
-    const storedToken = localStorage.getItem("token");
-
-    if (storedToken) {
-      token.value = storedToken;
-    }
+    const storedUser = localStorage.getItem("admin_user");
 
     if (storedUser) {
       try {
@@ -105,7 +86,6 @@ export const useAuthStore = defineStore("auth", () => {
   return {
     // State
     user,
-    token,
     loading,
     error,
     // Computed

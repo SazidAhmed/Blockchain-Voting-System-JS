@@ -4,15 +4,15 @@
 
 5 Docker services, no root package.json:
 
-| Service         | Port      | Stack                | Entry                                    |
-| --------------- | --------- | -------------------- | ---------------------------------------- |
-| frontend        | 5173      | Vue 3 + Vite + Vuex  | `services/frontend/`                     |
-| admin-panel     | 5174      | Vue 3 + Vite + Pinia | `services/admin-panel/`                  |
-| backend         | 3000      | Express 5 + MySQL    | `services/backend/index.js`              |
-| blockchain-node | 3001-3004 | Express + LevelDB    | `services/blockchain-node/index.js`      |
-| institution-api | 4000      | Express 4 + MySQL    | `services/institution-api/src/server.js` |
+| Service         | Port      | Stack                                    | Entry                                    |
+| --------------- | --------- | ---------------------------------------- | ---------------------------------------- |
+| frontend        | 5173      | Vue 3 + Vite + Vuex                      | `services/frontend/`                     |
+| admin-panel     | 5174      | Vue 3 + Vite + Pinia                     | `services/admin-panel/`                  |
+| backend         | 3000      | Express 5 + MySQL                        | `services/backend/index.js`              |
+| blockchain-node | 3001-3004 | Express 5 + LevelDB + Socket.IO          | `services/blockchain-node/index.js`      |
+| institution-api | 4000      | Express 4 + MySQL (own `institution_db`) | `services/institution-api/src/server.js` |
 
-4 blockchain nodes run for peer consensus. Backend depends on MySQL, blockchain-node, and institution-api.
+4 blockchain nodes run for peer consensus via Socket.IO. Backend depends on MySQL, blockchain-node, and institution-api.
 
 ## Quick Start
 
@@ -44,6 +44,12 @@ bash infra/scripts/docker-seed.sh
 
 # Run integration tests (requires running stack)
 bash tests/run-tests.sh
+
+# Local CI (same checks as GitHub Actions, no Docker required for static phase)
+bash scripts/ci.sh
+
+# Pre-push validation (branch name, commit message, secrets, syntax)
+bash scripts/run-all-checks.sh
 ```
 
 ## Testing
@@ -58,7 +64,7 @@ No unit test framework configured — `npm test` is a stub in all services. Test
 - `tests/categories/security-suite.sh` — no-auth vote, nullifier uniqueness, XSS, rate-limit
 - `tests/categories/resilience-test.sh` — node restart, sync, backend restart
 
-Requires Docker stack running. Use `docker-compose -f infra/docker/docker-compose.test.yml up -d` for isolated test stack.
+Requires Docker stack running. Use `docker-compose -f infra/docker/docker-compose.test.yml up -d` for isolated test stack (ports 3005/3010-3013/4005/3307 instead of defaults).
 
 ## Database
 
@@ -74,6 +80,7 @@ Requires Docker stack running. Use `docker-compose -f infra/docker/docker-compos
 - **Transaction hashes**: Deterministic SHA-256 of `{electionId, nullifier, encryptedBallot, timestamp}`
 - **Blockchain**: Custom PoW with LevelDB persistence, Merkle tree vote verification
 - **Auth**: JWT with ECDSA verification, rate-limited endpoints
+- **PRs**: Must follow Conventional Commits (`feat:`, `fix:`, etc.) — enforced by CI. PR descriptions must reference an issue (`Closes #N`)
 
 ## File Layout
 
@@ -109,9 +116,11 @@ tests/
 
 ## Gotchas
 
-- Backend `CORS` allows `localhost:5173` and `localhost:5174` only — add new frontend ports to `services/backend/index.js`
+- Backend `CORS` allows `localhost:5173`, `127.0.0.1:5173`, `localhost:5174`, `127.0.0.1:5174` (fallback in dev) — add new frontend ports to `services/backend/index.js`
 - Frontend uses `VITE_API_BASE_URL`, `VITE_BLOCKCHAIN_URL`, and `VITE_INSTITUTION_API_URL` env vars (set in docker-compose, not `.env`)
 - Blockchain node peer discovery uses `PEERS` env var with comma-separated URLs, staggered 2s connections
+- Install githooks: `git config core.hooksPath .githooks` (pre-commit checks secrets/syntax, pre-push runs `scripts/run-all-checks.sh`)
+- Convenience aliases in `.shell_aliases`: `dc` (docker-compose up), `dcm` (+monitoring), `health` (health check)
 - `package-lock.json` is gitignored — run `npm install` in each service dir after cloning
 - Express 5 is used in backend/blockchain-node (not 4) — middleware API differs
 - Institution API uses Express 4 (different from backend)

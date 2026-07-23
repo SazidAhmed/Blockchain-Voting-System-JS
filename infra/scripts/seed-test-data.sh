@@ -51,7 +51,7 @@ for election_info in \
     echo -e "${GREEN}✓ $title (ID: $EID)${NC}"
     # Activate if needed
     if [ "$status" = "active" ]; then
-      curl -s -X PUT "$BACKEND_URL/elections/$EID/status" \
+      curl -s -X PATCH "$BACKEND_URL/elections/$EID/status" \
         -H "Authorization: Bearer $ADMIN_TOKEN" \
         -H "Content-Type: application/json" \
         -d '{"status":"active"}' > /dev/null

@@ -150,6 +150,7 @@
 
 <script>
 import { mapGetters } from "vuex";
+import api from "@/services/api";
 import keyManager from "@/services/keyManager";
 import VoteReceipt from "@/components/VoteReceipt.vue";
 import AppModal from "@/components/AppModal.vue";
@@ -254,6 +255,7 @@ export default {
         this.showSuccessModal = true;
       } catch (error) {
         this.localError =
+          error.displayMessage ||
           error.message ||
           error.response?.data?.message ||
           "Failed to submit vote. Please try again.";
@@ -269,17 +271,12 @@ export default {
 
     // Check if user already voted
     try {
-      const token = localStorage.getItem("token");
-      const res = await fetch(
-        `${import.meta.env.VITE_API_BASE_URL || "http://localhost:3000"}/api/elections/${this.electionId}/registration-status`,
-        { headers: { "x-auth-token": token } },
+      const res = await api.get(
+        `/elections/${this.electionId}/registration-status`,
       );
-      if (res.ok) {
-        const data = await res.json();
-        if (data.status === "voted") {
-          this.alreadyVoted = true;
-          return;
-        }
+      if (res.data.status === "voted") {
+        this.alreadyVoted = true;
+        return;
       }
     } catch (e) {
       // Silently fail — backend will still reject double votes
@@ -298,6 +295,7 @@ export default {
       } catch (error) {
         console.error("Failed to load keys:", error);
         this.localError =
+          error.displayMessage ||
           "Failed to load cryptographic keys. Please login again.";
       }
     }

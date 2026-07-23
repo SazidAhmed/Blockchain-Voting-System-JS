@@ -38,7 +38,7 @@ Each vote is stored as a pending transaction. When a block is mined, pending tra
 
 ## Double-Vote Prevention
 
-Nullifiers enforce single-vote-per-election. `Blockchain.isNullifierUsed()` in `src/core/blockchain.js:174` scans all blocks and pending transactions. A matching nullifier rejects the vote. Because nullifiers derive from `privateKey + electionId` (see [crypto.md](crypto.md)), the same voter always produces the same nullifier for a given election — no identity needed.
+Nullifiers enforce single-vote-per-election. `Blockchain.isNullifierUsed()` in `src/core/blockchain.js:174` scans all blocks and pending transactions. A matching nullifier rejects the vote. Nullifiers are derived server-side from the authenticated user's ID and election ID — clients do not supply nullifiers directly, preventing manipulation.
 
 ## Block Structure
 
@@ -64,7 +64,7 @@ Genesis block is created at index 0 with message "Genesis Block" and empty trans
 
 ## Mining Flow
 
-1. `GET /mine` or `MINE` message: create block from pending transactions
+1. `POST /mine` or `MINE` message: create block from pending transactions
 2. `mineBlock(difficulty)`: increment nonce until hash starts with `difficulty` zeros
 3. `signBlock(privateKey)`: HMAC-SHA256 signature
 4. `addBlock()`: validate index, previousHash, hash, validator

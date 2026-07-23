@@ -23,18 +23,18 @@ Source of truth: `.env.example` in project root. Copy to `.env` before starting.
 
 Two sets — `DB_*` for application use, `MYSQL_*` for Docker image.
 
-| Variable              | Default            | Description                        |
-| --------------------- | ------------------ | ---------------------------------- |
-| `DB_HOST`             | `localhost`        | MySQL host (use `mysql` in Docker) |
-| `DB_PORT`             | `3306`             | MySQL port                         |
-| `DB_USER`             | `voting_user`      | Application DB user                |
-| `DB_PASSWORD`         | `voting_pass`      | Application DB password            |
-| `DB_NAME`             | `voting_db`        | Application DB name                |
-| `DB_ROOT_PASSWORD`    | `voting_root_pass` | MySQL root password                |
-| `MYSQL_ROOT_PASSWORD` | `voting_root_pass` | Docker MySQL root password         |
-| `MYSQL_DATABASE`      | `voting_db`        | Docker MySQL database              |
-| `MYSQL_USER`          | `voting_user`      | Docker MySQL user                  |
-| `MYSQL_PASSWORD`      | `voting_pass`      | Docker MySQL password              |
+| Variable              | Default            | Description                       |
+| --------------------- | ------------------ | --------------------------------- |
+| `DB_HOST`             | `localhost`        | MySQL host (use`mysql` in Docker) |
+| `DB_PORT`             | `3306`             | MySQL port                        |
+| `DB_USER`             | `voting_user`      | Application DB user               |
+| `DB_PASSWORD`         | `voting_pass`      | Application DB password           |
+| `DB_NAME`             | `voting_db`        | Application DB name               |
+| `DB_ROOT_PASSWORD`    | `voting_root_pass` | MySQL root password               |
+| `MYSQL_ROOT_PASSWORD` | `voting_root_pass` | Docker MySQL root password        |
+| `MYSQL_DATABASE`      | `voting_db`        | Docker MySQL database             |
+| `MYSQL_USER`          | `voting_user`      | Docker MySQL user                 |
+| `MYSQL_PASSWORD`      | `voting_pass`      | Docker MySQL password             |
 
 ### Frontend (port 5173)
 
@@ -48,12 +48,21 @@ These are baked at build time for production (Dockerfile.prod uses `ARG`).
 
 ### Blockchain Node (port 3001)
 
-| Variable              | Default                       | Description               |
-| --------------------- | ----------------------------- | ------------------------- |
-| `BLOCKCHAIN_NODE_URL` | `http://blockchain-node:3001` | Internal node URL         |
-| `NODE_ID`             | `node1`                       | Node identifier           |
-| `NODE_TYPE`           | `validator`                   | `validator` or `observer` |
-| `PEERS`               | _(empty)_                     | Comma-separated peer URLs |
+| Variable              | Default                       | Description                                  |
+| --------------------- | ----------------------------- | -------------------------------------------- |
+| `BLOCKCHAIN_NODE_URL` | `http://blockchain-node:3001` | Internal node URL                            |
+| `BLOCKCHAIN_API_KEY`  | _(required)_                  | API key for node access (`x-api-key` header) |
+| `BACKEND_URL`         | `http://backend:3000`         | Backend URL for CORS restriction             |
+| `NODE_ID`             | `node1`                       | Node identifier                              |
+| `NODE_TYPE`           | `validator`                   | `validator` or `observer`                    |
+| `PEERS`               | _(empty)_                     | Comma-separated peer URLs                    |
+
+### Institution API (port 4000)
+
+| Variable              | Default               | Description                                             |
+| --------------------- | --------------------- | ------------------------------------------------------- |
+| `INSTITUTION_API_KEY` | _(required)_          | API key for institution-api access (`x-api-key` header) |
+| `BACKEND_URL`         | `http://backend:3000` | Backend URL for CORS restriction                        |
 
 ### SMTP (Optional)
 
@@ -111,6 +120,8 @@ These are commented out in `.env.example`:
 - `JWT_SECRET`
 - `FRONTEND_URL`
 - `VITE_API_BASE_URL`, `VITE_BLOCKCHAIN_URL`
+- `BLOCKCHAIN_API_KEY`
+- `INSTITUTION_API_KEY`
 
 ## Test Stack
 

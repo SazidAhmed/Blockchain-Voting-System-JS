@@ -66,10 +66,22 @@ Registration requires email verification before account creation:
 1. `POST /api/users/institution-lookup/:institutionId` — verify member exists in institutional directory (proxied to institution-api)
 2. `POST /api/users/send-otp` — 6-digit OTP sent to institutional email via `EmailService` (SMTP or Ethereal in dev)
 3. `POST /api/users/verify-otp` — constant-time OTP comparison via `OTPService`, marks email verified (10min expiry, 3 attempts max, 60s cooldown between sends)
-4. `POST /api/users/register` — creates account, generates ECDSA + RSA-OAEP keypairs client-side, sends public keys to backend. User auto-registered for all active/pending elections
-5. `POST /api/users/login` — returns JWT for subsequent requests
+4. `POST /api/users/register` — creates account, requires client-side ECDSA + RSA-OAEP keypairs. User auto-registered for all active/pending elections
+5. `POST /api/users/login` — sets JWT as httpOnly cookie (not localStorage). CSRF double-submit cookie protection. JWT pinned to HS256 with JTI for revocation support
 
 OTP service uses in-memory storage with automatic cleanup. No OTP data persisted to database.
+
+## Route Organization
+
+Election routes are split into three files under `routes/elections/`:
+
+| File | Responsibility |
+| ---- | -------------- |
+| `crud.js` | Create, update, delete elections |
+| `candidates.js` | Add/remove candidates |
+| `voting.js` | Vote casting, registration, results |
+
+All mounted under `/api/elections`. Election status follows a state machine: `pending → active → completed`.
 
 ### Email Routing
 

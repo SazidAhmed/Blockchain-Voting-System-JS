@@ -1,8 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { useAuthStore } from './auth'
-
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'
+import api from '../services/api'
 
 export const useElectionsStore = defineStore('elections', () => {
   // State
@@ -21,24 +20,14 @@ export const useElectionsStore = defineStore('elections', () => {
     error.value = null
 
     try {
-      const response = await fetch(`${API_BASE}/api/elections/admin/all`, {
-        headers: {
-          'Authorization': `Bearer ${authStore.token}`
-        }
-      })
-
-      if (response.status === 401) {
+      const { data } = await api.get('/elections/admin/all')
+      elections.value = data
+    } catch (err) {
+      if (err.response?.status === 401) {
         authStore.logout()
         return
       }
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch elections')
-      }
-
-      elections.value = await response.json()
-    } catch (err) {
-      error.value = err.message
+      error.value = err.displayMessage || err.response?.data?.message || 'Failed to fetch elections. Please try again.'
       throw err
     } finally {
       loading.value = false
@@ -46,30 +35,15 @@ export const useElectionsStore = defineStore('elections', () => {
   }
 
   async function createElection(electionData) {
-    const authStore = useAuthStore()
     loading.value = true
     error.value = null
 
     try {
-      const response = await fetch(`${API_BASE}/api/elections`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${authStore.token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(electionData)
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.message || 'Failed to create election')
-      }
-
-      const newElection = await response.json()
+      const { data: newElection } = await api.post('/elections', electionData)
       elections.value.push(newElection)
       return newElection
     } catch (err) {
-      error.value = err.message
+      error.value = err.displayMessage || err.response?.data?.message || 'Failed to create election. Please try again.'
       throw err
     } finally {
       loading.value = false
@@ -77,27 +51,14 @@ export const useElectionsStore = defineStore('elections', () => {
   }
 
   async function updateElectionStatus(electionId, status) {
-    const authStore = useAuthStore()
     loading.value = true
     error.value = null
 
     try {
-      const response = await fetch(`${API_BASE}/api/elections/${electionId}/status`, {
-        method: 'PATCH',
-        headers: {
-          'Authorization': `Bearer ${authStore.token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ status })
-      })
-
-      if (!response.ok) {
-        throw new Error('Failed to update election status')
-      }
-
+      await api.patch(`/elections/${electionId}/status`, { status })
       await fetchElections()
     } catch (err) {
-      error.value = err.message
+      error.value = err.displayMessage || err.response?.data?.message || 'Failed to update election status. Please try again.'
       throw err
     } finally {
       loading.value = false
@@ -105,28 +66,14 @@ export const useElectionsStore = defineStore('elections', () => {
   }
 
   async function updateElection(electionId, electionData) {
-    const authStore = useAuthStore()
     loading.value = true
     error.value = null
 
     try {
-      const response = await fetch(`${API_BASE}/api/elections/${electionId}`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${authStore.token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(electionData)
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.message || 'Failed to update election')
-      }
-
+      await api.put(`/elections/${electionId}`, electionData)
       await fetchElections()
     } catch (err) {
-      error.value = err.message
+      error.value = err.displayMessage || err.response?.data?.message || 'Failed to update election. Please try again.'
       throw err
     } finally {
       loading.value = false
@@ -134,25 +81,14 @@ export const useElectionsStore = defineStore('elections', () => {
   }
 
   async function deleteElection(electionId) {
-    const authStore = useAuthStore()
     loading.value = true
     error.value = null
 
     try {
-      const response = await fetch(`${API_BASE}/api/elections/${electionId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${authStore.token}`
-        }
-      })
-
-      if (!response.ok) {
-        throw new Error('Failed to delete election')
-      }
-
+      await api.delete(`/elections/${electionId}`)
       elections.value = elections.value.filter(e => e.id !== electionId)
     } catch (err) {
-      error.value = err.message
+      error.value = err.displayMessage || err.response?.data?.message || 'Failed to delete election. Please try again.'
       throw err
     } finally {
       loading.value = false

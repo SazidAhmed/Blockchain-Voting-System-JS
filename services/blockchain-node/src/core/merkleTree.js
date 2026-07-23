@@ -336,58 +336,7 @@ class MerkleTree {
     }
 }
 
-/**
- * Utility functions for Merkle tree operations
- */
-class MerkleTreeUtils {
-    /**
-     * Create a Merkle tree from an election's votes
-     * @param {Array} votes - Array of vote transactions
-     * @param {string} electionId - Election ID to filter votes
-     * @returns {MerkleTree|null} - Merkle tree or null if no votes
-     */
-    static createElectionTree(votes, electionId) {
-        const electionVotes = votes.filter(v => v.electionId === electionId);
-        if (electionVotes.length === 0) {
-            return null;
-        }
-        return MerkleTree.fromVotes(electionVotes);
-    }
-
-    /**
-     * Verify a vote exists in an election using Merkle proof
-     * @param {Object} vote - Vote data
-     * @param {Object} proof - Merkle proof
-     * @param {string} electionRoot - Election's Merkle root
-     * @returns {boolean} - True if vote is verified
-     */
-    static verifyVoteInElection(vote, proof, electionRoot) {
-        const tree = new MerkleTree([vote]); // Temporary tree for verification
-        return tree.verifyProof(vote, proof, electionRoot);
-    }
-
-    /**
-     * Calculate the size savings of using Merkle proofs vs full data
-     * @param {number} totalItems - Total number of items in tree
-     * @param {number} itemsToVerify - Number of items to verify
-     * @returns {Object} - Size comparison
-     */
-    static calculateSavings(totalItems, itemsToVerify) {
-        const fullDataSize = totalItems * 64; // Assume 64 bytes per hash
-        const proofSize = itemsToVerify * Math.ceil(Math.log2(totalItems)) * 64;
-        const savings = ((fullDataSize - proofSize) / fullDataSize * 100).toFixed(2);
-
-        return {
-            fullDataSize: `${fullDataSize} bytes`,
-            proofSize: `${proofSize} bytes`,
-            savingsPercent: `${savings}%`,
-            efficiencyRatio: (fullDataSize / proofSize).toFixed(2)
-        };
-    }
-}
-
 module.exports = {
     MerkleTree,
-    MerkleNode,
-    MerkleTreeUtils
+    MerkleNode
 };

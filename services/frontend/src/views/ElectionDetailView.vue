@@ -134,6 +134,12 @@
         >
           <PhCheckSquare :size="16" /> Cast Your Vote
         </button>
+        <div
+          v-else-if="alreadyVoted"
+          class="btn btn-disabled"
+        >
+          <PhCheckCircle :size="16" weight="fill" /> Already Voted
+        </div>
       </div>
     </div>
   </div>
@@ -141,6 +147,7 @@
 
 <script>
 import { mapGetters } from "vuex";
+import api from "@/services/api";
 import {
   PhCheckCircle,
   PhClock,
@@ -171,6 +178,7 @@ export default {
       registrationLoading: false,
       localError: null,
       isRegistered: false,
+      alreadyVoted: false,
     };
   },
   computed: {
@@ -195,7 +203,7 @@ export default {
     },
     canVote() {
       if (!this.election) return false;
-      return this.election.status === "active";
+      return this.election.status === "active" && !this.alreadyVoted;
     },
     totalVotes() {
       if (!this.election || !this.election.candidates) return 0;
@@ -244,6 +252,8 @@ export default {
         this.isRegistered = true;
       } catch (error) {
         this.localError =
+          error.displayMessage ||
+          error.response?.data?.message ||
           "Failed to register for this election. Please try again.";
         console.error("Registration error:", error);
       } finally {
@@ -252,17 +262,11 @@ export default {
     },
     async checkRegistrationStatus() {
       try {
-        const token = localStorage.getItem("token");
-        const res = await fetch(
-          `${import.meta.env.VITE_API_BASE_URL || "http://localhost:3000"}/api/elections/${this.$route.params.id}/registration-status`,
-          {
-            headers: { "x-auth-token": token },
-          },
+        const res = await api.get(
+          `/elections/${this.$route.params.id}/registration-status`,
         );
-        if (res.ok) {
-          const data = await res.json();
-          this.isRegistered = data.registered;
-        }
+        this.isRegistered = res.data.registered;
+        this.alreadyVoted = res.data.status === "voted";
       } catch (e) {
         // Silently fail
       }

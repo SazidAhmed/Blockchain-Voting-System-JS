@@ -8,11 +8,11 @@ echo -e "${BLUE}=== Seed: Integration Test Data ===${NC}"
 
 "$SCRIPT_DIR/seed-test-smoke.sh"
 
-ADMIN_LOGIN=$(curl -s -X POST "$BACKEND_URL/auth/login" -H "Content-Type: application/json" \
+ADMIN_LOGIN=$(curl -s -X POST "$BACKEND_URL/users/login" -H "Content-Type: application/json" \
   -d "{\"email\":\"$SEED_ADMIN_EMAIL\",\"password\":\"$SEED_ADMIN_PASS\"}")
 TOKEN=$(echo "$ADMIN_LOGIN" | jq -r '.token')
 
-REG2=$(curl -s -X POST "$BACKEND_URL/auth/register" -H "Content-Type: application/json" \
+REG2=$(curl -s -X POST "$BACKEND_URL/users/register" -H "Content-Type: application/json" \
   -d "{\"name\":\"Integration Voter 2\",\"email\":\"integ-voter2@test.edu\",\"password\":\"TestPass123!\",\"studentId\":\"INTEG002\"}")
 if echo "$REG2" | jq -e '.userId' > /dev/null 2>&1; then
   echo -e "${GREEN}✓ Integration voter 2 created${NC}"

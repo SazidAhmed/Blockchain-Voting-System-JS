@@ -1,32 +1,17 @@
 import { createStore } from 'vuex'
-import axios from 'axios'
+import api from '@/services/api'
 import keyManager from '@/services/keyManager'
-
-// Configure axios
-const api = axios.create({
-  baseURL: `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'}/api`
-})
-
-// Add interceptor to include auth token
-api.interceptors.request.use(config => {
-  const token = localStorage.getItem('token')
-  if (token) {
-    config.headers['x-auth-token'] = token
-  }
-  return config
-})
 
 export default createStore({
   state: {
-    user: JSON.parse(localStorage.getItem('user') || 'null'),
-    token: localStorage.getItem('token') || null,
+    user: JSON.parse(localStorage.getItem('voter_user') || 'null'),
     elections: [],
     currentElection: null,
     loading: false,
     error: null
   },
   getters: {
-    isAuthenticated: state => !!state.token,
+    isAuthenticated: state => !!state.user,
     currentUser: state => state.user,
     getElections: state => state.elections,
     getCurrentElection: state => state.currentElection,
@@ -37,20 +22,14 @@ export default createStore({
     SET_USER(state, user) {
       state.user = user
       if (user) {
-        localStorage.setItem('user', JSON.stringify(user))
+        localStorage.setItem('voter_user', JSON.stringify(user))
       } else {
-        localStorage.removeItem('user')
+        localStorage.removeItem('voter_user')
       }
-    },
-    SET_TOKEN(state, token) {
-      state.token = token
-      localStorage.setItem('token', token)
     },
     CLEAR_AUTH(state) {
       state.user = null
-      state.token = null
-      localStorage.removeItem('token')
-      localStorage.removeItem('user')
+      localStorage.removeItem('voter_user')
     },
     SET_ELECTIONS(state, elections) {
       state.elections = elections
@@ -77,7 +56,11 @@ export default createStore({
         const response = await api.post('/users/register', userData)
         return response.data
       } catch (error) {
-        commit('SET_ERROR', error.response?.data?.message || 'Registration failed')
+        commit('SET_ERROR',
+          error.displayMessage ||
+          error.response?.data?.message ||
+          'Registration failed. Please try again.'
+        )
         throw error
       } finally {
         commit('SET_LOADING', false)
@@ -90,7 +73,6 @@ export default createStore({
       try {
         const response = await api.post('/users/login', { ...credentials, loginType: 'voter' })
         commit('SET_USER', response.data.user)
-        commit('SET_TOKEN', response.data.token)
         
         // Load user's cryptographic keys
         try {
@@ -105,15 +87,19 @@ export default createStore({
         
         return response.data
       } catch (error) {
-        commit('SET_ERROR', error.response?.data?.message || 'Login failed')
+        commit('SET_ERROR',
+          error.displayMessage ||
+          error.response?.data?.message ||
+          'Login failed. Please check your ID and password.'
+        )
         throw error
       } finally {
         commit('SET_LOADING', false)
       }
     },
     
-    async fetchCurrentUser({ commit }) {
-      if (!localStorage.getItem('token')) return
+    async fetchCurrentUser({ commit, state }) {
+      if (!state.user) return
       
       commit('SET_LOADING', true)
       try {
@@ -122,7 +108,10 @@ export default createStore({
         return response.data
       } catch (error) {
         commit('CLEAR_AUTH')
-        commit('SET_ERROR', 'Session expired. Please login again.')
+        commit('SET_ERROR',
+          error.displayMessage ||
+          'Session expired. Please login again.'
+        )
       } finally {
         commit('SET_LOADING', false)
       }
@@ -137,7 +126,7 @@ export default createStore({
     // Reload cryptographic keys from localStorage on app init
     restoreKeys({ commit, state }) {
       if (!state.user) {
-        const savedUser = localStorage.getItem('user')
+        const savedUser = localStorage.getItem('voter_user')
         if (savedUser) {
           commit('SET_USER', JSON.parse(savedUser))
         }
@@ -164,7 +153,11 @@ export default createStore({
         commit('SET_ELECTIONS', response.data)
         return response.data
       } catch (error) {
-        commit('SET_ERROR', error.response?.data?.message || 'Failed to fetch elections')
+        commit('SET_ERROR',
+          error.displayMessage ||
+          error.response?.data?.message ||
+          'Failed to fetch elections. Please try again.'
+        )
         throw error
       } finally {
         commit('SET_LOADING', false)
@@ -179,7 +172,11 @@ export default createStore({
         commit('SET_CURRENT_ELECTION', response.data)
         return response.data
       } catch (error) {
-        commit('SET_ERROR', error.response?.data?.message || 'Failed to fetch election details')
+        commit('SET_ERROR',
+          error.displayMessage ||
+          error.response?.data?.message ||
+          'Failed to fetch election details. Please try again.'
+        )
         throw error
       } finally {
         commit('SET_LOADING', false)
@@ -193,7 +190,11 @@ export default createStore({
         const response = await api.post('/elections', electionData)
         return response.data
       } catch (error) {
-        commit('SET_ERROR', error.response?.data?.message || 'Failed to create election')
+        commit('SET_ERROR',
+          error.displayMessage ||
+          error.response?.data?.message ||
+          'Failed to create election. Please try again.'
+        )
         throw error
       } finally {
         commit('SET_LOADING', false)
@@ -207,7 +208,11 @@ export default createStore({
         const response = await api.post(`/elections/${electionId}/register`)
         return response.data
       } catch (error) {
-        commit('SET_ERROR', error.response?.data?.message || 'Failed to register for election')
+        commit('SET_ERROR',
+          error.displayMessage ||
+          error.response?.data?.message ||
+          'Failed to register for election. Please try again.'
+        )
         throw error
       } finally {
         commit('SET_LOADING', false)
@@ -221,7 +226,11 @@ export default createStore({
         const response = await api.post(`/elections/${electionId}/vote`, voteData)
         return response.data
       } catch (error) {
-        commit('SET_ERROR', error.response?.data?.message || 'Failed to cast vote')
+        commit('SET_ERROR',
+          error.displayMessage ||
+          error.response?.data?.message ||
+          'Failed to cast vote. Please try again.'
+        )
         throw error
       } finally {
         commit('SET_LOADING', false)
@@ -232,10 +241,14 @@ export default createStore({
       commit('SET_LOADING', true)
       commit('CLEAR_ERROR')
       try {
-        const response = await api.put(`/elections/${electionId}/status`, { status })
+        const response = await api.patch(`/elections/${electionId}/status`, { status })
         return response.data
       } catch (error) {
-        commit('SET_ERROR', error.response?.data?.message || 'Failed to update election status')
+        commit('SET_ERROR',
+          error.displayMessage ||
+          error.response?.data?.message ||
+          'Failed to update election status. Please try again.'
+        )
         throw error
       } finally {
         commit('SET_LOADING', false)

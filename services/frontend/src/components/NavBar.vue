@@ -60,21 +60,27 @@
             @mouseenter="showProfile = true"
             @mouseleave="showProfile = false"
           >
-            <PhUser :size="18" />
-            <span class="user-name">{{
-              currentUser?.name || currentUser?.studentId
-            }}</span>
+            <span
+              class="profile-trigger"
+              @mouseenter="showProfile = true"
+              @mouseleave="showProfile = false"
+            >
+              <PhUser :size="18" />
+              <span class="user-name">{{
+                currentUser?.username || currentUser?.institutionId
+              }}</span>
+            </span>
             <button class="btn-logout" @click="handleLogout">
               <PhSignOut :size="16" /> Logout
             </button>
 
             <Transition name="profile-pop">
-              <div v-if="showProfile" class="profile-card glass">
+              <div v-if="showProfile" class="profile-card">
                 <div class="profile-header">
                   <PhUser :size="32" weight="fill" color="var(--accent)" />
                   <div>
                     <div class="profile-name">
-                      {{ currentUser?.name || "User" }}
+                      {{ currentUser?.username || currentUser?.institutionId || "User" }}
                     </div>
                     <div class="profile-id">
                       {{ currentUser?.institutionId || currentUser?.studentId }}
@@ -345,6 +351,13 @@ export default {
   position: relative;
 }
 
+.profile-trigger {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
 .profile-card {
   position: absolute;
   top: calc(100% + 8px);
@@ -352,6 +365,8 @@ export default {
   width: 260px;
   padding: var(--space-5);
   border-radius: var(--radius-lg);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
   box-shadow: var(--shadow-lg);
   z-index: 200;
 }

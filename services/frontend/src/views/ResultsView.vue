@@ -7,6 +7,8 @@
       <p>Loading results...</p>
     </div>
 
+    <div v-else-if="error" class="alert alert-danger">{{ error }}</div>
+
     <div v-else-if="elections.length === 0" class="empty-state card glass">
       <PhChartBar :size="48" color="var(--text-muted)" />
       <p>No elections found.</p>
@@ -126,6 +128,7 @@
 </template>
 
 <script>
+import api from "@/services/api";
 import {
   PhChartBar,
   PhCheckSquare,
@@ -133,8 +136,6 @@ import {
   PhCalendarCheck,
   PhLock,
 } from "@phosphor-icons/vue";
-
-const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
 
 export default {
   name: "ResultsView",
@@ -147,6 +148,7 @@ export default {
       loading: true,
       detailLoading: false,
       resultsReleased: false,
+      error: null,
     };
   },
   computed: {
@@ -194,17 +196,11 @@ export default {
       this.current = null;
       this.resultsReleased = false;
       try {
-        const token = localStorage.getItem("token");
-        const res = await fetch(
-          `${API_BASE}/api/elections/${this.selectedId}`,
-          {
-            headers: { "x-auth-token": token },
-          },
-        );
-        if (!res.ok) throw new Error("Failed to load election");
-        this.current = await res.json();
+        const res = await api.get(`/elections/${this.selectedId}`);
+        this.current = res.data;
         this.resultsReleased = this.current.resultsReleased;
       } catch (e) {
+        this.error = e.displayMessage || e.response?.data?.message || "Failed to load election results.";
         console.error(e);
       } finally {
         this.detailLoading = false;
@@ -213,12 +209,8 @@ export default {
   },
   async mounted() {
     try {
-      const token = localStorage.getItem("token");
-      const res = await fetch(`${API_BASE}/api/elections`, {
-        headers: { "x-auth-token": token },
-      });
-      if (!res.ok) throw new Error("Failed to fetch elections");
-      this.elections = await res.json();
+      const res = await api.get("/elections");
+      this.elections = res.data;
 
       if (this.elections.length > 0) {
         const active = this.elections.find((e) => e.status === "active");
@@ -226,6 +218,7 @@ export default {
         await this.loadElection();
       }
     } catch (e) {
+      this.error = e.displayMessage || e.response?.data?.message || "Failed to load elections.";
       console.error(e);
     } finally {
       this.loading = false;
@@ -415,5 +408,18 @@ export default {
 }
 .pending-results p {
   margin: 0;
+}
+
+.alert {
+  padding: 15px;
+  border-radius: var(--radius-md);
+  border-left: 4px solid;
+  margin-bottom: 20px;
+}
+
+.alert-danger {
+  background-color: color-mix(in srgb, var(--error) 10%, transparent);
+  color: var(--error);
+  border-left-color: var(--error);
 }
 </style>

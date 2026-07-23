@@ -10,6 +10,18 @@ http://localhost:3001
 
 Nodes run on ports 3001, 3002, 3003, 3004. Each is an independent instance with its own chain state.
 
+## Authentication
+
+All API endpoints require an API key via `x-api-key` header. Set via `BLOCKCHAIN_API_KEY` env var. Health endpoints (`/node`, `/chain`) are exempt.
+
+## CORS
+
+Restricted to the backend service URL only (set via `BACKEND_URL` env var). No browser origins permitted.
+
+## Rate Limiting
+
+General rate limiting applied to all endpoints.
+
 ## Node Identity
 
 Configured via environment:
@@ -50,7 +62,7 @@ Full blockchain data.
 }
 ```
 
-### `GET /mine`
+### `POST /mine`
 
 Mine a new block from pending transactions. Signs the block with the node's private key and broadcasts to peers.
 

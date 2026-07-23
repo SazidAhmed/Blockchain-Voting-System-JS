@@ -294,6 +294,7 @@
 
 <script>
 import { mapGetters } from "vuex";
+import api from "@/services/api";
 import keyManager from "@/services/keyManager";
 import {
   PhShieldCheck,
@@ -308,8 +309,6 @@ import {
   PhEnvelope,
 } from "@phosphor-icons/vue";
 import AppModal from "@/components/AppModal.vue";
-
-const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
 
 export default {
   name: "RegisterView",
@@ -374,12 +373,11 @@ export default {
       this.$store.commit("CLEAR_ERROR");
 
       try {
-        const res = await fetch(
-          `${API_BASE}/api/users/institution-lookup/${this.studentId.trim().toUpperCase()}`,
+        const { data, status } = await api.get(
+          `/users/institution-lookup/${this.studentId.trim().toUpperCase()}`,
         );
-        const data = await res.json();
-
-        if (!res.ok) {
+        // api throws on non-2xx, but 404 returns data with message
+        if (data.message && !data.fullName) {
           this.localError = data.message || "Institution ID not found.";
           return;
         }
@@ -393,6 +391,8 @@ export default {
         this.memberFound = true;
       } catch (err) {
         this.localError =
+          err.displayMessage ||
+          err.response?.data?.message ||
           "Could not reach the institutional directory. Please try again.";
       } finally {
         this.lookingUp = false;
@@ -404,26 +404,19 @@ export default {
       this.localError = "";
 
       try {
-        const res = await fetch(`${API_BASE}/api/users/send-otp`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            institutionId: this.studentId.trim().toUpperCase(),
-          }),
+        const { data } = await api.post("/users/send-otp", {
+          institutionId: this.studentId.trim().toUpperCase(),
         });
-        const data = await res.json();
-
-        if (!res.ok) {
-          this.localError = data.message || "Failed to send verification code.";
-          return;
-        }
 
         this.maskedEmail = data.maskedEmail;
         this.otpExpiryMinutes = data.expiresInMinutes || 10;
         this.currentStep = 2;
         this.startResendCooldown();
       } catch (err) {
-        this.localError = "Failed to send verification code. Please try again.";
+        this.localError =
+          err.displayMessage ||
+          err.response?.data?.message ||
+          "Failed to send verification code. Please try again.";
       } finally {
         this.sendingOTP = false;
       }
@@ -435,25 +428,18 @@ export default {
       this.localError = "";
 
       try {
-        const res = await fetch(`${API_BASE}/api/users/verify-otp`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            institutionId: this.studentId.trim().toUpperCase(),
-            code: this.otpCode,
-          }),
+        await api.post("/users/verify-otp", {
+          institutionId: this.studentId.trim().toUpperCase(),
+          code: this.otpCode,
         });
-        const data = await res.json();
-
-        if (!res.ok) {
-          this.localError = data.message || "Invalid verification code.";
-          return;
-        }
 
         this.currentStep = 3;
         this.localError = "";
       } catch (err) {
-        this.localError = "Verification failed. Please try again.";
+        this.localError =
+          err.displayMessage ||
+          err.response?.data?.message ||
+          "Verification failed. Please try again.";
       } finally {
         this.verifyingOTP = false;
       }
@@ -536,9 +522,10 @@ export default {
       } catch (error) {
         console.error("Registration error:", error);
         this.localError =
+          error.displayMessage ||
           error.response?.data?.message ||
           error.message ||
-          "Registration failed";
+          "Registration failed. Please try again.";
         this.generatingKeys = false;
       }
     },

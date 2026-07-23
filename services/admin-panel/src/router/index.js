@@ -31,8 +31,8 @@ const router = createRouter({
 
 // Navigation guard
 router.beforeEach((to, from, next) => {
-  const token = localStorage.getItem('token')
-  const user = JSON.parse(localStorage.getItem('user') || '{}')
+  const token = localStorage.getItem('admin_token')
+  const user = JSON.parse(localStorage.getItem('admin_user') || '{}')
   const isAuthenticated = !!token
 
   if (to.matched.some(record => record.meta.requiresAuth)) {

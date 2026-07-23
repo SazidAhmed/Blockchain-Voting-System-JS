@@ -66,7 +66,7 @@ class KeyManager {
     try {
       console.log('Loading user keys...')
       
-      const keypairs = await cryptoService.retrieveKeypairs((userId || '').toUpperCase())
+      const keypairs = await cryptoService.retrieveKeypairs((userId || '').toUpperCase(), password)
       
       // Keep keys in memory for this session
       this.currentKeys = keypairs

@@ -10,12 +10,26 @@ http://localhost:3000
 
 ## Auth
 
-JWT-based with ECDSA verification. Two middleware layers:
+JWT-based with HS256 algorithm pinning. Token transmitted via httpOnly cookie (not localStorage). Two middleware layers:
 
 - `auth` — any authenticated user (middleware/auth.js:5)
 - `adminAuth` — admin or board_member role only (middleware/auth.js:35)
 
-Token accepted via `x-auth-token` header or `Authorization: Bearer <token>`.
+### CSRF Protection
+
+Double-submit cookie pattern. Client reads `XSRF-TOKEN` from non-httpOnly cookie and sends it as `X-XSRF-TOKEN` header on state-changing requests. Server validates both tokens match.
+
+### Token Revocation
+
+Tokens include a `jti` (JWT ID) claim. Revoked tokens are added to an in-memory blacklist. Logout and password change invalidate the current token.
+
+### Logout
+
+`POST /api/users/logout` — invalidates the current JWT and clears the auth cookie.
+
+### Password Change
+
+`POST /api/users/change-password` — requires current password verification. Invalidates all existing tokens for the user.
 
 ## Rate Limiting
 
@@ -26,8 +40,11 @@ Token accepted via `x-auth-token` header or `Authorization: Bearer <token>`.
 | `otpLimiter`      | 15m    | 5   | POST /api/users/send-otp, /verify-otp |
 | `voteLimiter`     | 1h     | 10  | POST /api/elections/:id/vote          |
 | `generalLimiter`  | 15m    | 100 | All other endpoints                   |
+| `adminLimiter`    | 15m    | 30  | All admin endpoints                   |
 
 All return `429 Too Many Requests` with `RateLimit-*` headers.
+
+**Body parser limit:** 1mb max payload. **Trust proxy:** enabled (1 level) for accurate client IP behind reverse proxy. **404 handler:** returns `{ "message": "Endpoint not found" }` without exposing available routes.
 
 ## CORS
 
@@ -37,7 +54,7 @@ Allowed origins: `localhost:5173`, `localhost:5174`, `127.0.0.1:5173`, `127.0.0.
 
 ```text
 Content-Type: application/json
-x-auth-token: <jwt_token>
+XSRF-TOKEN cookie → X-XSRF-TOKEN header (state-changing requests)
 ```
 
 ## Error Response Shape
@@ -114,7 +131,7 @@ Verify the OTP code. Required before registration.
 
 ### `POST /api/users/register`
 
-Register a new voter. Requires a previously verified OTP. Auto-registers user for all active/pending elections.
+Register a new voter. Requires a previously verified OTP. Client-side key generation required — server does not generate keys. Auto-registers user for all active/pending elections.
 
 **Auth:** none
 
@@ -131,13 +148,10 @@ Register a new voter. Requires a previously verified OTP. Auto-registers user fo
 }
 ```
 
-If keys omitted, server generates them (legacy mode) and returns `privateKey` in response.
-
 **Response 201:**
 
 ```json
 {
-  "token": "jwt-token",
   "user": {
     "id": 1,
     "institutionId": "STU00001",
@@ -153,7 +167,7 @@ If keys omitted, server generates them (legacy mode) and returns `privateKey` in
 
 ### `POST /api/users/login`
 
-Authenticate and receive JWT.
+Authenticate. JWT set as httpOnly cookie.
 
 **Auth:** none
 
@@ -183,11 +197,10 @@ Authenticate and receive JWT.
 | 403    | `loginType: "voter"` but user is admin/board_member     |
 | 403    | `loginType: "admin"` but user is not admin/board_member |
 
-**Response 200:**
+**Response 200:** Sets `authToken` httpOnly cookie. Body:
 
 ```json
 {
-  "token": "jwt-token",
   "user": {
     "id": 1,
     "institutionId": "STU00001",
@@ -224,6 +237,10 @@ Get the current authenticated user's profile.
 ---
 
 ## Elections
+
+Election routes are split into three files under `routes/elections/`: `crud.js` (create/update/delete), `candidates.js` (candidate management), `voting.js` (vote casting, registration, results). All routes are mounted under `/api/elections`.
+
+Election status follows a state machine: `pending → active → completed`. Status transitions are enforced — invalid transitions return 400.
 
 ### `GET /api/elections`
 
@@ -421,33 +438,20 @@ Get all elections with statistics (candidates count, registrations, votes, per-c
 
 ### `POST /api/elections/:id/vote`
 
-Cast a vote. Supports two flows:
-
-- **New crypto flow:** client encrypts ballot and generates nullifier (preferred)
-- **Legacy flow:** server handles encryption using election public key
+Cast a vote. Client encrypts ballot and provides nullifier — all crypto is client-side. Nullifiers are derived server-side from the authenticated user's ID and election ID to prevent manipulation.
 
 **Auth:** required
 
 **Rate limit:** voteLimiter (10/h)
 
-**New crypto flow body:**
+**Body:**
 
 ```json
 {
   "encryptedBallot": "base64-encrypted-ballot",
-  "nullifier": "sha256-nullifier",
   "signature": "ecdsa-signature",
   "publicKey": "ecdsa-public-key",
   "timestamp": 1720000000000
-}
-```
-
-**Legacy flow body:**
-
-```json
-{
-  "candidateId": 1,
-  "privateKey": "user-private-key"
 }
 ```
 
@@ -482,6 +486,8 @@ Cast a vote. Supports two flows:
 
 ## Admin / Audit
 
+All admin endpoints pass through audit logging middleware that records admin actions (who, what, when) for compliance.
+
 ### `GET /api/elections/admin/audit-logs`
 
 **Auth:** adminAuth
@@ -509,9 +515,3 @@ Cast a vote. Supports two flows:
 **Auth:** none
 
 **Response 200:** `{ "status": "ok", "message": "Server is running" }`
-
-### `GET /`
-
-**Auth:** none
-
-**Response 200:** Service info with available endpoint groups.

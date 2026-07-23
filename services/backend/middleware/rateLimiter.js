@@ -91,10 +91,29 @@ const otpLimiter = rateLimit({
   }
 });
 
+// Rate limiter for admin operations
+// Limits: 30 requests per 15 minutes per IP
+const adminLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 30, // 30 requests per window
+  message: {
+    message: 'Too many admin requests from this IP, please try again later'
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: (req, res) => {
+    res.status(429).json({
+      message: 'Too many admin requests from this IP, please try again later',
+      retryAfter: Math.ceil(req.rateLimit.resetTime / 1000)
+    });
+  }
+});
+
 module.exports = {
   registerLimiter,
   loginLimiter,
   voteLimiter,
+  otpLimiter,
   generalLimiter,
-  otpLimiter
+  adminLimiter
 };

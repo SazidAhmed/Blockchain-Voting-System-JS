@@ -104,7 +104,9 @@ export default {
         this.$router.push(redirectPath);
       } catch (error) {
         this.errorMessage =
+          error.displayMessage ||
           error.response?.data?.message ||
+          error.response?.data?.error ||
           "Invalid credentials. Please check your ID and password.";
         this.showErrorModal = true;
       }
