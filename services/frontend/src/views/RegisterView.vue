@@ -391,6 +391,7 @@ export default {
         this.memberFound = true;
       } catch (err) {
         this.localError =
+          err.displayMessage ||
           err.response?.data?.message ||
           "Could not reach the institutional directory. Please try again.";
       } finally {
@@ -413,6 +414,7 @@ export default {
         this.startResendCooldown();
       } catch (err) {
         this.localError =
+          err.displayMessage ||
           err.response?.data?.message ||
           "Failed to send verification code. Please try again.";
       } finally {
@@ -435,6 +437,7 @@ export default {
         this.localError = "";
       } catch (err) {
         this.localError =
+          err.displayMessage ||
           err.response?.data?.message ||
           "Verification failed. Please try again.";
       } finally {
@@ -519,9 +522,10 @@ export default {
       } catch (error) {
         console.error("Registration error:", error);
         this.localError =
+          error.displayMessage ||
           error.response?.data?.message ||
           error.message ||
-          "Registration failed";
+          "Registration failed. Please try again.";
         this.generatingKeys = false;
       }
     },

@@ -255,6 +255,7 @@ export default {
         this.showSuccessModal = true;
       } catch (error) {
         this.localError =
+          error.displayMessage ||
           error.message ||
           error.response?.data?.message ||
           "Failed to submit vote. Please try again.";
@@ -294,6 +295,7 @@ export default {
       } catch (error) {
         console.error("Failed to load keys:", error);
         this.localError =
+          error.displayMessage ||
           "Failed to load cryptographic keys. Please login again.";
       }
     }

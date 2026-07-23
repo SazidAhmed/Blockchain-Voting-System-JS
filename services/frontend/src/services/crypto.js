@@ -127,7 +127,16 @@ class CryptoService {
    */
   async importPublicKey(keyData, algorithm = 'ECDSA', keyUsages = ['verify']) {
     try {
-      const binaryKey = this.base64ToArrayBuffer(keyData)
+      let binaryKey
+      if (keyData.startsWith('-----BEGIN')) {
+        const b64 = keyData
+          .replace(/-----BEGIN [^-]+-----/g, '')
+          .replace(/-----END [^-]+-----/g, '')
+          .replace(/\s+/g, '')
+        binaryKey = this.base64ToArrayBuffer(b64)
+      } else {
+        binaryKey = this.base64ToArrayBuffer(keyData)
+      }
       
       const algorithmParams = algorithm === 'ECDSA' 
         ? { name: 'ECDSA', namedCurve: 'P-256' }
@@ -548,8 +557,8 @@ class CryptoService {
   // Check if a string looks like a valid Base64-encoded public key
   isValidPublicKey(key) {
     if (!key || typeof key !== 'string') return false
-    // Valid RSA/EC public keys in JWK format should start with 'eyJ' (Base64 of '{"')
-    // or be at least 200 characters for PEM format
+    if (key.startsWith('-----BEGIN PUBLIC KEY-----')) return true
+    // Valid RSA/EC public keys in raw Base64 start with 'eyJ' (Base64 of '{"')
     return key.startsWith('eyJ') || key.length > 200
   }
 

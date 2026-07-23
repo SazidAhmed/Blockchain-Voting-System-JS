@@ -56,7 +56,11 @@ export default createStore({
         const response = await api.post('/users/register', userData)
         return response.data
       } catch (error) {
-        commit('SET_ERROR', error.response?.data?.message || 'Registration failed')
+        commit('SET_ERROR',
+          error.displayMessage ||
+          error.response?.data?.message ||
+          'Registration failed. Please try again.'
+        )
         throw error
       } finally {
         commit('SET_LOADING', false)
@@ -83,7 +87,11 @@ export default createStore({
         
         return response.data
       } catch (error) {
-        commit('SET_ERROR', error.response?.data?.message || 'Login failed')
+        commit('SET_ERROR',
+          error.displayMessage ||
+          error.response?.data?.message ||
+          'Login failed. Please check your ID and password.'
+        )
         throw error
       } finally {
         commit('SET_LOADING', false)
@@ -100,7 +108,10 @@ export default createStore({
         return response.data
       } catch (error) {
         commit('CLEAR_AUTH')
-        commit('SET_ERROR', 'Session expired. Please login again.')
+        commit('SET_ERROR',
+          error.displayMessage ||
+          'Session expired. Please login again.'
+        )
       } finally {
         commit('SET_LOADING', false)
       }
@@ -142,7 +153,11 @@ export default createStore({
         commit('SET_ELECTIONS', response.data)
         return response.data
       } catch (error) {
-        commit('SET_ERROR', error.response?.data?.message || 'Failed to fetch elections')
+        commit('SET_ERROR',
+          error.displayMessage ||
+          error.response?.data?.message ||
+          'Failed to fetch elections. Please try again.'
+        )
         throw error
       } finally {
         commit('SET_LOADING', false)
@@ -157,7 +172,11 @@ export default createStore({
         commit('SET_CURRENT_ELECTION', response.data)
         return response.data
       } catch (error) {
-        commit('SET_ERROR', error.response?.data?.message || 'Failed to fetch election details')
+        commit('SET_ERROR',
+          error.displayMessage ||
+          error.response?.data?.message ||
+          'Failed to fetch election details. Please try again.'
+        )
         throw error
       } finally {
         commit('SET_LOADING', false)
@@ -171,7 +190,11 @@ export default createStore({
         const response = await api.post('/elections', electionData)
         return response.data
       } catch (error) {
-        commit('SET_ERROR', error.response?.data?.message || 'Failed to create election')
+        commit('SET_ERROR',
+          error.displayMessage ||
+          error.response?.data?.message ||
+          'Failed to create election. Please try again.'
+        )
         throw error
       } finally {
         commit('SET_LOADING', false)
@@ -185,7 +208,11 @@ export default createStore({
         const response = await api.post(`/elections/${electionId}/register`)
         return response.data
       } catch (error) {
-        commit('SET_ERROR', error.response?.data?.message || 'Failed to register for election')
+        commit('SET_ERROR',
+          error.displayMessage ||
+          error.response?.data?.message ||
+          'Failed to register for election. Please try again.'
+        )
         throw error
       } finally {
         commit('SET_LOADING', false)
@@ -199,7 +226,11 @@ export default createStore({
         const response = await api.post(`/elections/${electionId}/vote`, voteData)
         return response.data
       } catch (error) {
-        commit('SET_ERROR', error.response?.data?.message || 'Failed to cast vote')
+        commit('SET_ERROR',
+          error.displayMessage ||
+          error.response?.data?.message ||
+          'Failed to cast vote. Please try again.'
+        )
         throw error
       } finally {
         commit('SET_LOADING', false)
@@ -213,7 +244,11 @@ export default createStore({
         const response = await api.patch(`/elections/${electionId}/status`, { status })
         return response.data
       } catch (error) {
-        commit('SET_ERROR', error.response?.data?.message || 'Failed to update election status')
+        commit('SET_ERROR',
+          error.displayMessage ||
+          error.response?.data?.message ||
+          'Failed to update election status. Please try again.'
+        )
         throw error
       } finally {
         commit('SET_LOADING', false)

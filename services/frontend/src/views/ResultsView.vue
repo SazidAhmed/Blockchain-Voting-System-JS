@@ -7,6 +7,8 @@
       <p>Loading results...</p>
     </div>
 
+    <div v-else-if="error" class="alert alert-danger">{{ error }}</div>
+
     <div v-else-if="elections.length === 0" class="empty-state card glass">
       <PhChartBar :size="48" color="var(--text-muted)" />
       <p>No elections found.</p>
@@ -146,6 +148,7 @@ export default {
       loading: true,
       detailLoading: false,
       resultsReleased: false,
+      error: null,
     };
   },
   computed: {
@@ -197,6 +200,7 @@ export default {
         this.current = res.data;
         this.resultsReleased = this.current.resultsReleased;
       } catch (e) {
+        this.error = e.displayMessage || e.response?.data?.message || "Failed to load election results.";
         console.error(e);
       } finally {
         this.detailLoading = false;
@@ -214,6 +218,7 @@ export default {
         await this.loadElection();
       }
     } catch (e) {
+      this.error = e.displayMessage || e.response?.data?.message || "Failed to load elections.";
       console.error(e);
     } finally {
       this.loading = false;
@@ -403,5 +408,18 @@ export default {
 }
 .pending-results p {
   margin: 0;
+}
+
+.alert {
+  padding: 15px;
+  border-radius: var(--radius-md);
+  border-left: 4px solid;
+  margin-bottom: 20px;
+}
+
+.alert-danger {
+  background-color: color-mix(in srgb, var(--error) 10%, transparent);
+  color: var(--error);
+  border-left-color: var(--error);
 }
 </style>
