@@ -27,7 +27,7 @@ export const useElectionsStore = defineStore('elections', () => {
         authStore.logout()
         return
       }
-      error.value = err.response?.data?.message || 'Failed to fetch elections'
+      error.value = err.displayMessage || err.response?.data?.message || 'Failed to fetch elections. Please try again.'
       throw err
     } finally {
       loading.value = false
@@ -43,7 +43,7 @@ export const useElectionsStore = defineStore('elections', () => {
       elections.value.push(newElection)
       return newElection
     } catch (err) {
-      error.value = err.response?.data?.message || 'Failed to create election'
+      error.value = err.displayMessage || err.response?.data?.message || 'Failed to create election. Please try again.'
       throw err
     } finally {
       loading.value = false
@@ -58,7 +58,7 @@ export const useElectionsStore = defineStore('elections', () => {
       await api.patch(`/elections/${electionId}/status`, { status })
       await fetchElections()
     } catch (err) {
-      error.value = err.response?.data?.message || 'Failed to update election status'
+      error.value = err.displayMessage || err.response?.data?.message || 'Failed to update election status. Please try again.'
       throw err
     } finally {
       loading.value = false
@@ -73,7 +73,7 @@ export const useElectionsStore = defineStore('elections', () => {
       await api.put(`/elections/${electionId}`, electionData)
       await fetchElections()
     } catch (err) {
-      error.value = err.response?.data?.message || 'Failed to update election'
+      error.value = err.displayMessage || err.response?.data?.message || 'Failed to update election. Please try again.'
       throw err
     } finally {
       loading.value = false
@@ -88,7 +88,7 @@ export const useElectionsStore = defineStore('elections', () => {
       await api.delete(`/elections/${electionId}`)
       elections.value = elections.value.filter(e => e.id !== electionId)
     } catch (err) {
-      error.value = err.response?.data?.message || 'Failed to delete election'
+      error.value = err.displayMessage || err.response?.data?.message || 'Failed to delete election. Please try again.'
       throw err
     } finally {
       loading.value = false

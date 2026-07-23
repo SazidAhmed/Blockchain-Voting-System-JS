@@ -8,6 +8,11 @@ const api = axios.create({
 });
 
 api.interceptors.request.use((config) => {
+  const token = localStorage.getItem("admin_token");
+  if (token) {
+    config.headers["x-auth-token"] = token;
+  }
+
   const csrf = document.cookie
     .split("; ")
     .find((r) => r.startsWith("csrf-token="))
@@ -15,5 +20,50 @@ api.interceptors.request.use((config) => {
   if (csrf) config.headers["x-csrf-token"] = csrf;
   return config;
 });
+
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (!error.response) {
+      error.displayMessage =
+        "Cannot reach the server. Please check your connection and ensure the backend is running.";
+    } else {
+      const { status, data } = error.response;
+      const rawMessage = data?.message || data?.error;
+
+      switch (status) {
+        case 400:
+          error.displayMessage = rawMessage || "Invalid request. Please check your input.";
+          break;
+        case 401:
+          error.displayMessage = rawMessage || "Authentication failed. Please log in again.";
+          break;
+        case 403:
+          error.displayMessage = rawMessage || "You do not have permission to perform this action.";
+          break;
+        case 404:
+          error.displayMessage = rawMessage || "The requested resource was not found.";
+          break;
+        case 429:
+          error.displayMessage = rawMessage || "Too many requests. Please try again later.";
+          break;
+        case 500:
+          error.displayMessage = rawMessage || "Server error. Please try again later.";
+          break;
+        case 502:
+        case 503:
+          error.displayMessage = "Service temporarily unavailable. Please try again later.";
+          break;
+        default:
+          error.displayMessage = rawMessage || `Request failed (${status}). Please try again.`;
+      }
+
+      if (process.env.NODE_ENV !== "production" && data) {
+        error.devDetail = { status, data, url: error.config?.url };
+      }
+    }
+    return Promise.reject(error);
+  },
+);
 
 export default api;

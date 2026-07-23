@@ -6,7 +6,10 @@
         <p>Enter your admin credentials</p>
       </div>
 
-      <div v-if="error" class="alert alert-danger">{{ error }}</div>
+      <div v-if="error" class="alert alert-danger">
+        <span class="alert-icon">&#9888;</span>
+        <span class="alert-text">{{ error }}</span>
+      </div>
 
       <form @submit.prevent="handleLogin">
         <div class="form-group">
@@ -176,10 +179,35 @@ export default {
 }
 
 .alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
   padding: 12px;
   margin-bottom: 20px;
   border-radius: var(--radius-sm);
   border-left: 4px solid;
+  animation: alertSlideIn 0.3s ease;
+}
+
+@keyframes alertSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.alert-icon {
+  font-size: 1.2rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.alert-text {
+  line-height: 1.5;
 }
 
 .alert-danger {

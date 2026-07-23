@@ -25,10 +25,15 @@ export const useAuthStore = defineStore("auth", () => {
 
       user.value = data.user;
       localStorage.setItem("admin_user", JSON.stringify(data.user));
+      localStorage.setItem("admin_token", data.token);
 
       return data;
     } catch (err) {
-      error.value = err.response?.data?.message || "Login failed";
+      error.value =
+        err.displayMessage ||
+        err.response?.data?.message ||
+        err.response?.data?.error ||
+        "Login failed. Please try again.";
       throw err;
     } finally {
       loading.value = false;
@@ -44,7 +49,10 @@ export const useAuthStore = defineStore("auth", () => {
       user.value = data;
       return user.value;
     } catch (err) {
-      error.value = err.response?.data?.message || "Failed to fetch user";
+      error.value =
+        err.displayMessage ||
+        err.response?.data?.message ||
+        "Failed to fetch user.";
       logout();
     } finally {
       loading.value = false;
@@ -54,6 +62,7 @@ export const useAuthStore = defineStore("auth", () => {
   function logout() {
     user.value = null;
     localStorage.removeItem("admin_user");
+    localStorage.removeItem("admin_token");
     error.value = null;
   }
 
