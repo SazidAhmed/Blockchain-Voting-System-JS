@@ -27,31 +27,47 @@ const PORT = process.env.PORT || 3001;
 const app = express();
 app.use(express.json());
 
-// Root discovery route (before CORS so services are identifiable from browser)
-app.get('/', (req, res) => {
-  res.json({
-    service: 'Blockchain Node',
-    nodeId,
-    nodeType,
-    port: PORT,
-    endpoints: {
-      chain: '/chain',
-      node: '/node',
-      peers: '/peers',
-      metrics: '/metrics',
-      vote: '/vote',
-      mine: '/mine',
-      transactions: '/transactions/new',
-      merkle: '/merkle/stats',
-      elections: '/elections/:electionId/results',
-      nullifier: '/nullifier/:nullifier',
-      security: '/security/status'
-    }
+// Root discovery route — dev only
+if (process.env.NODE_ENV !== 'production') {
+  app.get('/', (req, res) => {
+    res.json({
+      service: 'Blockchain Node',
+      nodeId,
+      nodeType,
+      port: PORT,
+      endpoints: {
+        chain: '/chain',
+        node: '/node',
+        peers: '/peers',
+        metrics: '/metrics',
+        vote: '/vote',
+        mine: '/mine',
+        transactions: '/transactions/new',
+        merkle: '/merkle/stats',
+        elections: '/elections/:electionId/results',
+        nullifier: '/nullifier/:nullifier',
+        security: '/security/status'
+      }
+    });
   });
-});
+}
 
+const nodeAllowedOrigins = (process.env.CORS_ALLOWED_ORIGINS || "")
+  .split(",")
+  .map((o) => o.trim())
+  .filter(Boolean);
+if (nodeAllowedOrigins.length === 0) {
+  nodeAllowedOrigins.push(process.env.BACKEND_URL || "http://localhost:3000");
+  nodeAllowedOrigins.push(process.env.FRONTEND_URL || "http://localhost:5173");
+  nodeAllowedOrigins.push("http://localhost:5174");
+}
 app.use(cors({
-  origin: process.env.BACKEND_URL || "http://localhost:3000",
+  origin: function (origin, callback) {
+    if (!origin) return callback(null, true);
+    if (nodeAllowedOrigins.indexOf(origin) !== -1) return callback(null, true);
+    callback(new Error("Not allowed by CORS"));
+  },
+  credentials: true,
 }));
 
 // Create HTTP server
@@ -391,10 +407,9 @@ app.use((req, res) => {
             "GET /chain",
             "GET /node",
             "GET /peers",
-            "GET /mine",
+            "POST /mine",
             "POST /vote",
-            "POST /transactions",
-            "GET /transactions/pending",
+            "POST /transactions/new",
             "GET /elections/:electionId/results",
         ],
     });
