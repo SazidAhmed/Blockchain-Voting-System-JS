@@ -376,30 +376,46 @@ router.post("/:id/vote", voteLimiter, auth, validateVote, async (req, res) => {
       // In production, this should fail
     }
 
-    // Update registration status
-    await pool.query("UPDATE voter_registrations SET status = ? WHERE id = ?", [
-      "voted",
-      registration.id,
-    ]);
-
     // Store vote metadata in database
     const receipt = blockchainResponse?.data?.receipt || {};
     const transactionHash =
       receipt.transactionHash || crypto.randomBytes(32).toString("hex");
     const blockIndex = receipt.blockIndex || 0;
 
-    await pool.query(
-      "INSERT INTO votes_meta (tx_hash, block_index, election_id, nullifier_hash, encrypted_ballot, signature, voter_public_key) VALUES (?, ?, ?, ?, ?, ?, ?)",
-      [
-        transactionHash,
-        blockIndex,
-        electionId,
-        finalNullifier,
-        finalEncryptedBallot,
-        finalSignature,
-        finalPublicKey,
-      ],
-    );
+    const connection = await pool.getConnection();
+    try {
+      await connection.beginTransaction();
+
+      await connection.query(
+        "UPDATE voter_registrations SET status = ? WHERE id = ?",
+        ["voted", registration.id],
+      );
+
+      await connection.query(
+        "INSERT INTO votes_meta (tx_hash, block_index, election_id, nullifier_hash, encrypted_ballot, signature, voter_public_key) VALUES (?, ?, ?, ?, ?, ?, ?)",
+        [
+          transactionHash,
+          blockIndex,
+          electionId,
+          finalNullifier,
+          finalEncryptedBallot,
+          finalSignature,
+          finalPublicKey,
+        ],
+      );
+
+      await connection.query(
+        "INSERT INTO vote_receipts (election_id, nullifier_hash, transaction_hash) VALUES (?, ?, ?)",
+        [electionId, finalNullifier, transactionHash],
+      );
+
+      await connection.commit();
+    } catch (txErr) {
+      await connection.rollback();
+      throw txErr;
+    } finally {
+      connection.release();
+    }
 
     // Log successful vote
     await auditLogger.logVote(
@@ -413,11 +429,6 @@ router.post("/:id/vote", voteLimiter, auth, validateVote, async (req, res) => {
         encryptionUsed: isNewCryptoFlow ? "client-side" : "server-side",
       },
       req,
-    );
-
-    await pool.query(
-      "INSERT INTO vote_receipts (election_id, nullifier_hash, transaction_hash) VALUES (?, ?, ?)",
-      [electionId, finalNullifier, transactionHash],
     );
 
     res.json({

@@ -30,7 +30,7 @@ router.post('/:id/candidates', adminAuth, async (req, res) => {
     }
 
     // Check election exists and is not locked
-    const [elections] = await pool.query('SELECT * FROM elections WHERE id = ?', [electionId]);
+    const [elections] = await pool.query('SELECT id, status, is_locked FROM elections WHERE id = ?', [electionId]);
     if (elections.length === 0) {
       return res.status(404).json({ message: 'Election not found' });
     }
@@ -97,7 +97,7 @@ router.delete('/:electionId/candidates/:candidateId', adminAuth, async (req, res
     const clientIp = getClientIp(req);
 
     // Get candidate info
-    const [candidates] = await pool.query('SELECT * FROM candidates WHERE id = ? AND election_id = ?', [candidateId, electionId]);
+    const [candidates] = await pool.query('SELECT id, name FROM candidates WHERE id = ? AND election_id = ?', [candidateId, electionId]);
     if (candidates.length === 0) {
       return res.status(404).json({ message: 'Candidate not found' });
     }
@@ -105,7 +105,7 @@ router.delete('/:electionId/candidates/:candidateId', adminAuth, async (req, res
     const candidate = candidates[0];
 
     // Check election status
-    const [elections] = await pool.query('SELECT * FROM elections WHERE id = ?', [electionId]);
+    const [elections] = await pool.query('SELECT id, status, is_locked FROM elections WHERE id = ?', [electionId]);
     if (elections.length === 0) {
       return res.status(404).json({ message: 'Election not found' });
     }

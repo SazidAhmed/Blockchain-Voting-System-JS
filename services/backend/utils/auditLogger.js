@@ -8,13 +8,12 @@ const crypto = require('crypto');
 
 class AuditLogger {
   constructor() {
-    this.previousHash = null;
   }
 
   /**
    * Calculate hash for audit log entry (for tamper detection)
    */
-  calculateLogHash(entry) {
+  calculateLogHash(entry, previousHash) {
     const data = JSON.stringify({
       event_type: entry.event_type,
       user_id: entry.user_id,
@@ -22,7 +21,7 @@ class AuditLogger {
       target_type: entry.target_type,
       target_id: entry.target_id,
       timestamp: entry.timestamp,
-      previous_hash: this.previousHash
+      previous_hash: previousHash
     });
     
     return crypto.createHash('sha256').update(data).digest('hex');
@@ -45,6 +44,12 @@ class AuditLogger {
     try {
       const timestamp = new Date();
       
+      // Get the last hash from DB to avoid race conditions with in-memory state
+      const [lastLogs] = await pool.query(
+        'SELECT log_hash FROM audit_logs ORDER BY id DESC LIMIT 1',
+      );
+      const previousHash = lastLogs.length > 0 ? lastLogs[0].log_hash : null;
+
       const entry = {
         event_type: event.type,
         event_category: event.category || 'security',
@@ -55,12 +60,12 @@ class AuditLogger {
         target_id: event.targetId ? String(event.targetId) : null,
         details: event.details ? JSON.stringify(event.details) : null,
         severity: event.severity || 'info',
-        previous_hash: this.previousHash,
+        previous_hash: previousHash,
         timestamp: timestamp
       };
 
       // Calculate log hash for tamper detection
-      const logHash = this.calculateLogHash(entry);
+      const logHash = this.calculateLogHash(entry, previousHash);
       entry.log_hash = logHash;
 
       // Insert into database
@@ -84,9 +89,6 @@ class AuditLogger {
           entry.timestamp
         ]
       );
-
-      // Update previous hash for next entry
-      this.previousHash = logHash;
 
       return { success: true, logHash };
     } catch (error) {
@@ -224,12 +226,11 @@ class AuditLogger {
   async verifyIntegrity(limit = 100) {
     try {
       const [logs] = await pool.query(
-        'SELECT * FROM audit_logs ORDER BY timestamp DESC LIMIT ?',
+        'SELECT id, event_type, user_id, ip_address, target_type, target_id, log_hash, previous_hash, timestamp FROM audit_logs ORDER BY timestamp DESC LIMIT ?',
         [limit]
       );
 
-      const savedPreviousHash = this.previousHash;
-      this.previousHash = null;
+      let previousHash = null;
       let valid = true;
       const results = [];
 
@@ -243,20 +244,19 @@ class AuditLogger {
           target_type: log.target_type,
           target_id: log.target_id,
           timestamp: log.timestamp,
-          previous_hash: this.previousHash
+          previous_hash: previousHash
         };
         
-        const calculatedHash = this.calculateLogHash(entry);
-        const isValid = calculatedHash === log.log_hash && log.previous_hash === this.previousHash;
+        const calculatedHash = this.calculateLogHash(entry, previousHash);
+        const isValid = calculatedHash === log.log_hash && log.previous_hash === previousHash;
         
         results.push({ id: log.id, event_type: log.event_type, timestamp: log.timestamp, isValid });
 
         if (!isValid) valid = false;
 
-        this.previousHash = log.log_hash;
+        previousHash = log.log_hash;
       }
 
-      this.previousHash = savedPreviousHash;
       return { valid, results };
     } catch (error) {
       console.error('Error verifying audit log integrity:', error);

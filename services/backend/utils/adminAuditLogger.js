@@ -128,19 +128,43 @@ class AdminAuditLogger {
    */
   async getAdminLogs(adminId, limit = 100, offset = 0) {
     try {
-      const query = `
-        SELECT * FROM admin_audit_logs 
-        WHERE admin_id = ? 
-        ORDER BY timestamp DESC 
-        LIMIT ? OFFSET ?
-      `;
-      const countQuery = `
-        SELECT COUNT(*) as total FROM admin_audit_logs 
-        WHERE admin_id = ?
-      `;
+      let query;
+      let params;
+      if (offset === 0) {
+        query = `
+          SELECT id, admin_id, action_type, resource_type, resource_id, changes, change_hash,
+                 action_signature, ip_address, user_agent, metadata, timestamp, status
+          FROM admin_audit_logs 
+          WHERE admin_id = ? 
+          ORDER BY timestamp DESC, id DESC 
+          LIMIT ?
+        `;
+        params = [adminId, limit];
+      } else {
+        const [cursorRows] = await this.pool.query(
+          `SELECT timestamp, id FROM admin_audit_logs 
+           WHERE admin_id = ? 
+           ORDER BY timestamp DESC, id DESC 
+           LIMIT 1 OFFSET ?`,
+          [adminId, offset - 1],
+        );
+        if (cursorRows.length === 0) return { logs: [], total: 0 };
+        query = `
+          SELECT id, admin_id, action_type, resource_type, resource_id, changes, change_hash,
+                 action_signature, ip_address, user_agent, metadata, timestamp, status
+          FROM admin_audit_logs 
+          WHERE admin_id = ? AND (timestamp, id) < (?, ?)
+          ORDER BY timestamp DESC, id DESC 
+          LIMIT ?
+        `;
+        params = [adminId, cursorRows[0].timestamp, cursorRows[0].id, limit];
+      }
 
-      const [logs] = await this.pool.query(query, [adminId, limit, offset]);
-      const [countResult] = await this.pool.query(countQuery, [adminId]);
+      const [logs] = await this.pool.query(query, params);
+      const [countResult] = await this.pool.query(
+        'SELECT COUNT(*) as total FROM admin_audit_logs WHERE admin_id = ?',
+        [adminId],
+      );
       return { logs, total: countResult[0].total };
     } catch (error) {
       console.error('Error fetching admin logs:', error);
@@ -153,13 +177,35 @@ class AdminAuditLogger {
    */
   async getSecurityLogs(limit = 100, offset = 0) {
     try {
-      const query = `
-        SELECT * FROM admin_security_logs 
-        ORDER BY timestamp DESC 
-        LIMIT ? OFFSET ?
-      `;
+      let query;
+      let params;
+      if (offset === 0) {
+        query = `
+          SELECT id, admin_id, event_type, severity, description, metadata, timestamp
+          FROM admin_security_logs 
+          ORDER BY timestamp DESC, id DESC 
+          LIMIT ?
+        `;
+        params = [limit];
+      } else {
+        const [cursorRows] = await this.pool.query(
+          `SELECT timestamp, id FROM admin_security_logs 
+           ORDER BY timestamp DESC, id DESC 
+           LIMIT 1 OFFSET ?`,
+          [offset - 1],
+        );
+        if (cursorRows.length === 0) return [];
+        query = `
+          SELECT id, admin_id, event_type, severity, description, metadata, timestamp
+          FROM admin_security_logs 
+          WHERE (timestamp, id) < (?, ?)
+          ORDER BY timestamp DESC, id DESC 
+          LIMIT ?
+        `;
+        params = [cursorRows[0].timestamp, cursorRows[0].id, limit];
+      }
 
-      const [logs] = await this.pool.query(query, [limit, offset]);
+      const [logs] = await this.pool.query(query, params);
       return logs;
     } catch (error) {
       console.error('Error fetching security logs:', error);

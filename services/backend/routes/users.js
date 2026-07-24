@@ -199,7 +199,7 @@ router.post(
 
       // Check if user already exists
       const [existingUsers] = await pool.query(
-        "SELECT * FROM users WHERE institution_id = ? OR email = ?",
+        "SELECT id FROM users WHERE institution_id = ? OR email = ?",
         [institutionId, email],
       );
 
@@ -354,7 +354,7 @@ router.post("/login", loginLimiter, validateLogin, async (req, res) => {
 
     // Check if user exists
     const [users] = await pool.query(
-      "SELECT * FROM users WHERE institution_id = ?",
+      "SELECT id, institution_id, username, role, email, password, public_key, encryption_public_key, registration_status, mfa_enabled, mfa_secret FROM users WHERE institution_id = ?",
       [institutionId],
     );
 

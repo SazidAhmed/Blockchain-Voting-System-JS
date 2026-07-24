@@ -7,7 +7,7 @@ const router = Router();
 router.get("/api/lookup/:institutionId", async (req, res) => {
   try {
     const [[row]] = await getPool().query(
-      "SELECT * FROM institution_members WHERE institution_id = ?",
+      "SELECT institution_id, full_name, email, role, department, year_level, is_voter FROM institution_members WHERE institution_id = ?",
       [req.params.institutionId.toUpperCase()],
     );
     if (!row)
@@ -38,8 +38,9 @@ router.get("/api/search", apiKeyAuth, async (req, res) => {
         .json({ message: "Query must be at least 2 characters" });
     const [results] = await getPool().query(
       "SELECT institution_id, full_name, email, role, department, year_level, is_voter FROM institution_members WHERE institution_id LIKE ? OR full_name LIKE ? LIMIT 20",
-      ["%" + q + "%", "%" + q + "%"],
+      [q + "%", "%" + q + "%"],
     );
+    // full_name uses leading-wildcard LIKE — add FULLTEXT index on full_name if search volume grows
     res.json({ results });
   } catch (e) {
     res.status(500).json({ message: e.message });

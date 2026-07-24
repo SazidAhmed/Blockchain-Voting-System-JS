@@ -132,9 +132,15 @@ class MigrationRunner {
         const { execFileSync } = require('child_process');
         execFileSync(process.execPath, [migrationPath], { stdio: 'inherit' });
       } else {
-        // SQL migration — execute via shared connection
         const sql = await fs.readFile(migrationPath, 'utf8');
-        await this.connection.query(sql);
+        await this.connection.query('START TRANSACTION');
+        try {
+          await this.connection.query(sql);
+          await this.connection.query('COMMIT');
+        } catch (err) {
+          await this.connection.query('ROLLBACK');
+          throw err;
+        }
       }
 
       // Record migration (the initial schema file creates the tracking table)
@@ -198,8 +204,7 @@ class MigrationRunner {
    * Rollback last migration (if rollback file exists)
    */
   async rollbackLast() {
-    console.log('Rollback functionality not yet implemented');
-    // TODO: Implement rollback using down migrations
+    console.log('Rollback not implemented — create a new forward migration to revert changes');
   }
 
   /**

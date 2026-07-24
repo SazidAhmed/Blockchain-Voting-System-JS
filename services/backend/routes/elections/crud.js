@@ -99,42 +99,58 @@ router.post(
       );
 
       const electionId = result.insertId;
-      const candidateIds = [];
 
-      // Insert candidates
-      for (const candidate of candidates) {
-        const [candResult] = await pool.query(
-          "INSERT INTO candidates (election_id, name, description, is_locked) VALUES (?, ?, ?, ?)",
-          [electionId, candidate.name, candidate.description, false],
-        );
-        candidateIds.push(candResult.insertId);
-      }
-
-      // Auto-register all existing verified users for this new election
+      const connection = await pool.getConnection();
       try {
-        const [existingUsers] = await pool.query(
-          "SELECT id FROM users WHERE registration_status = 'verified' OR registration_status IS NULL",
-        );
-        if (existingUsers.length > 0) {
-          const regValues = existingUsers.map((u) => [
-            u.id,
+        await connection.beginTransaction();
+
+        // Batch insert candidates
+        if (candidates && candidates.length > 0) {
+          const candidateValues = candidates.map((c) => [
             electionId,
-            crypto.randomBytes(32).toString("hex"),
-            "registered",
+            c.name,
+            c.description || null,
+            false,
           ]);
-          await pool.query(
-            "INSERT IGNORE INTO voter_registrations (user_id, election_id, registration_token, status) VALUES ?",
-            [regValues],
-          );
-          console.log(
-            `✅ Auto-registered ${existingUsers.length} existing user(s) for election #${electionId}`,
+          await connection.query(
+            "INSERT INTO candidates (election_id, name, description, is_locked) VALUES ?",
+            [candidateValues],
           );
         }
-      } catch (regErr) {
-        console.warn(
-          "Warning: Could not auto-register existing users for new election:",
-          regErr.message,
-        );
+
+        // Auto-register all existing verified users for this new election
+        try {
+          const [existingUsers] = await connection.query(
+            "SELECT id FROM users WHERE registration_status = 'verified' OR registration_status IS NULL",
+          );
+          if (existingUsers.length > 0) {
+            const regValues = existingUsers.map((u) => [
+              u.id,
+              electionId,
+              crypto.randomBytes(32).toString("hex"),
+              "registered",
+            ]);
+            await connection.query(
+              "INSERT IGNORE INTO voter_registrations (user_id, election_id, registration_token, status) VALUES ?",
+              [regValues],
+            );
+            console.log(
+              `✅ Auto-registered ${existingUsers.length} existing user(s) for election #${electionId}`,
+            );
+          }
+        } catch (regErr) {
+          console.warn(
+            "Warning: Could not auto-register existing users for new election:",
+            regErr.message,
+          );
+        }
+
+        await connection.commit();
+      } catch (txErr) {
+        await connection.rollback();
+        throw txErr;
+      } finally {
+        connection.release();
       }
 
       // Log security event
@@ -444,7 +460,7 @@ router.patch("/:id/lock", adminAuth, async (req, res) => {
 
     // Check election exists
     const [elections] = await pool.query(
-      "SELECT * FROM elections WHERE id = ?",
+      "SELECT id, status FROM elections WHERE id = ?",
       [electionId],
     );
     if (elections.length === 0) {
@@ -532,16 +548,29 @@ router.delete("/:id", adminAuth, async (req, res) => {
     }
 
     // Delete related data first
-    await pool.query("DELETE FROM votes_meta WHERE election_id = ?", [
-      electionId,
-    ]);
-    await pool.query("DELETE FROM voter_registrations WHERE election_id = ?", [
-      electionId,
-    ]);
-    await pool.query("DELETE FROM candidates WHERE election_id = ?", [
-      electionId,
-    ]);
-    await pool.query("DELETE FROM elections WHERE id = ?", [electionId]);
+    const connection = await pool.getConnection();
+    try {
+      await connection.beginTransaction();
+      await connection.query("DELETE FROM votes_meta WHERE election_id = ?", [
+        electionId,
+      ]);
+      await connection.query(
+        "DELETE FROM voter_registrations WHERE election_id = ?",
+        [electionId],
+      );
+      await connection.query("DELETE FROM candidates WHERE election_id = ?", [
+        electionId,
+      ]);
+      await connection.query("DELETE FROM elections WHERE id = ?", [
+        electionId,
+      ]);
+      await connection.commit();
+    } catch (txErr) {
+      await connection.rollback();
+      throw txErr;
+    } finally {
+      connection.release();
+    }
 
     res.json({ message: "Election deleted successfully" });
   } catch (err) {

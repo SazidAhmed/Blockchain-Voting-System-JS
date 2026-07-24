@@ -7,6 +7,13 @@ services:
     image: mysql:8.0
     container_name: voting-mysql-multinode
     restart: unless-stopped
+    command: >
+      --innodb_buffer_pool_size=1G
+      --innodb_redo_log_capacity=512M
+      --innodb_flush_log_at_trx_commit=2
+      --innodb_flush_method=O_DIRECT
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_0900_ai_ci
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?MYSQL_ROOT_PASSWORD is required}
       MYSQL_DATABASE: ${MYSQL_DATABASE:?MYSQL_DATABASE is required}
@@ -47,6 +54,8 @@ services:
       PEERS: http://blockchain-node-2:${BLOCKCHAIN_NODE2_PORT},http://blockchain-node-3:${BLOCKCHAIN_NODE3_PORT},http://blockchain-node-4:${BLOCKCHAIN_NODE4_PORT},http://blockchain-node-5:${BLOCKCHAIN_NODE5_PORT}
       NODE_ENV: ${NODE_ENV:?NODE_ENV is required}
       BLOCKCHAIN_API_KEY: ${BLOCKCHAIN_API_KEY:?BLOCKCHAIN_API_KEY is required}
+    ports:
+      - "127.0.0.1:${BLOCKCHAIN_NODE1_PORT}:${BLOCKCHAIN_NODE1_PORT}"
     volumes:
       - blockchain_data_node1:/app/data
     networks:

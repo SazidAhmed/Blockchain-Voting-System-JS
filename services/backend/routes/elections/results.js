@@ -24,7 +24,7 @@ router.get('/admin/all', adminAuth, async (req, res) => {
     // Get candidates + tally votes per candidate by decoding encrypted ballots
     for (const election of elections) {
       const [candidates] = await pool.query(
-        'SELECT * FROM candidates WHERE election_id = ? ORDER BY name',
+        'SELECT id, name, description, election_id, is_locked FROM candidates WHERE election_id = ? ORDER BY name',
         [election.id]
       );
 

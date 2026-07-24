@@ -251,7 +251,7 @@
 </template>
 
 <script>
-const API = "http://localhost:4000";
+const API = import.meta.env.VITE_INSTITUTION_API_URL || "http://localhost:4000";
 const LIMIT = 20;
 
 const emptyForm = () => ({

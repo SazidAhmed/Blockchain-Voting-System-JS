@@ -8,6 +8,13 @@ services:
     image: mysql:8.0
     container_name: voting-test-mysql
     restart: unless-stopped
+    command: >
+      --innodb_buffer_pool_size=1G
+      --innodb_redo_log_capacity=512M
+      --innodb_flush_log_at_trx_commit=2
+      --innodb_flush_method=O_DIRECT
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_0900_ai_ci
     environment:
       MYSQL_ROOT_PASSWORD: ${TEST_MYSQL_ROOT_PASSWORD:-voting_test_root_pass}
       MYSQL_DATABASE: ${TEST_MYSQL_DATABASE:-voting_test_db}
@@ -42,14 +49,19 @@ services:
     container_name: voting-test-institution-api
     restart: unless-stopped
     environment:
+      NODE_ENV: ${NODE_ENV:-development}
       PORT: ${TEST_INSTITUTION_PORT:-4005}
       DB_HOST: mysql
       DB_PORT: 3306
       DB_USER: ${TEST_MYSQL_USER:-voting_test_user}
       DB_PASSWORD: ${TEST_MYSQL_PASSWORD:-voting_test_pass}
       DB_NAME: institution_test_db
+      INSTITUTION_API_KEY: ${TEST_INSTITUTION_API_KEY:-test-institution-key}
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5175}
       ADMIN_PANEL_URL: ${ADMIN_PANEL_URL:-http://localhost:5176}
+      CORS_ALLOWED_ORIGINS: ${TEST_CORS_ALLOWED_ORIGINS:-http://localhost:5175,http://localhost:5176}
+    ports:
+      - "127.0.0.1:${TEST_INSTITUTION_PORT:-4005}:${TEST_INSTITUTION_PORT:-4005}"
     depends_on:
       mysql:
         condition: service_healthy
@@ -70,6 +82,7 @@ services:
       start_period: 20s
       interval: 15s
 
+  # Blockchain Node 1 (primary)
   blockchain-node:
     build:
       context: ../../services/blockchain-node
@@ -82,6 +95,9 @@ services:
       NODE_ENV: ${TEST_NODE_ENV:-development}
       PEERS: http://voting-test-blockchain-2:${TEST_BLOCKCHAIN_NODE2_PORT:-3011},http://voting-test-blockchain-3:${TEST_BLOCKCHAIN_NODE3_PORT:-3012},http://voting-test-blockchain-4:${TEST_BLOCKCHAIN_NODE4_PORT:-3013}
       BLOCKCHAIN_API_KEY: ${TEST_BLOCKCHAIN_API_KEY:-test-blockchain-key}
+      CORS_ALLOWED_ORIGINS: ${TEST_CORS_ALLOWED_ORIGINS:-http://localhost:5175,http://localhost:5176}
+    ports:
+      - "127.0.0.1:${TEST_BLOCKCHAIN_NODE1_PORT:-3010}:${TEST_BLOCKCHAIN_NODE1_PORT:-3010}"
     volumes:
       - blockchain_test_data:/app/data
     networks:
@@ -101,6 +117,7 @@ services:
       interval: 15s
     command: npm start
 
+  # Blockchain Node 2
   blockchain-node-2:
     build:
       context: ../../services/blockchain-node
@@ -113,6 +130,7 @@ services:
       NODE_ENV: ${TEST_NODE_ENV:-development}
       PEERS: http://voting-test-blockchain:${TEST_BLOCKCHAIN_NODE1_PORT:-3010},http://voting-test-blockchain-3:${TEST_BLOCKCHAIN_NODE3_PORT:-3012},http://voting-test-blockchain-4:${TEST_BLOCKCHAIN_NODE4_PORT:-3013}
       BLOCKCHAIN_API_KEY: ${TEST_BLOCKCHAIN_API_KEY:-test-blockchain-key}
+      CORS_ALLOWED_ORIGINS: ${TEST_CORS_ALLOWED_ORIGINS:-http://localhost:5175,http://localhost:5176}
     volumes:
       - blockchain_test_data_2:/app/data
     networks:
@@ -135,6 +153,7 @@ services:
       interval: 15s
     command: npm start
 
+  # Blockchain Node 3
   blockchain-node-3:
     build:
       context: ../../services/blockchain-node
@@ -147,6 +166,7 @@ services:
       NODE_ENV: ${TEST_NODE_ENV:-development}
       PEERS: http://voting-test-blockchain:${TEST_BLOCKCHAIN_NODE1_PORT:-3010},http://voting-test-blockchain-2:${TEST_BLOCKCHAIN_NODE2_PORT:-3011},http://voting-test-blockchain-4:${TEST_BLOCKCHAIN_NODE4_PORT:-3013}
       BLOCKCHAIN_API_KEY: ${TEST_BLOCKCHAIN_API_KEY:-test-blockchain-key}
+      CORS_ALLOWED_ORIGINS: ${TEST_CORS_ALLOWED_ORIGINS:-http://localhost:5175,http://localhost:5176}
     volumes:
       - blockchain_test_data_3:/app/data
     networks:
@@ -169,6 +189,7 @@ services:
       interval: 15s
     command: npm start
 
+  # Blockchain Node 4
   blockchain-node-4:
     build:
       context: ../../services/blockchain-node
@@ -181,6 +202,7 @@ services:
       NODE_ENV: ${TEST_NODE_ENV:-development}
       PEERS: http://voting-test-blockchain:${TEST_BLOCKCHAIN_NODE1_PORT:-3010},http://voting-test-blockchain-2:${TEST_BLOCKCHAIN_NODE2_PORT:-3011},http://voting-test-blockchain-3:${TEST_BLOCKCHAIN_NODE3_PORT:-3012}
       BLOCKCHAIN_API_KEY: ${TEST_BLOCKCHAIN_API_KEY:-test-blockchain-key}
+      CORS_ALLOWED_ORIGINS: ${TEST_CORS_ALLOWED_ORIGINS:-http://localhost:5175,http://localhost:5176}
     volumes:
       - blockchain_test_data_4:/app/data
     networks:
@@ -203,6 +225,7 @@ services:
       interval: 15s
     command: npm start
 
+  # Backend API
   backend:
     build:
       context: ../../services/backend
@@ -219,8 +242,12 @@ services:
       DB_NAME: ${TEST_MYSQL_DATABASE:-voting_test_db}
       JWT_SECRET: ${TEST_JWT_SECRET:-test-jwt-secret-for-integration-tests}
       BLOCKCHAIN_NODE_URL: http://voting-test-blockchain:${TEST_BLOCKCHAIN_NODE1_PORT:-3010}
+      BLOCKCHAIN_API_KEY: ${TEST_BLOCKCHAIN_API_KEY:-test-blockchain-key}
+      INSTITUTION_API_KEY: ${TEST_INSTITUTION_API_KEY:-test-institution-key}
       FRONTEND_URL: http://localhost:${TEST_FRONTEND_PORT:-5175}
+      ADMIN_PANEL_URL: http://localhost:${TEST_ADMIN_PANEL_PORT:-5176}
       INSTITUTION_API_URL: http://voting-test-institution-api:${TEST_INSTITUTION_PORT:-4005}
+      CORS_ALLOWED_ORIGINS: ${TEST_CORS_ALLOWED_ORIGINS:-http://localhost:5175,http://localhost:5176}
     volumes:
       - ../../services/backend/keys:/app/keys
     depends_on:
@@ -270,6 +297,7 @@ services:
       - "127.0.0.1:${TEST_FRONTEND_PORT:-5175}:${TEST_FRONTEND_PORT:-5175}"
     command: sh -c "npm run dev -- --host 0.0.0.0 --port ${TEST_FRONTEND_PORT:-5175}"
 
+  # Admin Panel (Separate Vue App)
   admin-panel:
     build:
       context: ../../services/admin-panel
@@ -280,6 +308,7 @@ services:
       PORT: ${TEST_ADMIN_PANEL_PORT:-5176}
       VITE_API_BASE_URL: ${TEST_VITE_API_BASE_URL:-http://localhost:${TEST_BACKEND_PORT:-3005}/api}
       VITE_BLOCKCHAIN_URL: ${TEST_VITE_BLOCKCHAIN_URL:-http://localhost:${TEST_BLOCKCHAIN_NODE1_PORT:-3010}}
+      VITE_INSTITUTION_API_URL: ${TEST_VITE_INSTITUTION_API_URL:-http://localhost:${TEST_INSTITUTION_PORT:-4005}}
     depends_on:
       backend:
         condition: service_healthy

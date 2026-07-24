@@ -32,7 +32,7 @@ router.post('/api/members', apiKeyAuth, async (req, res) => {
       'INSERT INTO institution_members (institution_id, full_name, email, role, department, year_level, is_voter) VALUES (?, ?, ?, ?, ?, ?, FALSE)',
       [institution_id.toUpperCase(), full_name, email, role, department, year_level || null]
     );
-    const [[row]] = await db.query('SELECT * FROM institution_members WHERE institution_id = ?', [institution_id.toUpperCase()]);
+    const [[row]] = await db.query('SELECT id, institution_id, full_name, email, role, department, year_level, is_voter FROM institution_members WHERE institution_id = ?', [institution_id.toUpperCase()]);
     res.status(201).json(row);
   } catch (e) { res.status(500).json({ message: e.message }); }
 });
@@ -52,7 +52,7 @@ router.put('/api/members/:institutionId', apiKeyAuth, async (req, res) => {
       [full_name, email, role, department, year_level || null, id]
     );
     if (r.affectedRows === 0) return res.status(404).json({ message: 'Member not found.' });
-    const [[row]] = await db.query('SELECT * FROM institution_members WHERE institution_id = ?', [id]);
+    const [[row]] = await db.query('SELECT id, institution_id, full_name, email, role, department, year_level, is_voter FROM institution_members WHERE institution_id = ?', [id]);
     res.json(row);
   } catch (e) { res.status(500).json({ message: e.message }); }
 });
@@ -83,10 +83,11 @@ router.get('/api/members', async (req, res) => {
     const where = conditions.length ? 'WHERE ' + conditions.join(' AND ') : '';
     const db = getPool();
     const [members] = await db.query(
-      'SELECT id, institution_id, full_name, email, role, department, year_level, is_voter FROM institution_members ' + where + ' ORDER BY is_voter ASC, role, institution_id LIMIT ? OFFSET ?',
+      'SELECT SQL_CALC_FOUND_ROWS id, institution_id, full_name, email, role, department, year_level, is_voter FROM institution_members ' + where + ' ORDER BY is_voter ASC, role, institution_id LIMIT ? OFFSET ?',
       [...params, limit, offset]
     );
-    const [[{ total }]] = await db.query('SELECT COUNT(*) AS total FROM institution_members ' + where, params);
+    const [[{ total }]] = await db.query('SELECT FOUND_ROWS() AS total');
+    // Composite index idx_voter_role_id added in database.js init
     const [[counts]] = await db.query('SELECT SUM(is_voter) AS voters, COUNT(*) AS total FROM institution_members');
     res.json({ members, pagination: { page, limit, total, pages: Math.ceil(total / limit) }, stats: { total: counts.total, voters: counts.voters || 0, available: counts.total - (counts.voters || 0) } });
   } catch (e) { res.status(500).json({ message: e.message }); }
