@@ -47,7 +47,8 @@ async function createTestElection() {
     
     console.log(`\n🎉 Test election created successfully!`);
     console.log(`Election ID: ${electionId}`);
-    console.log(`Navigate to: http://localhost:5173/elections/${electionId}`);
+    const feUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    console.log(`Navigate to: ${feUrl}/elections/${electionId}`);
     
   } catch (error) {
     console.error('❌ Error:', error.message);

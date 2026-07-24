@@ -133,7 +133,7 @@ bash infra/scripts/docker-backup.sh           # Backup database & blockchain
 bash infra/scripts/docker-restore.sh <file>   # Restore from backup
 bash infra/scripts/docker-logs.sh             # Interactive log viewer
 bash infra/scripts/docker-cleanup.sh          # Clean Docker resources
-bash infra/scripts/docker-seed.sh             # Seed test data
+bash infra/scripts/docker-bootstrap.sh        # Bootstrap admin, validators, config
 ```
 
 ### Testing
@@ -190,7 +190,7 @@ Comprehensive documentation available:
 - `infra/scripts/docker-logs.sh` - Advanced log viewer
 - `infra/scripts/docker-cleanup.sh` - Clean Docker resources
 - `infra/scripts/docker-health-check.sh` - System health check
-- `infra/scripts/docker-seed.sh` - Seed test data
+- `infra/scripts/docker-bootstrap.sh` - Bootstrap admin, validator nodes, system config
 - `infra/scripts/docker-monitoring-start.sh` - Start monitoring stack
 
 ## 🔄 Vote Casting Flow

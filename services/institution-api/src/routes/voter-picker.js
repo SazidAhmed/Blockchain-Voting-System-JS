@@ -61,8 +61,8 @@ router.get('/voter-picker', (_req, res) => {
 <div class="stats" id="stats"></div>
 
 <div class="register-url">
-  Register at: <a href="http://localhost:5173/register" target="_blank">http://localhost:5173/register</a>
-  &nbsp;|&nbsp; Admin panel: <a href="http://localhost:5174" target="_blank">http://localhost:5174</a>
+  Register at: <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}/register" target="_blank">${process.env.FRONTEND_URL || 'http://localhost:5173'}/register</a>
+  &nbsp;|&nbsp; Admin panel: <a href="${process.env.ADMIN_PANEL_URL || 'http://localhost:5174'}" target="_blank">${process.env.ADMIN_PANEL_URL || 'http://localhost:5174'}</a>
 </div>
 
 <div class="controls">

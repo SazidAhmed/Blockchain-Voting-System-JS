@@ -63,3 +63,5 @@ temp/
 tests/security/results/
 .opencode/
 tests/results/
+.agents/
+skills-lock.json

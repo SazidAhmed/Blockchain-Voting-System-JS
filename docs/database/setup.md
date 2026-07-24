@@ -54,10 +54,10 @@ npm run migrate
 
 This creates the database if missing and applies all pending migrations from `services/backend/migrations/`.
 
-### 4. Seed test data (development only)
+### 4. Seed Admin data
 
 ```bash
-bash infra/scripts/docker-seed.sh
+bash infra/scripts/docker-bootstrap.sh
 ```
 
 Or directly inside the container:
@@ -92,7 +92,7 @@ New migrations run automatically on Docker boot. The `schema_migrations` table t
 
 ## Seed Data
 
-`bash infra/scripts/docker-seed.sh` populates:
+`bash infra/scripts/docker-bootstrap.sh` populates:
 
 - 7 users (admin, students, teacher, staff, board member)
 - 3 elections (active, pending, completed)
@@ -106,9 +106,6 @@ New migrations run automatically on Docker boot. The `schema_migrations` table t
 | Role    | Institution ID | Password    |
 | ------- | -------------- | ----------- |
 | Admin   | ADMIN001       | admin123    |
-| Student | STU001         | password123 |
-| Teacher | TEACH001       | password123 |
-| Staff   | STAFF001       | password123 |
 
 ## Scripts
 

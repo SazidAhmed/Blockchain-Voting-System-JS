@@ -27,8 +27,8 @@ Services wait for healthchecks before starting. Backend runs migrations automati
 
 ```bash
 # Full stack
-docker-compose -f infra/docker/docker-compose.yml up --build -d
-docker-compose -f infra/docker/docker-compose.yml down -v
+docker-compose -f infra/docker/docker-compose.yml --env-file .env up --build -d
+docker-compose -f infra/docker/docker-compose.yml --env-file .env down -v
 
 # Backend only (local dev)
 cd services/backend && npm install && npm run migrate && npm run dev
@@ -39,8 +39,8 @@ cd services/frontend && npm install && npm run dev
 # Health check
 bash infra/scripts/docker-health-check.sh
 
-# Seed test data
-bash infra/scripts/docker-seed.sh
+# Seed Admin data
+bash infra/scripts/docker-bootstrap.sh
 
 # Run integration tests (requires running stack)
 bash tests/run-tests.sh
@@ -70,7 +70,7 @@ Requires Docker stack running. Use `docker-compose -f infra/docker/docker-compos
 
 - MySQL 8.0 with database name `voting_db` (default, set via `DB_NAME` env var)
 - Schema in `services/backend/migrations/*.sql` (auto-run on Docker init + backend boot, also run by `npm run migrate`)
-- Seeding: `bash infra/scripts/docker-seed.sh`
+- Seeding: `bash infra/scripts/docker-bootstrap.sh`
 - Access: phpMyAdmin at `localhost:8080`
 
 ## Key Conventions

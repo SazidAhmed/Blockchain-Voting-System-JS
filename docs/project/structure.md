@@ -115,7 +115,7 @@
             ├── docker-logs.sh
             ├── docker-monitoring-start.sh
             ├── docker-restore.sh
-            ├── docker-seed.sh
+            ├── docker-bootstrap.sh
             ├── docker-start.bat
             ├── docker-start.sh
             ├── seed-test-attack.sh

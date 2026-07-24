@@ -61,7 +61,8 @@ async function createTestElection() {
     console.log(`   Title: Crypto Test Election`);
     console.log(`   Status: active`);
     console.log(`   Candidates: 3`);
-    console.log(`\n✅ You can now vote at: http://localhost:5174/#/elections`);
+    const adminUrl = process.env.ADMIN_PANEL_URL || 'http://localhost:5174';
+    console.log(`\n✅ You can now vote at: ${adminUrl}/#/elections`);
     
     await pool.end();
   } catch (error) {

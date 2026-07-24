@@ -1,16 +1,17 @@
+# Usage: docker-compose -f infra/docker/docker-compose.yml -f infra/docker/docker-compose.multi-node.yml up -d
+# Override for 5 blockchain nodes (3 validators + 2 observers). Requires .env.
+
 services:
-  # MySQL Database (shared for all nodes)
+  # ── Data Layer ───────────────────────────────────────────────────────────────
   mysql:
     image: mysql:8.0
     container_name: voting-mysql-multinode
-    restart: always
+    restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-voting_root_pass}
-      MYSQL_DATABASE: ${MYSQL_DATABASE:-voting_db}
-      MYSQL_USER: ${MYSQL_USER:-voting_user}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-voting_pass}
-    ports:
-      - "3306:3306"
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?MYSQL_ROOT_PASSWORD is required}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:?MYSQL_DATABASE is required}
+      MYSQL_USER: ${MYSQL_USER:?MYSQL_USER is required}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?MYSQL_PASSWORD is required}
     volumes:
       - mysql_data_multinode:/var/lib/mysql
       - ../../services/backend/migrations:/docker-entrypoint-initdb.d
@@ -26,33 +27,33 @@ services:
           "localhost",
           "-u",
           "root",
-          "-p${MYSQL_ROOT_PASSWORD:-voting_root_pass}",
+          "-p${MYSQL_ROOT_PASSWORD}",
         ]
       timeout: 20s
       retries: 10
       interval: 10s
 
-  # Blockchain Node 1 (Validator)
+  # ── Validator Nodes ──────────────────────────────────────────────────────────
   blockchain-node-1:
     build:
       context: ../../services/blockchain-node
       dockerfile: Dockerfile
     container_name: voting-blockchain-node-1
-    restart: always
+    restart: unless-stopped
     environment:
       NODE_ID: node1
       NODE_TYPE: validator
-      PORT: 3001
-      PEERS: http://blockchain-node-2:3002,http://blockchain-node-3:3003,http://blockchain-node-4:3004,http://blockchain-node-5:3005
-      NODE_ENV: development
-    ports:
-      - "3001:3001"
+      PORT: ${BLOCKCHAIN_NODE1_PORT:?BLOCKCHAIN_NODE1_PORT is required}
+      PEERS: http://blockchain-node-2:${BLOCKCHAIN_NODE2_PORT},http://blockchain-node-3:${BLOCKCHAIN_NODE3_PORT},http://blockchain-node-4:${BLOCKCHAIN_NODE4_PORT},http://blockchain-node-5:${BLOCKCHAIN_NODE5_PORT}
+      NODE_ENV: ${NODE_ENV:?NODE_ENV is required}
+      BLOCKCHAIN_API_KEY: ${BLOCKCHAIN_API_KEY:?BLOCKCHAIN_API_KEY is required}
     volumes:
       - blockchain_data_node1:/app/data
-      - ../../services/blockchain-node:/app
-      - /app/node_modules
     networks:
       - voting-blockchain-network
+    depends_on:
+      mysql:
+        condition: service_healthy
     healthcheck:
       test:
         [
@@ -61,36 +62,33 @@ services:
           "--quiet",
           "--tries=1",
           "--spider",
-          "http://localhost:3001/node/status",
+          "http://localhost:${BLOCKCHAIN_NODE1_PORT}/node",
         ]
       timeout: 10s
       retries: 5
       interval: 15s
     command: npm start
-    depends_on:
-      - mysql
 
-  # Blockchain Node 2 (Validator)
   blockchain-node-2:
     build:
       context: ../../services/blockchain-node
       dockerfile: Dockerfile
     container_name: voting-blockchain-node-2
-    restart: always
+    restart: unless-stopped
     environment:
       NODE_ID: node2
       NODE_TYPE: validator
-      PORT: 3002
-      PEERS: http://blockchain-node-1:3001,http://blockchain-node-3:3003,http://blockchain-node-4:3004,http://blockchain-node-5:3005
-      NODE_ENV: development
-    ports:
-      - "3002:3002"
+      PORT: ${BLOCKCHAIN_NODE2_PORT:?BLOCKCHAIN_NODE2_PORT is required}
+      PEERS: http://blockchain-node-1:${BLOCKCHAIN_NODE1_PORT},http://blockchain-node-3:${BLOCKCHAIN_NODE3_PORT},http://blockchain-node-4:${BLOCKCHAIN_NODE4_PORT},http://blockchain-node-5:${BLOCKCHAIN_NODE5_PORT}
+      NODE_ENV: ${NODE_ENV:?NODE_ENV is required}
+      BLOCKCHAIN_API_KEY: ${BLOCKCHAIN_API_KEY:?BLOCKCHAIN_API_KEY is required}
     volumes:
       - blockchain_data_node2:/app/data
-      - ../../services/blockchain-node:/app
-      - /app/node_modules
     networks:
       - voting-blockchain-network
+    depends_on:
+      blockchain-node-1:
+        condition: service_healthy
     healthcheck:
       test:
         [
@@ -99,36 +97,33 @@ services:
           "--quiet",
           "--tries=1",
           "--spider",
-          "http://localhost:3002/node/status",
+          "http://localhost:${BLOCKCHAIN_NODE2_PORT}/node",
         ]
       timeout: 10s
       retries: 5
       interval: 15s
     command: npm start
-    depends_on:
-      - mysql
 
-  # Blockchain Node 3 (Validator)
   blockchain-node-3:
     build:
       context: ../../services/blockchain-node
       dockerfile: Dockerfile
     container_name: voting-blockchain-node-3
-    restart: always
+    restart: unless-stopped
     environment:
       NODE_ID: node3
       NODE_TYPE: validator
-      PORT: 3003
-      PEERS: http://blockchain-node-1:3001,http://blockchain-node-2:3002,http://blockchain-node-4:3004,http://blockchain-node-5:3005
-      NODE_ENV: development
-    ports:
-      - "3003:3003"
+      PORT: ${BLOCKCHAIN_NODE3_PORT:?BLOCKCHAIN_NODE3_PORT is required}
+      PEERS: http://blockchain-node-1:${BLOCKCHAIN_NODE1_PORT},http://blockchain-node-2:${BLOCKCHAIN_NODE2_PORT},http://blockchain-node-4:${BLOCKCHAIN_NODE4_PORT},http://blockchain-node-5:${BLOCKCHAIN_NODE5_PORT}
+      NODE_ENV: ${NODE_ENV:?NODE_ENV is required}
+      BLOCKCHAIN_API_KEY: ${BLOCKCHAIN_API_KEY:?BLOCKCHAIN_API_KEY is required}
     volumes:
       - blockchain_data_node3:/app/data
-      - ../../services/blockchain-node:/app
-      - /app/node_modules
     networks:
       - voting-blockchain-network
+    depends_on:
+      blockchain-node-1:
+        condition: service_healthy
     healthcheck:
       test:
         [
@@ -137,36 +132,34 @@ services:
           "--quiet",
           "--tries=1",
           "--spider",
-          "http://localhost:3003/node/status",
+          "http://localhost:${BLOCKCHAIN_NODE3_PORT}/node",
         ]
       timeout: 10s
       retries: 5
       interval: 15s
     command: npm start
-    depends_on:
-      - mysql
 
-  # Blockchain Node 4 (Observer)
+  # ── Observer Nodes ───────────────────────────────────────────────────────────
   blockchain-node-4:
     build:
       context: ../../services/blockchain-node
       dockerfile: Dockerfile
     container_name: voting-blockchain-node-4
-    restart: always
+    restart: unless-stopped
     environment:
       NODE_ID: node4
       NODE_TYPE: observer
-      PORT: 3004
-      PEERS: http://blockchain-node-1:3001,http://blockchain-node-2:3002,http://blockchain-node-3:3003,http://blockchain-node-5:3005
-      NODE_ENV: development
-    ports:
-      - "3004:3004"
+      PORT: ${BLOCKCHAIN_NODE4_PORT:?BLOCKCHAIN_NODE4_PORT is required}
+      PEERS: http://blockchain-node-1:${BLOCKCHAIN_NODE1_PORT},http://blockchain-node-2:${BLOCKCHAIN_NODE2_PORT},http://blockchain-node-3:${BLOCKCHAIN_NODE3_PORT},http://blockchain-node-5:${BLOCKCHAIN_NODE5_PORT}
+      NODE_ENV: ${NODE_ENV:?NODE_ENV is required}
+      BLOCKCHAIN_API_KEY: ${BLOCKCHAIN_API_KEY:?BLOCKCHAIN_API_KEY is required}
     volumes:
       - blockchain_data_node4:/app/data
-      - ../../services/blockchain-node:/app
-      - /app/node_modules
     networks:
       - voting-blockchain-network
+    depends_on:
+      blockchain-node-1:
+        condition: service_healthy
     healthcheck:
       test:
         [
@@ -175,36 +168,33 @@ services:
           "--quiet",
           "--tries=1",
           "--spider",
-          "http://localhost:3004/node/status",
+          "http://localhost:${BLOCKCHAIN_NODE4_PORT}/node",
         ]
       timeout: 10s
       retries: 5
       interval: 15s
     command: npm start
-    depends_on:
-      - mysql
 
-  # Blockchain Node 5 (Observer)
   blockchain-node-5:
     build:
       context: ../../services/blockchain-node
       dockerfile: Dockerfile
     container_name: voting-blockchain-node-5
-    restart: always
+    restart: unless-stopped
     environment:
       NODE_ID: node5
       NODE_TYPE: observer
-      PORT: 3005
-      PEERS: http://blockchain-node-1:3001,http://blockchain-node-2:3002,http://blockchain-node-3:3003,http://blockchain-node-4:3004
-      NODE_ENV: development
-    ports:
-      - "3005:3005"
+      PORT: ${BLOCKCHAIN_NODE5_PORT:?BLOCKCHAIN_NODE5_PORT is required}
+      PEERS: http://blockchain-node-1:${BLOCKCHAIN_NODE1_PORT},http://blockchain-node-2:${BLOCKCHAIN_NODE2_PORT},http://blockchain-node-3:${BLOCKCHAIN_NODE3_PORT},http://blockchain-node-4:${BLOCKCHAIN_NODE4_PORT}
+      NODE_ENV: ${NODE_ENV:?NODE_ENV is required}
+      BLOCKCHAIN_API_KEY: ${BLOCKCHAIN_API_KEY:?BLOCKCHAIN_API_KEY is required}
     volumes:
       - blockchain_data_node5:/app/data
-      - ../../services/blockchain-node:/app
-      - /app/node_modules
     networks:
       - voting-blockchain-network
+    depends_on:
+      blockchain-node-1:
+        condition: service_healthy
     healthcheck:
       test:
         [
@@ -213,14 +203,12 @@ services:
           "--quiet",
           "--tries=1",
           "--spider",
-          "http://localhost:3005/node/status",
+          "http://localhost:${BLOCKCHAIN_NODE5_PORT}/node",
         ]
       timeout: 10s
       retries: 5
       interval: 15s
     command: npm start
-    depends_on:
-      - mysql
 
 networks:
   voting-blockchain-network:
@@ -228,14 +216,8 @@ networks:
 
 volumes:
   mysql_data_multinode:
-    driver: local
   blockchain_data_node1:
-    driver: local
   blockchain_data_node2:
-    driver: local
   blockchain_data_node3:
-    driver: local
   blockchain_data_node4:
-    driver: local
   blockchain_data_node5:
-    driver: local

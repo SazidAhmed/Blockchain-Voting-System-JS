@@ -15,5 +15,5 @@ console.log('Full Name:', secondUserData.fullName);
 console.log('Email:', secondUserData.email);
 console.log('Student/Staff ID:', secondUserData.studentId);
 console.log('Password:', secondUserData.password);
-console.log('\n📝 Use these credentials to register at: http://localhost:5173/register');
+console.log(`\n📝 Use these credentials to register at: ${process.env.FRONTEND_URL || 'http://localhost:5173'}/register`);
 console.log('💡 The system will automatically generate crypto keys during registration');

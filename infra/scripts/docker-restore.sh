@@ -9,6 +9,7 @@ set -e
 
 # Docker Compose file location (relative to project root)
 COMPOSE_FILE="infra/docker/docker-compose.yml"
+ENV_FILE=".env"
 
 # Colors for output
 GREEN='\033[0;32m'
@@ -65,24 +66,24 @@ ENV_BACKUP="${TEMP_DIR}/${BACKUP_NAME}_env.txt"
 
 # Check if containers are running
 echo -e "${YELLOW}Checking if containers are running...${NC}"
-if ! docker-compose -f $COMPOSE_FILE ps | grep -q "voting-mysql.*Up"; then
+if ! docker-compose -f $COMPOSE_FILE --env-file $ENV_FILE ps | grep -q "voting-mysql.*Up"; then
     echo -e "${YELLOW}MySQL container is not running. Starting services...${NC}"
-    docker-compose -f $COMPOSE_FILE up -d mysql
+    docker-compose -f $COMPOSE_FILE --env-file $ENV_FILE up -d mysql
     echo "Waiting for MySQL to be ready..."
     sleep 10
 fi
 
 # Restore MySQL database
 echo -e "${BLUE}Restoring MySQL database...${NC}"
-docker-compose -f $COMPOSE_FILE exec -T mysql mysql -u voting_user -pvoting_pass voting_db < "${MYSQL_BACKUP}"
+docker-compose -f $COMPOSE_FILE --env-file $ENV_FILE exec -T mysql mysql -u voting_user -pvoting_pass voting_db < "${MYSQL_BACKUP}"
 echo -e "${GREEN}✓ MySQL database restored successfully${NC}"
 
 # Restore blockchain data
 echo -e "${BLUE}Restoring blockchain data...${NC}"
-docker-compose -f $COMPOSE_FILE stop blockchain-node
-docker-compose -f $COMPOSE_FILE exec -T blockchain-node rm -rf /app/data/*
-cat "${BLOCKCHAIN_BACKUP}" | docker-compose -f $COMPOSE_FILE exec -T blockchain-node tar xzf - -C /
-docker-compose -f $COMPOSE_FILE start blockchain-node
+docker-compose -f $COMPOSE_FILE --env-file $ENV_FILE stop blockchain-node
+docker-compose -f $COMPOSE_FILE --env-file $ENV_FILE exec -T blockchain-node rm -rf /app/data/*
+cat "${BLOCKCHAIN_BACKUP}" | docker-compose -f $COMPOSE_FILE --env-file $ENV_FILE exec -T blockchain-node tar xzf - -C /
+docker-compose -f $COMPOSE_FILE --env-file $ENV_FILE start blockchain-node
 echo -e "${GREEN}✓ Blockchain data restored successfully${NC}"
 
 # Show environment differences (optional)
@@ -106,7 +107,7 @@ echo -e "${GREEN}Restore completed successfully!${NC}"
 echo -e "${GREEN}===========================================${NC}"
 echo ""
 echo -e "${BLUE}Restarting all services...${NC}"
-docker-compose -f $COMPOSE_FILE restart
+docker-compose -f $COMPOSE_FILE --env-file $ENV_FILE restart
 
 echo ""
 echo -e "${GREEN}All services restarted. System is ready!${NC}"

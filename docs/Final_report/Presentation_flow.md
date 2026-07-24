@@ -673,8 +673,8 @@ docker-compose down
 # Emergency restart
 docker-compose restart
 
-# Seed database if needed
-./docker-seed.sh
+# Seed database with Admin data
+./docker-bootstrap.sh
 ```
 
 ---
@@ -722,7 +722,7 @@ docker-compose restart
 ### 1 Hour Before
 
 - [ ] Start Docker services: `docker-compose up -d`
-- [ ] Seed database: `infra/scripts/docker-seed.sh`
+- [ ] Seed database with Admin data: `infra/scripts/docker-bootstrap.sh`
 - [ ] Test user registration
 - [ ] Test vote casting
 - [ ] Open all browser tabs

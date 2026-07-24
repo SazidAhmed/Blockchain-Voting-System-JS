@@ -1,3 +1,5 @@
+# Admin Panel Dockerfile (Development)
+
 FROM node:20-alpine
 
 WORKDIR /app
@@ -11,8 +13,15 @@ RUN npm install
 # Copy source code
 COPY . .
 
+# Create non-root user
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+RUN chown -R appuser:appgroup /app
+
+USER appuser
+
 # Expose port
-EXPOSE 5174
+ARG PORT=5174
+EXPOSE $PORT
 
 # Start development server
-CMD ["npm", "run", "dev"]
+CMD npm run dev -- --host 0.0.0.0 --port $PORT

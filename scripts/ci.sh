@@ -49,18 +49,29 @@ run_step "Docker build" docker compose -f "$COMPOSE_FILE" build
 # --- Phase 3: Start and test ---
 echo -e "${YELLOW}Phase 3: Integration Tests${NC}"
 run_step "Create .env" bash -c 'cp .env.example .env && echo "JWT_SECRET=test-secret-key-for-ci-minimum-32-chars-long" >> .env'
-run_step "Start services" docker compose -f "$COMPOSE_FILE" up -d
+run_step "Start services" docker compose -f "$COMPOSE_FILE" --env-file .env up -d
 
 echo "Waiting for services..."
 sleep 30
 
-run_step "Backend API (port 3000)"  curl -sf http://localhost:3000/api/elections
-run_step "Blockchain node (port 3001)" curl -sf http://localhost:3001/node
-run_step "Frontend (port 5173)"     curl -sf http://localhost:5173
+# Read ports from .env for endpoint checks
+get_env() {
+  local var="$1" fallback="$2"
+  local val
+  val=$(grep "^${var}=" .env 2>/dev/null | head -1 | cut -d= -f2-)
+  echo "${val:-$fallback}"
+}
+BE_PORT=$(get_env BACKEND_PORT 3000)
+BC_PORT=$(get_env BLOCKCHAIN_NODE1_PORT 3001)
+FE_PORT=$(get_env FRONTEND_PORT 5173)
+
+run_step "Backend API (port ${BE_PORT})"  curl -sf "http://localhost:${BE_PORT}/api/elections"
+run_step "Blockchain node (port ${BC_PORT})" curl -sf "http://localhost:${BC_PORT}/node"
+run_step "Frontend (port ${FE_PORT})"     curl -sf "http://localhost:${FE_PORT}"
 
 # --- Phase 4: Cleanup ---
 echo -e "${YELLOW}Phase 4: Cleanup${NC}"
-docker compose -f "$COMPOSE_FILE" down -v 2>/dev/null || true
+docker compose -f "$COMPOSE_FILE" --env-file .env down -v 2>/dev/null || true
 echo ""
 
 # --- Result ---

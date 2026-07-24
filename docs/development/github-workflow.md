@@ -438,8 +438,8 @@ docker-compose -f infra/docker/docker-compose.yml up --build -d
 # Check health
 bash infra/scripts/docker-health-check.sh
 
-# Seed test data (requires healthy stack)
-bash infra/scripts/docker-seed.sh
+# Seed Admin data (requires healthy stack)
+bash infra/scripts/docker-bootstrap.sh
 
 # View logs
 docker-compose -f infra/docker/docker-compose.yml logs -f

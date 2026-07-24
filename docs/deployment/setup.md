@@ -53,10 +53,10 @@ Access:
 | phpMyAdmin      | <http://localhost:8080>               |
 | MySQL           | localhost:3306                        |
 
-### 5. Seed Test Data
+### 5. Seed Admin Data
 
 ```bash
-bash infra/scripts/docker-seed.sh
+bash infra/scripts/docker-bootstrap.sh
 ```
 
 ---

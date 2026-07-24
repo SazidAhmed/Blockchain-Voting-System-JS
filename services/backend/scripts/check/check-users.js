@@ -36,7 +36,7 @@ async function checkUsers() {
 
     if (total === 0) {
       console.log('\nNo users found in the database.');
-      console.log('Register users at http://localhost:5173/register');
+      console.log(`Register users at ${process.env.FRONTEND_URL || 'http://localhost:5173'}/register`);
     } else {
       console.log(`\n=== Registered Users (${total} total) ===\n`);
       printTable(users);

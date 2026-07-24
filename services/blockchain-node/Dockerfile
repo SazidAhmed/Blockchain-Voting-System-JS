@@ -5,12 +5,7 @@ FROM node:20-slim
 WORKDIR /app
 
 # Install system dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    python3 \
-    make \
-    g++ \
-    wget \
-    && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y --no-install-recommends python3 make g++ wget && rm -rf /var/lib/apt/lists/*
 
 # Copy package files
 COPY package*.json ./
@@ -21,15 +16,19 @@ RUN npm install
 # Copy application code
 COPY . .
 
-# Create data directory
-RUN mkdir -p /app/data
+# Create non-root user
+RUN groupadd -r appgroup && useradd -r -g appgroup appuser
+RUN mkdir -p /app/data && chown -R appuser:appgroup /app
+
+USER appuser
 
 # Expose port
-EXPOSE 3001
+ARG PORT=3001
+EXPOSE $PORT
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-  CMD wget --quiet --tries=1 --spider http://localhost:3001/node || exit 1
+  CMD wget --quiet --tries=1 --spider http://localhost:$PORT/node || exit 1
 
 # Start application
 CMD ["npm", "start"]
