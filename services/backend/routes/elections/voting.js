@@ -124,7 +124,7 @@ router.post("/:id/vote", voteLimiter, auth, validateVote, async (req, res) => {
     const nullifier = generateNullifier(
       userId.toString(),
       electionId.toString(),
-      process.env.JWT_SECRET,
+      process.env.NULLIFIER_SECRET || process.env.JWT_SECRET,
     );
 
     // Reject base64-encoded plaintext ballots
@@ -367,7 +367,7 @@ router.post("/:id/vote", voteLimiter, auth, validateVote, async (req, res) => {
       blockchainResponse = response;
 
       // Auto-mine the pending vote into a block immediately
-      blockchainApi.post("/mine").catch(() => {});
+      blockchainApi.post("/mine").catch((err) => console.error("Mining failed:", err.message));
     } catch (blockchainError) {
       console.warn(
         "⚠️ Blockchain node not available, continuing with simulated transaction (development mode)",

@@ -17,7 +17,7 @@ JWT-based with HS256 algorithm pinning. Token transmitted via httpOnly cookie (n
 
 ### CSRF Protection
 
-Double-submit cookie pattern. Client reads `XSRF-TOKEN` from non-httpOnly cookie and sends it as `X-XSRF-TOKEN` header on state-changing requests. Server validates both tokens match.
+Double-submit cookie pattern. Client reads `csrf-token` from cookie and sends it as `x-csrf-token` header on state-changing requests. Server validates both tokens match.
 
 ### Token Revocation
 

@@ -25,6 +25,7 @@ const PORT = process.env.PORT || 3001;
 
 // Create express app
 const app = express();
+app.disable('x-powered-by');
 app.use(express.json());
 
 // Root discovery route — dev only

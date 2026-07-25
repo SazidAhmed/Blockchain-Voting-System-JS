@@ -8,6 +8,7 @@ const voterPickerRoute = require("./routes/voter-picker");
 const errorHandler = require("./middleware/errorHandler");
 
 const app = express();
+app.disable('x-powered-by');
 
 const allowedOrigins = (process.env.CORS_ALLOWED_ORIGINS || "")
   .split(",")

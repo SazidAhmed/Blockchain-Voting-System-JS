@@ -45,12 +45,13 @@ Every port is configurable via `.env`. Defaults shown below:
 
 ### Backend (port ${BACKEND_PORT})
 
-| Variable              | Default                                          | Description          |
-| --------------------- | ------------------------------------------------ | -------------------- |
-| `JWT_SECRET`          | `change-me-to-a-random-secret-at-least-32-chars` | JWT signing key      |
-| `FRONTEND_URL`        | `http://localhost:5173`                          | CORS allowed origin  |
-| `INSTITUTION_API_URL` | `http://institution-api:4000`                    | Institution API host |
-| `BACKEND_URL`         | `http://backend:3000`                            | Internal backend URL |
+| Variable              | Default                                                | Description                                  |
+| --------------------- | ------------------------------------------------------ | -------------------------------------------- |
+| `JWT_SECRET`          | `change-me-to-a-random-secret-at-least-32-chars`       | JWT signing key                              |
+| `NULLIFIER_SECRET`    | `change-me-to-another-random-secret-at-least-32-chars` | Nullifier derivation key (separate from JWT) |
+| `FRONTEND_URL`        | `http://localhost:5173`                                | CORS allowed origin                          |
+| `INSTITUTION_API_URL` | `http://institution-api:4000`                          | Institution API host                         |
+| `BACKEND_URL`         | `http://backend:3000`                                  | Internal backend URL                         |
 
 ### MySQL
 
@@ -153,7 +154,7 @@ These are commented out in `.env.example`:
 - All service ports (`BACKEND_PORT`, `FRONTEND_PORT`, `BLOCKCHAIN_NODE1_PORT`, `INSTITUTION_PORT`, etc.)
 - `MYSQL_ROOT_PASSWORD`, `MYSQL_DATABASE`, `MYSQL_USER`, `MYSQL_PASSWORD`
 - `DB_HOST`, `DB_PORT`
-- `JWT_SECRET`
+- `JWT_SECRET`, `NULLIFIER_SECRET`
 - `FRONTEND_URL`, `ADMIN_PANEL_URL`, `INSTITUTION_API_URL`
 - `VITE_API_BASE_URL`, `VITE_BLOCKCHAIN_URL`
 - `BLOCKCHAIN_API_KEY`

@@ -239,21 +239,14 @@ router.get("/:id", validateElectionId, async (req, res) => {
       try {
         let ballot;
         if (electionMeta && electionMeta.tally_key) {
-          try {
-            const decrypted = crypto.privateDecrypt(
-              { key: electionMeta.tally_key, oaepHash: "sha256" },
-              Buffer.from(v.encrypted_ballot, "base64"),
-            );
-            ballot = JSON.parse(decrypted.toString("utf8"));
-          } catch (_) {
-            ballot = JSON.parse(
-              Buffer.from(v.encrypted_ballot, "base64").toString("utf8"),
-            );
-          }
-        } else {
-          ballot = JSON.parse(
-            Buffer.from(v.encrypted_ballot, "base64").toString("utf8"),
+          const decrypted = crypto.privateDecrypt(
+            { key: electionMeta.tally_key, oaepHash: "sha256" },
+            Buffer.from(v.encrypted_ballot, "base64"),
           );
+          ballot = JSON.parse(decrypted.toString("utf8"));
+        } else {
+          // ponytail: tally with no key — skip encrypted ballots
+          continue;
         }
         const cid = ballot.candidateId;
         if (cid) tally[cid] = (tally[cid] || 0) + 1;

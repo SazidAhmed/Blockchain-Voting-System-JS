@@ -89,9 +89,6 @@ class EmailService {
 
       this.etherealInitialized = true;
 
-      // Log both user + pass so Docker logs can be used to retrieve credentials
-      console.log(`📧 Ethereal ready: ${testAccount.user}`);
-      console.log(`📧 Ethereal password: ${testAccount.pass}`);
       console.log(`📧 View emails at: https://ethereal.email/login`);
     } catch (error) {
       console.error("❌ Ethereal initialization failed:", error.message);
@@ -162,7 +159,7 @@ class EmailService {
         `✅ OTP email sent to ${to} (ID: ${institutionId}) — MessageID: ${info.messageId}`,
       );
 
-      if (process.env.NODE_ENV !== "production") {
+      if (process.env.DEV_OTP_DEBUG === "true") {
         console.log(`🔑 [DEV] OTP for ${institutionId}: ${otp}`);
       }
 
@@ -170,7 +167,7 @@ class EmailService {
     } catch (error) {
       console.error(`❌ Failed to send OTP email to ${to}:`, error.message);
 
-      if (process.env.NODE_ENV !== "production") {
+      if (process.env.DEV_OTP_DEBUG === "true") {
         console.log(`\n${"=".repeat(50)}`);
         console.log(`📧 EMAIL FALLBACK (send failed)`);
         console.log(`To: ${to}`);

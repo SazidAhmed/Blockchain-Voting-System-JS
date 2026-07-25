@@ -34,8 +34,9 @@ async function initDatabase() {
     user:     'root',
     password: process.env.DB_ROOT_PASSWORD || (console.warn('WARNING: using default DB_ROOT_PASSWORD'), 'voting_root_pass')
   });
-  await root.query('CREATE DATABASE IF NOT EXISTS ' + dbName + ' CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci');
-  await root.query('GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, ALTER, INDEX ON ' + dbName + '.* TO \'' + dbUser + '\'@\'%\'');
+  const escapedDb = mysql.escapeId(dbName);
+  await root.query('CREATE DATABASE IF NOT EXISTS ' + escapedDb + ' CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci');
+  await root.query('GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, ALTER, INDEX ON ' + escapedDb + '.* TO \'' + dbUser + '\'@\'%\'');
   await root.query('FLUSH PRIVILEGES');
   await root.end();
   console.log('Database ready: ' + dbName);
