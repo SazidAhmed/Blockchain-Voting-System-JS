@@ -96,7 +96,7 @@ function handleLogout() {
 }
 
 .admin-nav__theme-btn:hover {
-  background: var(--bg-hover, rgba(0, 0, 0, 0.05));
+  background: var(--bg-hover);
   color: var(--text-primary);
 }
 

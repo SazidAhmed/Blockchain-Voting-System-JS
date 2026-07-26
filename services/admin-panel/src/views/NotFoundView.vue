@@ -1,6 +1,6 @@
 <template>
   <div class="not-found">
-    <div class="not-found-content">
+    <div class="not-found-content card glass">
       <h1>404</h1>
       <p>Page Not Found</p>
       <p class="sub">
@@ -26,7 +26,7 @@ export default { name: "AdminNotFoundView" };
 }
 .not-found-content {
   text-align: center;
-  padding: 3rem;
+  padding: var(--space-12);
 }
 .not-found-content h1 {
   font-size: 4rem;
@@ -35,16 +35,16 @@ export default { name: "AdminNotFoundView" };
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  margin: 0 0 0.5rem;
+  margin: 0 0 var(--space-2);
 }
 .not-found-content p {
   font-size: 1.2rem;
   color: var(--text-primary);
-  margin: 0 0 0.5rem;
+  margin: 0 0 var(--space-2);
 }
 .not-found-content .sub {
   color: var(--text-muted);
   font-size: 0.95rem;
-  margin-bottom: 1.5rem;
+  margin-bottom: var(--space-6);
 }
 </style>

@@ -111,7 +111,7 @@
           <div v-if="!alreadyRegistered">
             <button
               type="button"
-              class="btn btn-primary"
+              class="btn btn-primary btn-block"
               @click="sendOTP"
               :disabled="sendingOTP"
             >

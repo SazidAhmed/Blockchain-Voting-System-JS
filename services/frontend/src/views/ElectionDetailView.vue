@@ -452,6 +452,12 @@ export default {
   margin-top: var(--space-8);
 }
 
+@media (max-width: 480px) {
+  .election-info {
+    grid-template-columns: 1fr;
+  }
+}
+
 .spinning {
   animation: spin 0.7s linear infinite;
 }

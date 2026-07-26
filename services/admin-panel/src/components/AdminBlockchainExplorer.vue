@@ -59,12 +59,22 @@
     <div v-if="error" class="alert alert-danger">{{ error }}</div>
 
     <div class="search-bar">
-      <input
-        type="text"
-        v-model="searchQuery"
-        placeholder="Search by block #, hash, tx hash, nullifier, election ID\u2026"
-        class="search-input"
-      />
+      <div class="search-input-wrapper">
+        <PhMagnifyingGlass
+          :size="16"
+          color="var(--text-muted)"
+          class="search-icon"
+        />
+        <input
+          type="text"
+          v-model="searchQuery"
+          placeholder="Search by block #, hash, tx hash, nullifier, election ID\u2026"
+          class="search-input"
+        />
+      </div>
+      <button v-if="searchQuery" class="btn-clear" @click="searchQuery = ''">
+        ✕ Clear
+      </button>
     </div>
 
     <div v-if="!loading || chain.length" class="block-list">
@@ -182,7 +192,7 @@
                 Transactions <span class="tx-badge">{{ txCount(block) }}</span>
               </h3>
               <div v-if="block.index === 0" class="genesis-msg">
-                Genesis Block
+                <PhLeaf :size="16" /> Genesis Block — {{ block.data.message }}
               </div>
               <div v-else-if="txCount(block) === 0" class="no-tx">
                 No transactions in this block.
@@ -306,6 +316,8 @@ import {
   PhXCircle,
   PhCaretUp,
   PhCaretDown,
+  PhMagnifyingGlass,
+  PhLeaf,
 } from "@phosphor-icons/vue";
 
 const BLOCKCHAIN_URL =
@@ -316,7 +328,7 @@ export default {
   props: {
     tabActive: { type: Boolean, default: false },
   },
-  components: { PhCheckCircle, PhXCircle, PhCaretUp, PhCaretDown },
+  components: { PhCheckCircle, PhXCircle, PhCaretUp, PhCaretDown, PhMagnifyingGlass, PhLeaf },
   data() {
     return {
       chain: [],
@@ -656,26 +668,50 @@ export default {
   font-weight: 600;
 }
 
+/* ── Search ── */
 .search-bar {
-  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+.search-input-wrapper {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 0 12px;
+  transition: border-color 0.2s;
+}
+.search-input-wrapper:focus-within {
+  border-color: var(--accent);
+}
+.search-icon {
+  flex-shrink: 0;
 }
 .search-input {
-  width: 100%;
+  flex: 1;
+  padding: 10px 0;
+  border: none;
+  background: transparent;
+  font-size: 0.9rem;
+  outline: none;
+  color: var(--text-primary);
+}
+.btn-clear {
   padding: 10px 14px;
   background: var(--bg-secondary);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
-  color: var(--text-primary);
+  cursor: pointer;
   font-size: 0.85rem;
-  outline: none;
-  transition: border-color 0.2s;
+  color: var(--text-secondary);
 }
-.search-input:focus {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 14%, transparent);
-}
-.search-input::placeholder {
-  color: var(--text-muted);
+.btn-clear:hover {
+  background: var(--border);
 }
 
 .stats-bar {

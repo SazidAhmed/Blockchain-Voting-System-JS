@@ -92,6 +92,7 @@
                         v-if="election.status !== 'active'"
                         @click="editElection(election)"
                         class="btn btn-small btn-primary"
+                        title="Edit election details"
                       >
                         Edit
                       </button>
@@ -266,7 +267,7 @@
                   class="btn btn-secondary"
                   :disabled="creating"
                 >
-                  Cancel
+                  Reset
                 </button>
               </div>
             </form>
@@ -959,24 +960,6 @@ export default {
 
 .btn-logout {
   width: 100%;
-  padding: 10px;
-  background-color: rgba(255, 255, 255, 0.2);
-  color: white;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  font-weight: 600;
-  transition: all 0.3s ease;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-2);
-  font-size: 0.9rem;
-}
-
-.btn-logout:hover {
-  background-color: rgba(255, 255, 255, 0.3);
-  border-color: rgba(255, 255, 255, 0.5);
 }
 
 .sidebar-nav {
@@ -1133,54 +1116,6 @@ export default {
   max-width: 900px;
 }
 
-.form-group {
-  margin-bottom: 20px;
-}
-
-.form-group label {
-  display: block;
-  margin-bottom: 8px;
-  font-weight: 600;
-  color: var(--text-primary);
-  font-size: 0.95rem;
-}
-
-.form-input {
-  width: 100%;
-  padding: 12px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  font-size: 1rem;
-  font-family: var(--font-sans);
-  color: var(--text-primary);
-  background: var(--bg-primary);
-  transition: border-color 0.3s ease;
-  outline: none;
-}
-
-.form-input:focus {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 15%, transparent);
-}
-
-.form-input[type="datetime-local"] {
-  color-scheme: light dark;
-}
-
-:root[data-theme="dark"]
-  .form-input[type="datetime-local"]::-webkit-calendar-picker-indicator {
-  filter: invert(1) brightness(1.35);
-}
-
-:root[data-theme="light"]
-  .form-input[type="datetime-local"]::-webkit-calendar-picker-indicator {
-  filter: none;
-}
-
-.form-input::placeholder {
-  color: var(--text-muted);
-}
-
 .form-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -1201,21 +1136,9 @@ export default {
   padding: 10px 0;
 }
 
-.candidate-input .form-input {
-  min-width: 0;
-}
-
 .candidate-input .btn-danger {
   align-self: stretch;
   white-space: nowrap;
-}
-
-.candidate-input .form-input:first-child {
-  min-width: 180px;
-}
-
-.candidate-input .form-input:nth-child(2) {
-  min-width: 240px;
 }
 
 @media (max-width: 720px) {
@@ -1292,70 +1215,6 @@ export default {
 }
 
 /* ============= BUTTONS ============= */
-.btn {
-  padding: 10px 16px;
-  border: none;
-  border-radius: var(--radius-md);
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  font-size: 0.95rem;
-  font-family: var(--font-sans);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-2);
-}
-
-.btn-primary {
-  background: var(--accent-gradient);
-  color: white;
-}
-
-.btn-primary:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px color-mix(in srgb, var(--accent) 30%, transparent);
-}
-
-.btn-secondary {
-  background-color: var(--bg-secondary);
-  color: var(--text-primary);
-  border: 1px solid var(--border);
-}
-
-.btn-secondary:hover {
-  border-color: var(--accent);
-  color: var(--accent);
-}
-
-.btn-warning {
-  background-color: var(--warning);
-  color: var(--text-primary);
-}
-
-.btn-warning:hover {
-  background-color: color-mix(in srgb, var(--warning) 85%, black);
-}
-
-.btn-danger {
-  background-color: var(--error);
-  color: white;
-}
-
-.btn-danger:hover {
-  background-color: color-mix(in srgb, var(--error) 85%, black);
-}
-
-.btn-small {
-  padding: 8px 12px;
-  font-size: 0.85rem;
-}
-
-.btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  transform: none;
-}
 
 /* ============= CARDS & ALERTS ============= */
 .candidate-card {
@@ -1417,49 +1276,6 @@ export default {
   flex-direction: column;
   align-items: center;
   gap: 12px;
-}
-
-.spinner {
-  width: 32px;
-  height: 32px;
-  border: 3px solid var(--border);
-  border-top-color: var(--accent);
-  border-radius: 50%;
-  animation: spin 0.7s linear infinite;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-/* ============= BADGES ============= */
-.badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 3px 10px;
-  border-radius: 999px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-}
-
-.badge-active {
-  background: color-mix(in srgb, var(--success) 20%, transparent);
-  color: var(--success);
-}
-
-.badge-pending {
-  background: color-mix(in srgb, var(--warning) 20%, transparent);
-  color: var(--warning);
-}
-
-.badge-completed {
-  background: color-mix(in srgb, var(--accent-secondary) 20%, transparent);
-  color: var(--accent-secondary);
 }
 
 /* ============= RESULTS ============= */

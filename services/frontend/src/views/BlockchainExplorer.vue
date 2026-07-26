@@ -596,7 +596,7 @@ export default {
   max-width: 1100px;
   margin: 0 auto;
   padding: 24px 20px;
-  font-family: "Segoe UI", system-ui, sans-serif;
+  font-family: var(--font-sans);
   color: var(--text-primary);
 }
 

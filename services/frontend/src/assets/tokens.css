@@ -396,6 +396,10 @@ input[type="checkbox"].toggle-input {
   padding: var(--space-6);
 }
 
+.btn-block {
+  width: 100%;
+}
+
 /* ── Responsive ── */
 @media (max-width: 640px) {
   .page {
@@ -405,5 +409,20 @@ input[type="checkbox"].toggle-input {
   .btn {
     padding: 8px 16px;
     font-size: 0.85rem;
+  }
+
+  .page-centered {
+    min-height: calc(100vh - 100px);
+    padding: var(--space-4);
+  }
+}
+
+@media (max-width: 480px) {
+  .explorer .stats-bar {
+    padding: 0 4px;
+  }
+
+  .explorer {
+    padding: 16px 12px;
   }
 }

@@ -19,7 +19,7 @@
         v-model="search"
         @input="onSearch"
         type="search"
-        class="form-control toolbar-search"
+        class="form-input toolbar-search"
         placeholder="Search name or ID…"
       />
       <div class="toolbar-filters">
@@ -176,20 +176,20 @@
           <label>Institution ID *</label>
           <input
             v-model="form.institution_id"
-            class="form-control"
+            class="form-input"
             placeholder="e.g. STU00501"
           />
         </div>
         <div class="form-group" v-else>
           <label>Institution ID</label>
-          <input :value="form.institution_id" class="form-control" disabled />
+          <input :value="form.institution_id" class="form-input" disabled />
         </div>
 
         <div class="form-group">
           <label>Full Name *</label>
           <input
             v-model="form.full_name"
-            class="form-control"
+            class="form-input"
             placeholder="e.g. John Smith"
           />
         </div>
@@ -199,7 +199,7 @@
           <input
             v-model="form.email"
             type="email"
-            class="form-control"
+            class="form-input"
             placeholder="e.g. john@university.edu"
           />
         </div>
@@ -207,7 +207,7 @@
         <div class="form-row">
           <div class="form-group">
             <label>Role *</label>
-            <select v-model="form.role" class="form-control">
+            <select v-model="form.role" class="form-input">
               <option value="">— Select —</option>
               <option value="student">Student</option>
               <option value="teacher">Teacher</option>
@@ -216,7 +216,7 @@
           </div>
           <div class="form-group">
             <label>Year Level</label>
-            <select v-model="form.year_level" class="form-control">
+            <select v-model="form.year_level" class="form-input">
               <option value="">— N/A —</option>
               <option value="1st Year">1st Year</option>
               <option value="2nd Year">2nd Year</option>
@@ -230,7 +230,7 @@
           <label>Department *</label>
           <input
             v-model="form.department"
-            class="form-control"
+            class="form-input"
             placeholder="e.g. Computer Science"
           />
         </div>
@@ -496,13 +496,9 @@ export default {
   margin-left: auto;
 }
 
-.members-tab select.form-control {
+.members-tab select.form-input {
   appearance: none;
   padding-right: 36px;
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  background-color: var(--bg-card);
-  color: var(--text-primary);
   background-image:
     linear-gradient(45deg, transparent 50%, var(--text-muted) 50%),
     linear-gradient(135deg, var(--text-muted) 50%, transparent 50%);
@@ -515,7 +511,7 @@ export default {
   background-repeat: no-repeat;
 }
 
-.members-tab select.form-control:focus {
+.members-tab select.form-input:focus {
   outline: none;
   border-color: var(--accent);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 14%, transparent);
@@ -636,66 +632,6 @@ export default {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 16px;
-}
-.form-group {
-  margin-bottom: 14px;
-}
-.form-group label {
-  display: block;
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--text-secondary);
-  margin-bottom: 6px;
-}
-.form-control {
-  width: 100%;
-  padding: 9px 12px;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  font-size: 0.9rem;
-  color: var(--text-primary);
-  background: var(--bg-primary);
-  box-sizing: border-box;
-  outline: none;
-}
-.form-control:focus {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 15%, transparent);
-}
-.form-control:disabled {
-  background: var(--bg-secondary);
-  cursor: not-allowed;
-}
-
-/* Buttons */
-.btn {
-  padding: 8px 16px;
-  border-radius: 6px;
-  border: none;
-  cursor: pointer;
-  font-weight: 600;
-  font-size: 0.875rem;
-  transition: opacity 0.15s;
-}
-.btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-.btn-primary {
-  background: var(--accent-gradient);
-  color: #fff;
-}
-.btn-secondary {
-  background: var(--bg-secondary);
-  color: var(--text-secondary);
-}
-.btn-danger {
-  background: var(--error);
-  color: #fff;
-}
-.btn-small {
-  padding: 5px 12px;
-  font-size: 0.8rem;
 }
 
 /* Alerts */

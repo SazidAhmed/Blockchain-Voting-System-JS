@@ -1,11 +1,11 @@
 <template>
   <div class="audit-logs-section">
-    <h3>📋 Admin Audit Logs</h3>
+    <h3><PhShieldCheck :size="20" /> Admin Audit Logs</h3>
 
     <div class="logs-filters">
       <div class="filter-group">
         <label for="logFilter">Filter by Action:</label>
-        <select v-model="selectedAction" id="logFilter" class="form-control">
+        <select v-model="selectedAction" id="logFilter" class="form-input">
           <option value="">All Actions</option>
           <option value="CREATE_ELECTION">Create Election</option>
           <option value="ADD_CANDIDATE">Add Candidate</option>
@@ -19,7 +19,7 @@
 
       <div class="filter-group">
         <label for="statusFilter">Filter by Status:</label>
-        <select v-model="selectedStatus" id="statusFilter" class="form-control">
+        <select v-model="selectedStatus" id="statusFilter" class="form-input">
           <option value="">All</option>
           <option value="success">Success</option>
           <option value="failed">Failed</option>
@@ -119,9 +119,11 @@
 
 <script>
 import api from "../services/api";
+import { PhShieldCheck } from "@phosphor-icons/vue";
 
 export default {
   name: "AdminAuditLogs",
+  components: { PhShieldCheck },
   props: {
     tabActive: { type: Boolean, default: false },
   },
@@ -243,6 +245,9 @@ export default {
   color: var(--text-primary);
   border-bottom: 2px solid var(--accent);
   padding-bottom: 15px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .logs-filters {
@@ -263,19 +268,14 @@ export default {
   color: var(--text-primary);
 }
 
-.filter-group .form-control {
+.filter-group .form-input {
   min-width: 180px;
 }
 
-.filter-group select.form-control {
+.filter-group select.form-input {
   appearance: none;
   padding: 10px 36px 10px 12px;
-  border: 1px solid var(--border);
-  border-radius: 12px;
   background-color: var(--bg-card);
-  color: var(--text-primary);
-  font-size: 0.9rem;
-  box-shadow: var(--shadow-sm);
   background-image:
     linear-gradient(45deg, transparent 50%, var(--text-muted) 50%),
     linear-gradient(135deg, var(--text-muted) 50%, transparent 50%);
@@ -288,7 +288,7 @@ export default {
   background-repeat: no-repeat;
 }
 
-.filter-group select.form-control:focus {
+.filter-group select.form-input:focus {
   outline: none;
   border-color: var(--accent);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 14%, transparent);
@@ -412,43 +412,6 @@ export default {
   gap: 15px;
   margin-top: 20px;
   align-items: center;
-}
-
-.btn {
-  padding: 8px 12px;
-  border: none;
-  border-radius: 4px;
-  font-weight: 600;
-  cursor: pointer;
-  font-size: 0.9rem;
-}
-
-.btn-primary {
-  background-color: var(--accent);
-  color: white;
-}
-
-.btn-primary:hover {
-  background-color: color-mix(in srgb, var(--accent) 85%, black);
-}
-
-.btn-secondary {
-  background-color: var(--bg-secondary);
-  color: var(--text-primary);
-}
-
-.btn-secondary:hover {
-  background-color: color-mix(in srgb, var(--bg-secondary) 85%, black);
-}
-
-.btn-small {
-  padding: 6px 10px;
-  font-size: 0.8rem;
-}
-
-.btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
 }
 
 .alert {
