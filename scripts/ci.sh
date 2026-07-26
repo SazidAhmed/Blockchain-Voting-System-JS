@@ -48,7 +48,7 @@ run_step "Docker build" docker compose -f "$COMPOSE_FILE" build
 
 # --- Phase 3: Start and test ---
 echo -e "${YELLOW}Phase 3: Integration Tests${NC}"
-run_step "Create .env" bash -c 'cp .env.example .env && echo "JWT_SECRET=test-secret-key-for-ci-minimum-32-chars-long" >> .env'
+run_step "Create .env" bash -c 'cp .env.example .env && sed -i "" "s/^JWT_SECRET=.*/JWT_SECRET=test-secret-key-for-ci-minimum-32-chars-long/" .env 2>/dev/null || sed -i "s/^JWT_SECRET=.*/JWT_SECRET=test-secret-key-for-ci-minimum-32-chars-long/" .env'
 run_step "Start services" docker compose -f "$COMPOSE_FILE" --env-file .env up -d
 
 echo "Waiting for services..."

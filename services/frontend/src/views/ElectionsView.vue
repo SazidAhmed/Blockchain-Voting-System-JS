@@ -84,6 +84,7 @@
 
 <script>
 import { mapGetters } from "vuex";
+import api from "@/services/api";
 import {
   PhArchive,
   PhCheckCircle,
@@ -154,24 +155,12 @@ export default {
       await this.checkVoteStatuses();
     },
     async checkVoteStatuses() {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        this.voteStatusMap = {};
-        return;
-      }
-
       const votedMap = {};
       for (const election of [...this.getElections]) {
         try {
-          const res = await fetch(
-            `${import.meta.env.VITE_API_BASE_URL || "http://localhost:3000"}/api/elections/${election.id}/registration-status`,
-            { headers: { "x-auth-token": token } },
-          );
-          if (res.ok) {
-            const data = await res.json();
-            if (data.status === "voted") {
-              votedMap[election.id] = true;
-            }
+          const { data } = await api.get(`/elections/${election.id}/registration-status`);
+          if (data.status === "voted") {
+            votedMap[election.id] = true;
           }
         } catch (e) {
           /* silent */

@@ -5,7 +5,7 @@ module.exports = function createChainRoutes(blockchain, nodeMonitor, peerManager
 
     router.get('/chain', (req, res) => {
         res.json({
-            chain: blockchain.chain,
+            chain: JSON.parse(JSON.stringify(blockchain.chain)),
             length: blockchain.chain.length
         });
     });

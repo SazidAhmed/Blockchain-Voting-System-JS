@@ -206,7 +206,7 @@ class SecurityMonitor extends EventEmitter {
         const anomalies = [];
         
         // Check required fields
-        if (!vote.voterId || !vote.candidate) {
+        if (!vote.voterId || !vote.electionId || !vote.encryptedBallot || !vote.nullifier) {
             anomalies.push({
                 type: 'INCOMPLETE_VOTE',
                 severity: 'high',

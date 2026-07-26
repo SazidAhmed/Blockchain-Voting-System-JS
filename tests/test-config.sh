@@ -7,17 +7,12 @@ PROJECT_DIR="$(cd "$TEST_CONFIG_DIR/.." && pwd)"
 ENV_FILE="$PROJECT_DIR/.env.test"
 
 # Ensure jq is available
-JQ_CMD="jq"
-if ! command -v jq >/dev/null 2>&1; then
-  JQ_BIN="/c/Users/LENOVO/AppData/Local/Microsoft/WinGet/Packages/jqlang.jq_Microsoft.Winget.Source_8wekyb3d8bbwe/jq.exe"
-  if [ ! -f "$JQ_BIN" ]; then
-    JQ_BIN="$PROJECT_DIR/.opencode/tools/jq.exe"
-  fi
-  if [ -f "$JQ_BIN" ]; then
-    JQ_CMD="$JQ_BIN"
-    jq() { "$JQ_BIN" "$@"; }
-  fi
+JQ_BIN="${JQ_BIN:-$(which jq 2>/dev/null || echo '')}"
+if [ -z "$JQ_BIN" ]; then
+    echo "ERROR: jq is required but not found. Install jq (brew install jq / apt install jq)"
+    exit 1
 fi
+JQ_CMD="$JQ_BIN"
 export JQ_CMD
 
 # Load .env.test if present

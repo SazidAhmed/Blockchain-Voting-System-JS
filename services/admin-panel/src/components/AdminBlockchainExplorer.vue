@@ -58,6 +58,15 @@
 
     <div v-if="error" class="alert alert-danger">{{ error }}</div>
 
+    <div class="search-bar">
+      <input
+        type="text"
+        v-model="searchQuery"
+        placeholder="Search by block #, hash, tx hash, nullifier, election ID\u2026"
+        class="search-input"
+      />
+    </div>
+
     <div v-if="!loading || chain.length" class="block-list">
       <div
         v-for="block in pagedChain"
@@ -321,6 +330,7 @@ export default {
       clockTimer: null,
       refreshTimer: null,
       autoRefresh: false,
+      searchQuery: "",
       currentPage: 1,
       pageSize: 10,
     };
@@ -343,7 +353,11 @@ export default {
       return `${Math.floor(diff / 3600)}h ago`;
     },
     filteredChain() {
-      return [...this.chain].reverse();
+      if (!this.searchQuery.trim()) return [...this.chain].reverse();
+      const q = this.searchQuery.trim().toLowerCase();
+      return [...this.chain]
+        .filter((b) => this.blockMatchesSearch(b, q))
+        .reverse();
     },
     totalPages() {
       return Math.max(1, Math.ceil(this.filteredChain.length / this.pageSize));
@@ -456,6 +470,22 @@ export default {
         second: "2-digit",
       });
     },
+    blockMatchesSearch(block, query) {
+      if (!query.trim()) return true;
+      const q = query.trim().toLowerCase();
+      return (
+        block.index.toString() === q ||
+        block.hash.toLowerCase().includes(q) ||
+        block.previousHash?.toLowerCase().includes(q) ||
+        (block.data?.transactions || []).some(
+          (tx) =>
+            tx.transactionHash?.toLowerCase().includes(q) ||
+            tx.nullifier?.toLowerCase().includes(q) ||
+            tx.signature?.toLowerCase().includes(q) ||
+            tx.electionId?.toString() === q,
+        )
+      );
+    },
     async copy(text) {
       try {
         await navigator.clipboard.writeText(text);
@@ -469,6 +499,9 @@ export default {
   watch: {
     autoRefresh(val) {
       val ? this.startAutoRefresh() : this.stopAutoRefresh();
+    },
+    searchQuery() {
+      this.currentPage = 1;
     },
     tabActive(active) {
       if (active) this.loadAll();
@@ -621,6 +654,28 @@ export default {
 
 .auto-refresh-toggle .toggle-text {
   font-weight: 600;
+}
+
+.search-bar {
+  margin-bottom: 16px;
+}
+.search-input {
+  width: 100%;
+  padding: 10px 14px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.search-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 14%, transparent);
+}
+.search-input::placeholder {
+  color: var(--text-muted);
 }
 
 .stats-bar {

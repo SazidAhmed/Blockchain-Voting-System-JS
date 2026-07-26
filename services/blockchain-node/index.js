@@ -1,6 +1,8 @@
 const express = require('express');
 const cors = require('cors');
 const crypto = require('crypto-js');
+const EC = require('elliptic').ec;
+const ec = new EC('p256');
 const http = require('http');
 const socketIo = require('socket.io');
 const Blockchain = require('./src/core/blockchain');
@@ -85,6 +87,8 @@ const io = socketIo(server, {
 // Initialize blockchain
 const blockchain = new Blockchain(nodeId);
 
+const sockets = [];
+
 // Initialize PeerManager
 const peerManager = new PeerManager(nodeId, nodeType);
 
@@ -97,9 +101,10 @@ const metrics = new PrometheusMetrics(nodeId, nodeType);
 // Initialize Security Modules
 const securityMonitor = new SecurityMonitor({ nodeId });
 // In production, this would use proper cryptographic key generation
+const key = ec.genKeyPair();
 const nodeKeyPair = {
-    privateKey: crypto.lib.WordArray.random(32).toString(),
-    publicKey: crypto.lib.WordArray.random(32).toString()
+    privateKey: key.getPrivate('hex'),
+    publicKey: key.getPublic('hex')
 };
 
 // Register this node as a validator
@@ -121,8 +126,6 @@ peerManager.on('peer_unhealthy', (data) => {
     const stats = peerManager.getStats();
     metrics.updatePeerMetrics(stats.peers || [], stats.healthyPeers, stats.unhealthyPeers);
 });
-
-const sockets = [];
 
 // Socket.io connection handling
 io.on('connection', (socket) => {
@@ -146,9 +149,14 @@ io.on('connection', (socket) => {
 });
 
 // Handle messages from peers and socket connections
-function handleMessage(senderId, message) {
+async function handleMessage(senderId, message) {
     if (!message || !message.type) {
         console.warn('Invalid message received');
+        return;
+    }
+
+    if (securityMonitor.isQuarantined(senderId)) {
+        console.warn(`Blocked message from quarantined peer: ${senderId}`);
         return;
     }
 
@@ -282,7 +290,7 @@ function handleMessage(senderId, message) {
 
         case 'MINE':
             console.log('[MSG] Received mining request');
-            const { block: minedBlock, pendingSnapshot: minedSnapshot } = blockchain.createBlock(nodeId);
+            const { block: minedBlock, pendingSnapshot: minedSnapshot } = await blockchain.createBlock(nodeId);
             minedBlock.signBlock(nodeKeyPair.privateKey);
 
             if (blockchain.addBlock(minedBlock, nodeId, minedBlock.signature)) {

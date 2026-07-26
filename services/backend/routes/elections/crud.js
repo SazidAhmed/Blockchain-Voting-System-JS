@@ -190,8 +190,11 @@ router.post(
 // @access  Public
 router.get("/", async (req, res) => {
   try {
+    const limit = parseInt(req.query.limit) || 20;
+    const offset = parseInt(req.query.offset) || 0;
     const [elections] = await pool.query(
-      "SELECT id, title, description, start_date, end_date, status, created_at FROM elections ORDER BY created_at DESC",
+      "SELECT id, title, description, start_date, end_date, status, created_at FROM elections ORDER BY created_at DESC LIMIT ? OFFSET ?",
+      [limit, offset],
     );
 
     res.json(elections);

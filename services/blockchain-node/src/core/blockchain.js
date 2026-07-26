@@ -13,8 +13,9 @@ class Blockchain {
         this.difficulty = 2;
         this.miningReward = 0;
         this.nodeId = nodeId;
-        this.nodes = new Set(); // Connected nodes
-        this.validators = new Map(); // Map of validator nodeId -> public key
+        this.nodes = new Set();
+        this.validators = new Map();
+        this.usedNullifiers = new Set();
         
         // Create genesis block
         this.createGenesisBlock();
@@ -93,7 +94,7 @@ class Blockchain {
     }
 
     // Create a new block with pending transactions
-    createBlock(validatorId) {
+    async createBlock(validatorId) {
         const previousBlock = this.getLatestBlock();
         const pendingSnapshot = [...this.pendingTransactions];
         const newBlock = new Block(
@@ -105,11 +106,8 @@ class Blockchain {
             previousBlock.hash
         );
         
-        // In a real implementation, this would use proper BFT consensus
-        // For development, we'll use a simple PoW
-        newBlock.mineBlock(this.difficulty);
+        await newBlock.mineBlock(this.difficulty);
         
-        // Set the validator info
         newBlock.validator = validatorId;
         
         return { block: newBlock, pendingSnapshot };
@@ -144,8 +142,7 @@ class Blockchain {
             throw new Error('Vote must include voterId, electionId, encryptedBallot, and nullifier');
         }
         
-        // Check if nullifier has been used before (prevent double voting)
-        if (this.isNullifierUsed(vote.nullifier)) {
+        if (this.usedNullifiers.has(vote.nullifier)) {
             throw new Error('Vote nullifier has already been used');
         }
         
@@ -154,7 +151,8 @@ class Blockchain {
             throw new Error('Cannot add invalid vote to chain');
         }
         
-        // Add to pending transactions
+        this.usedNullifiers.add(vote.nullifier);
+
         this.pendingTransactions.push({
             type: 'VOTE',
             electionId: vote.electionId,
@@ -170,26 +168,8 @@ class Blockchain {
         return this.getLatestBlock().index + 1;
     }
 
-    // Check if a nullifier has been used in any block
     isNullifierUsed(nullifier) {
-        for (const block of this.chain) {
-            if (block.data && block.data.transactions) {
-                for (const tx of block.data.transactions) {
-                    if (tx.type === 'VOTE' && tx.nullifier === nullifier) {
-                        return true;
-                    }
-                }
-            }
-        }
-        
-        // Also check pending transactions
-        for (const tx of this.pendingTransactions) {
-            if (tx.type === 'VOTE' && tx.nullifier === nullifier) {
-                return true;
-            }
-        }
-        
-        return false;
+        return this.usedNullifiers.has(nullifier);
     }
 
     // Verify transaction signature using ECDSA P-256
@@ -208,31 +188,63 @@ class Blockchain {
         }
     }
 
-    // Verify vote signature — signature already validated by backend (apiKeyAuth)
     verifyVoteSignature(vote) {
-        if (!vote.signature) {
+        if (!vote.signature || !vote.publicKey) {
             return false;
         }
-        return true;
+        try {
+            const publicKeyDer = Buffer.from(vote.publicKey, 'base64');
+            let keyStart = -1;
+            for (let i = 0; i < publicKeyDer.length - 65; i++) {
+                if (publicKeyDer[i] === 0x03 && publicKeyDer[i + 2] === 0x00 && publicKeyDer[i + 3] === 0x04) {
+                    keyStart = i + 3;
+                    break;
+                }
+            }
+            if (keyStart === -1) return false;
+            if (publicKeyDer[keyStart] !== 0x04) return false;
+            const xHex = publicKeyDer.slice(keyStart + 1, keyStart + 33).toString('hex');
+            const yHex = publicKeyDer.slice(keyStart + 33, keyStart + 65).toString('hex');
+            const key = ec.keyFromPublic({ x: xHex, y: yHex }, 'hex');
+            const dataStr = JSON.stringify({
+                encryptedBallot: vote.encryptedBallot,
+                nullifier: vote.nullifier,
+                electionId: vote.electionId,
+                timestamp: vote.timestamp
+            });
+            const hash = nodeCrypto.createHash('sha256').update(dataStr, 'utf8').digest();
+            const sigBuf = Buffer.from(vote.signature, 'base64');
+            if (sigBuf.length !== 64) return false;
+            const r = sigBuf.slice(0, 32).toString('hex');
+            const s = sigBuf.slice(32, 64).toString('hex');
+            return key.verify(hash, { r, s });
+        } catch (e) {
+            return false;
+        }
     }
 
-    // Validate the chain
     isChainValid() {
         for (let i = 1; i < this.chain.length; i++) {
             const currentBlock = this.chain[i];
             const previousBlock = this.chain[i - 1];
-            
-            // Check hash
+
             if (currentBlock.hash !== currentBlock.calculateHash()) {
                 return false;
             }
-            
-            // Check previous hash reference
+
             if (currentBlock.previousHash !== previousBlock.hash) {
                 return false;
             }
+
+            const target = Array(this.difficulty + 1).join('0');
+            if (currentBlock.hash.substring(0, this.difficulty) !== target) {
+                return false;
+            }
+
+            if (currentBlock.merkleRoot !== currentBlock.calculateMerkleRoot()) {
+                return false;
+            }
         }
-        
         return true;
     }
 

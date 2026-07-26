@@ -237,10 +237,14 @@ export default {
           throw new Error("Cryptographic keys not loaded. Please login again.");
         }
 
+        const electionPublicKey = this.election.public_key || this.election.publicKey;
+        if (!electionPublicKey) {
+          throw new Error("Election public key not available. Cannot encrypt vote.");
+        }
         const votePackage = await keyManager.generateVote(
           { candidateId: this.selectedCandidate },
           this.electionId,
-          this.election.public_key || this.election.publicKey,
+          electionPublicKey,
         );
 
         this.encryptingVote = false;
@@ -252,7 +256,7 @@ export default {
 
         this.voteSubmitted = true;
         this.voteReceipt = response.receipt;
-        this.showSuccessModal = true;
+        
       } catch (error) {
         this.localError =
           error.displayMessage ||

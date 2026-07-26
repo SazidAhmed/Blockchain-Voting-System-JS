@@ -1,10 +1,11 @@
 const express = require('express');
 const { MerkleTree } = require('../core/merkleTree');
+const { apiKeyAuth } = require('../../middleware/auth');
 
 module.exports = function createMerkleRoutes(blockchain) {
     const router = express.Router();
 
-    router.get('/merkle/block/:blockIndex', (req, res) => {
+    router.get('/merkle/block/:blockIndex', apiKeyAuth, (req, res) => {
         const blockIndex = parseInt(req.params.blockIndex);
 
         if (isNaN(blockIndex) || blockIndex < 0 || blockIndex >= blockchain.chain.length) {
@@ -24,7 +25,7 @@ module.exports = function createMerkleRoutes(blockchain) {
         });
     });
 
-    router.get('/merkle/election/:electionId', (req, res) => {
+    router.get('/merkle/election/:electionId', apiKeyAuth, (req, res) => {
         const electionId = req.params.electionId;
 
         try {
@@ -56,7 +57,7 @@ module.exports = function createMerkleRoutes(blockchain) {
         }
     });
 
-    router.post('/merkle/proof', (req, res) => {
+    router.post('/merkle/proof', apiKeyAuth, (req, res) => {
         const { transactionHash, electionId } = req.body;
 
         if (!transactionHash || !electionId) {
@@ -143,7 +144,7 @@ module.exports = function createMerkleRoutes(blockchain) {
         }
     });
 
-    router.get('/merkle/stats', (req, res) => {
+    router.get('/merkle/stats', apiKeyAuth, (req, res) => {
         try {
             const elections = new Set();
 
@@ -188,7 +189,7 @@ module.exports = function createMerkleRoutes(blockchain) {
         }
     });
 
-    router.post('/merkle/batch-verify', (req, res) => {
+    router.post('/merkle/batch-verify', apiKeyAuth, (req, res) => {
         const { items, merkleRoot } = req.body;
 
         if (!items || !Array.isArray(items) || !merkleRoot) {

@@ -14,10 +14,6 @@ function csrfProtection(req, res, next) {
   // Skip CSRF for public auth endpoints (no session to protect)
   if (CSRF_EXEMPT_PATHS.includes(req.path)) return next();
 
-  // Skip CSRF for non-browser requests (no Origin or Referer header)
-  // CSRF only applies to browser-initiated cross-origin requests
-  if (!req.headers.origin && !req.headers.referer) return next();
-
   const csrfCookie = req.cookies?.["csrf-token"];
   const csrfHeader = req.headers["x-csrf-token"];
 

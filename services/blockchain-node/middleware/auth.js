@@ -8,10 +8,7 @@ function apiKeyAuth(req, res, next) {
       .status(500)
       .json({ error: "Server misconfigured: BLOCKCHAIN_API_KEY not set" });
   }
-  if (
-    !key ||
-    !crypto.timingSafeEqual(Buffer.from(key), Buffer.from(expected))
-  ) {
+  if (!key || key.length !== expected.length || !crypto.timingSafeEqual(Buffer.from(key), Buffer.from(expected))) {
     return res
       .status(401)
       .json({ error: "Unauthorized", message: "Valid API key required" });

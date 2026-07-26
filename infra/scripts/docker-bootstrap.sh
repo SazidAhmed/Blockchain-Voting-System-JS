@@ -18,9 +18,9 @@ echo -e "${BLUE}  System Bootstrap${NC}"
 echo -e "${BLUE}===========================================${NC}"
 echo ""
 
-if ! docker-compose -f $COMPOSE_FILE --env-file $ENV_FILE ps | grep -q "voting-backend.*Up"; then
+if ! docker compose -f $COMPOSE_FILE --env-file $ENV_FILE ps | grep -q "voting-backend.*Up"; then
     echo -e "${RED}Error: Backend container is not running${NC}"
-    echo "  docker-compose -f $COMPOSE_FILE --env-file $ENV_FILE up -d"
+    echo "  docker compose -f $COMPOSE_FILE --env-file $ENV_FILE up -d"
     exit 1
 fi
 
@@ -39,8 +39,8 @@ fi
 echo ""
 echo -e "${BLUE}Bootstrapping...${NC}"
 
-if docker-compose -f $COMPOSE_FILE --env-file $ENV_FILE exec -T backend test -f scripts/seed.js; then
-    docker-compose -f $COMPOSE_FILE --env-file $ENV_FILE exec -T backend node scripts/seed.js
+if docker compose -f $COMPOSE_FILE --env-file $ENV_FILE exec -T backend test -f scripts/seed.js; then
+    docker compose -f $COMPOSE_FILE --env-file $ENV_FILE exec -T backend node scripts/seed.js
 else
     echo -e "${RED}Error: scripts/seed.js not found in backend container${NC}"
     exit 1

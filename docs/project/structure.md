@@ -2,6 +2,7 @@
 
 ```text
 └── 📁Blockchain-Voting-System-JS
+    └── 📁.agents
     └── 📁.githooks
         ├── pre-commit
         ├── pre-push
@@ -32,6 +33,7 @@
             ├── docs-archive.zip
             ├── README.md
         └── 📁database
+            ├── database-review-findings.md
             ├── reference.md
             ├── schema.md
             ├── setup.md
@@ -72,12 +74,16 @@
         └── 📁security
             ├── audit.md
             ├── operations.md
+            ├── SECURITY_AUDIT_REPORT.md
+            ├── SECURITY_DECISION.md
             ├── threat-model.md
         └── 📁testing
             ├── ci.md
             ├── overview.md
             ├── running-tests.md
+        ├── CODE_REVIEW_REPORT.md
         ├── README.md
+        ├── UNFIXABLE_REVIEW_DECISION.md
     └── 📁infra
         └── 📁alerts
             ├── voting-system-alerts.yml
@@ -109,15 +115,16 @@
                 ├── promtail-config.yml
         └── 📁scripts
             ├── docker-backup.sh
+            ├── docker-bootstrap.sh
             ├── docker-cleanup.sh
             ├── docker-health-check.bat
             ├── docker-health-check.sh
             ├── docker-logs.sh
             ├── docker-monitoring-start.sh
             ├── docker-restore.sh
-            ├── docker-bootstrap.sh
             ├── docker-start.bat
             ├── docker-start.sh
+            ├── generate-secrets.sh
             ├── seed-test-attack.sh
             ├── seed-test-data.sh
             ├── seed-test-detection.sh
@@ -145,10 +152,13 @@
                     ├── tokens.css
                 └── 📁components
                     ├── AdminAuditLogs.vue
+                    ├── AdminBlockchainExplorer.vue
                     ├── AdminInstituteMembersTab.vue
                     ├── AdminNavBar.vue
                 └── 📁router
                     ├── index.js
+                └── 📁services
+                    ├── api.js
                 └── 📁store
                     ├── audit.js
                     ├── auth.js
@@ -163,7 +173,9 @@
             ├── .dockerignore
             ├── .gitignore
             ├── Dockerfile
+            ├── Dockerfile.prod
             ├── index.html
+            ├── nginx.conf
             ├── package.json
             ├── vite.config.js
         └── 📁backend
@@ -182,6 +194,8 @@
                 ├── 001_initial_schema.sql
                 ├── 002_add_crypto_fields.sql
                 ├── 003_add_tally_encryption.sql
+                ├── 004_fix_tally_key_column.sql
+                ├── 005_fix_schema_issues.sql
             └── 📁routes
                 └── 📁elections
                     ├── candidates.js

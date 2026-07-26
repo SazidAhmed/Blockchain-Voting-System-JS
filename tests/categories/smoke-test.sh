@@ -72,7 +72,7 @@ check "8a" "Rejected: ${DV_MSG:0:60}" [ "$DV_PASS" = "1" ]
 # T9: DB persistence
 echo -e "\n${BLUE}[T9] Database${NC}"
 VCOUNT=$(docker exec voting-test-mysql mysql -u root -p"$MYSQL_ROOT_PASSWORD" "$MYSQL_DATABASE" \
-  -N -e "SELECT COUNT(*) FROM votes_meta WHERE election_id=$EID;" 2>/dev/null || echo "0")
+  -N -e "SELECT COUNT(*) FROM votes_meta WHERE election_id='$EID';" 2>/dev/null || echo "0")
 check "9a" "Vote in MySQL (count: $VCOUNT)" [ "$VCOUNT" -ge 1 ]
 
 summary

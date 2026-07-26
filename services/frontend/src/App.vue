@@ -1,13 +1,3 @@
-<script>
-import NavBar from "@/components/NavBar.vue";
-import AppFooter from "@/components/AppFooter.vue";
-
-export default {
-  name: "App",
-  components: { NavBar, AppFooter },
-};
-</script>
-
 <template>
   <div id="app-root">
     <NavBar />
@@ -17,6 +7,16 @@ export default {
     <AppFooter />
   </div>
 </template>
+
+<script>
+import NavBar from "@/components/NavBar.vue";
+import AppFooter from "@/components/AppFooter.vue";
+
+export default {
+  name: "App",
+  components: { NavBar, AppFooter },
+};
+</script>
 
 <style scoped>
 #app-root {

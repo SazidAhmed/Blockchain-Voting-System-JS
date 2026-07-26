@@ -19,7 +19,10 @@ VOTER_TOKEN=$(curl -s -X POST "$BACKEND_URL/users/login" -H "Content-Type: appli
 
 # R1: Reboot blockchain node 1
 echo -e "\n${BLUE}[R1] Node restart${NC}"
-docker restart voting-test-blockchain 2>/dev/null
+BLOCKCHAIN_CONTAINER=$(docker compose -f infra/docker/docker-compose.test.yml ps -q blockchain-node 2>/dev/null || echo "")
+if [ -n "$BLOCKCHAIN_CONTAINER" ]; then
+    docker restart "$BLOCKCHAIN_CONTAINER"
+fi
 sleep 3
 R1=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:3010/node" 2>/dev/null)
 check "r1" "Node 3010 after restart: HTTP $R1" [ "$R1" = "200" ]

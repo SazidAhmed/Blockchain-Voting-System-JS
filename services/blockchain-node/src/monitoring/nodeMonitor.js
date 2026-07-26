@@ -46,13 +46,13 @@ class NodeMonitor extends EventEmitter {
         this.blockTimes.push({
             timestamp: now,
             index: block.index,
-            transactionCount: block.data ? block.data.length : 0
+            transactionCount: block.data && block.data.transactions ? block.data.transactions.length : 0
         });
 
         this.emit('block_produced', {
             nodeId: this.nodeId,
             blockIndex: block.index,
-            transactionCount: block.data ? block.data.length : 0
+            transactionCount: block.data && block.data.transactions ? block.data.transactions.length : 0
         });
     }
 

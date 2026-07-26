@@ -4,7 +4,7 @@ import keyManager from '@/services/keyManager'
 
 export default createStore({
   state: {
-    user: JSON.parse(localStorage.getItem('voter_user') || 'null'),
+    user: (() => { try { return JSON.parse(localStorage.getItem('voter_user')); } catch { return null; } })(),
     elections: [],
     currentElection: null,
     loading: false,

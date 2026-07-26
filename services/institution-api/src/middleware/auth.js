@@ -8,7 +8,7 @@ function apiKeyAuth(req, res, next) {
     return res.status(500).json({ error: "Server misconfigured: INSTITUTION_API_KEY not set" });
   }
 
-  if (!key || !crypto.timingSafeEqual(Buffer.from(key), Buffer.from(expected))) {
+  if (!key || key.length !== expected.length || !crypto.timingSafeEqual(Buffer.from(key), Buffer.from(expected))) {
     return res.status(401).json({ error: "Unauthorized" });
   }
 

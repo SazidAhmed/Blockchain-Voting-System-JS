@@ -1,4 +1,6 @@
 const crypto = require('crypto-js');
+const EC = require('elliptic').ec;
+const ec = new EC('p256');
 const { MerkleTree } = require('./merkleTree');
 
 class Block {
@@ -23,19 +25,11 @@ class Block {
      * @returns {string|null} - Merkle root hash or null if no data
      */
     calculateMerkleRoot() {
-        if (!this.data) {
+        if (!this.data || !this.data.transactions || !Array.isArray(this.data.transactions) || this.data.transactions.length === 0) {
             return null;
         }
-
-        // Ensure data is an array
-        const dataArray = Array.isArray(this.data) ? this.data : [this.data];
-        
-        if (dataArray.length === 0) {
-            return null;
-        }
-
         try {
-            const tree = new MerkleTree(dataArray);
+            const tree = new MerkleTree(this.data.transactions);
             return tree.getRoot();
         } catch (error) {
             console.error('Error calculating Merkle root:', error.message);
@@ -54,30 +48,42 @@ class Block {
         ).toString();
     }
 
-    // Simple proof of work for development purposes
-    // In production, this would be replaced with BFT consensus
     mineBlock(difficulty) {
-        while (this.hash.substring(0, difficulty) !== Array(difficulty + 1).join('0')) {
-            this.nonce++;
-            this.hash = this.calculateHash();
-        }
-        console.log(`Block mined: ${this.hash}`);
+        const target = Array(difficulty + 1).join('0');
+        return new Promise((resolve) => {
+            const tryNonce = () => {
+                this.hash = this.calculateHash();
+                if (this.hash.substring(0, difficulty) === target) {
+                    console.log(`Block mined: ${this.hash}`);
+                    resolve();
+                } else {
+                    this.nonce++;
+                    setImmediate(tryNonce);
+                }
+            };
+            tryNonce();
+        });
     }
 
-    // For BFT consensus, blocks are signed by validators
     signBlock(privateKey) {
-        // In a real implementation, this would use proper cryptographic signing
-        // For now, we'll simulate it
-        this.signature = crypto.HmacSHA256(this.hash, privateKey).toString();
+        const key = ec.keyFromPrivate(privateKey, 'hex');
+        const hash = require('crypto').createHash('sha256').update(this.hash, 'utf8').digest();
+        const sig = key.sign(hash);
+        this.signature = Buffer.from(sig.r.toString('hex', 32) + sig.s.toString('hex', 32), 'hex').toString('base64');
         return this.signature;
     }
 
-    // Verify the block signature
-    // ponytail: HMAC uses same key for sign+verify — this is a simulation
-    // Real impl would use ECDSA verify with public key
     verifySignature(key) {
-        const expectedSignature = crypto.HmacSHA256(this.hash, key).toString();
-        return this.signature === expectedSignature;
+        try {
+            const ecKey = ec.keyFromPublic(key, 'hex');
+            const hash = require('crypto').createHash('sha256').update(this.hash, 'utf8').digest();
+            const sigBuf = Buffer.from(this.signature, 'base64');
+            const r = sigBuf.slice(0, 32).toString('hex');
+            const s = sigBuf.slice(32, 64).toString('hex');
+            return ecKey.verify(hash, { r, s });
+        } catch (e) {
+            return false;
+        }
     }
 }
 

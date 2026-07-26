@@ -63,25 +63,29 @@ module.exports = function createVotesRoutes(blockchain, nodeMonitor, metrics, pe
         }
     });
 
-    router.post('/mine', apiKeyAuth, (req, res) => {
-        const { block: newBlock, pendingSnapshot } = blockchain.createBlock(nodeId);
-        newBlock.signBlock(nodeKeyPair.privateKey);
+    router.post('/mine', apiKeyAuth, async (req, res) => {
+        try {
+            const { block: newBlock, pendingSnapshot } = await blockchain.createBlock(nodeId);
+            newBlock.signBlock(nodeKeyPair.privateKey);
 
-        if (blockchain.addBlock(newBlock, nodeId, newBlock.signature)) {
-            blockchain.commitBlock(newBlock, pendingSnapshot);
-            nodeMonitor.recordBlockProduced(newBlock);
-            nodeMonitor.updateChainHeight(blockchain.chain.length);
+            if (blockchain.addBlock(newBlock, nodeId, newBlock.signature)) {
+                blockchain.commitBlock(newBlock, pendingSnapshot);
+                nodeMonitor.recordBlockProduced(newBlock);
+                nodeMonitor.updateChainHeight(blockchain.chain.length);
 
-            metrics.recordBlockCreated(newBlock);
+                metrics.recordBlockCreated(newBlock);
 
-            peerManager.broadcastBlock(newBlock);
+                peerManager.broadcastBlock(newBlock);
 
-            res.json({
-                message: 'New block forged',
-                block: newBlock
-            });
-        } else {
-            res.status(500).json({ message: 'Error adding block to chain' });
+                res.json({
+                    message: 'New block forged',
+                    block: newBlock
+                });
+            } else {
+                res.status(500).json({ message: 'Error adding block to chain' });
+            }
+        } catch (error) {
+            res.status(500).json({ message: error.message });
         }
     });
 

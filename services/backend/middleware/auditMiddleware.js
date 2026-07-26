@@ -9,17 +9,14 @@ function withAdminAudit(actionType, resourceType) {
     res.json = function (body) {
       const adminId = req.user?.id;
       const clientIp = req.headers['x-forwarded-for']?.split(',')[0] || req.connection?.remoteAddress || 'unknown';
-      const resourceId = req.params.id ? Number(req.params.id) : null;
+      const resourceId = req.params.id ? Number(req.params.id) : (body?.electionId || null);
       if (res.statusCode < 400) {
         adminLogger.logAdminAction(
           adminId,
           actionType,
           resourceType,
           resourceId,
-          {
-            ...(req.body || {}),
-            statusCode: res.statusCode,
-          },
+          body,
           { ipAddress: clientIp, userAgent: req.get('user-agent') }
         );
       } else {
@@ -28,10 +25,7 @@ function withAdminAudit(actionType, resourceType) {
           actionType,
           resourceType,
           resourceId,
-          {
-            ...(req.body || {}),
-            error: body,
-          },
+          body,
           { ipAddress: clientIp }
         );
       }

@@ -124,7 +124,7 @@ router.post("/:id/vote", voteLimiter, auth, validateVote, async (req, res) => {
     const nullifier = generateNullifier(
       userId.toString(),
       electionId.toString(),
-      process.env.NULLIFIER_SECRET || process.env.JWT_SECRET,
+      process.env.NULLIFIER_SECRET,
     );
 
     // Reject base64-encoded plaintext ballots
@@ -306,7 +306,7 @@ router.post("/:id/vote", voteLimiter, auth, validateVote, async (req, res) => {
       finalPublicKey = publicKey;
     } else {
       // LEGACY FLOW - Server-side encryption and signing
-      console.log("Processing vote with legacy server-side cryptography");
+      console.warn('⚠️ DEPRECATED: Legacy server-side vote flow used by user ' + userId + '. This flow is insecure and will be removed in a future version.');
 
       // Check if candidate exists in this election
       const [candidates] = await pool.query(
@@ -324,7 +324,7 @@ router.post("/:id/vote", voteLimiter, auth, validateVote, async (req, res) => {
       finalNullifier = generateNullifier(
         userId.toString(),
         electionId.toString(),
-        privateKey,
+        process.env.NULLIFIER_SECRET,
       );
 
       // Create ballot

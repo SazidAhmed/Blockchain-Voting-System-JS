@@ -1,6 +1,11 @@
 const path = require("path");
 require("dotenv").config({ path: path.resolve(__dirname, "../../.env") });
 
+if (!process.env.NULLIFIER_SECRET) {
+    console.error('FATAL: NULLIFIER_SECRET environment variable is required');
+    process.exit(1);
+}
+
 if (
   process.env.NODE_ENV === "production" &&
   process.env.JWT_SECRET ===
