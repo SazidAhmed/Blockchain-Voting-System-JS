@@ -5,11 +5,16 @@ const adminLogger = new AdminAuditLogger(pool);
 
 function withAdminAudit(actionType, resourceType) {
   return (req, res, next) => {
-    const originalJson = res.json.bind(res);
-    res.json = function (body) {
+    res.on("finish", () => {
       const adminId = req.user?.id;
-      const clientIp = req.headers['x-forwarded-for']?.split(',')[0] || req.connection?.remoteAddress || 'unknown';
-      const resourceId = req.params.id ? Number(req.params.id) : (body?.electionId || null);
+      const clientIp =
+        req.headers["x-forwarded-for"]?.split(",")[0] ||
+        req.connection?.remoteAddress ||
+        "unknown";
+      const resourceId = req.params.id
+        ? Number(req.params.id)
+        : res.locals.body?.electionId || null;
+      const body = res.locals.body || req.body || {};
       if (res.statusCode < 400) {
         adminLogger.logAdminAction(
           adminId,
@@ -17,7 +22,7 @@ function withAdminAudit(actionType, resourceType) {
           resourceType,
           resourceId,
           body,
-          { ipAddress: clientIp, userAgent: req.get('user-agent') }
+          { ipAddress: clientIp, userAgent: req.get("user-agent") },
         );
       } else {
         adminLogger.logFailedAction(
@@ -26,11 +31,10 @@ function withAdminAudit(actionType, resourceType) {
           resourceType,
           resourceId,
           body,
-          { ipAddress: clientIp }
+          { ipAddress: clientIp },
         );
       }
-      return originalJson(body);
-    };
+    });
     next();
   };
 }

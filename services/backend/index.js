@@ -2,8 +2,8 @@ const path = require("path");
 require("dotenv").config({ path: path.resolve(__dirname, "../../.env") });
 
 if (!process.env.NULLIFIER_SECRET) {
-    console.error('FATAL: NULLIFIER_SECRET environment variable is required');
-    process.exit(1);
+  console.error("FATAL: NULLIFIER_SECRET environment variable is required");
+  process.exit(1);
 }
 
 if (
@@ -110,7 +110,12 @@ const corsOptions = {
   credentials: true,
   optionsSuccessStatus: 200,
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization", "x-auth-token", "x-csrf-token"],
+  allowedHeaders: [
+    "Content-Type",
+    "Authorization",
+    "x-auth-token",
+    "x-csrf-token",
+  ],
 };
 app.use(cors(corsOptions));
 
@@ -152,7 +157,7 @@ app.use((req, res) => {
 });
 
 // Auto-release results scheduler — checks every 60s
-setInterval(async () => {
+const autoReleaseInterval = setInterval(async () => {
   try {
     const [expired] = await pool.query(
       `SELECT id FROM elections 
@@ -169,6 +174,22 @@ setInterval(async () => {
     console.error("Auto-release scheduler error:", err.message);
   }
 }, 60000);
+
+function shutdown() {
+  clearInterval(autoReleaseInterval);
+  console.log("Auto-release scheduler stopped");
+  pool.end().catch((err) => console.error("Error closing pool:", err));
+}
+process.on("SIGINT", () => {
+  console.log("\nShutting down...");
+  shutdown();
+  process.exit(0);
+});
+process.on("SIGTERM", () => {
+  console.log("\nShutting down...");
+  shutdown();
+  process.exit(0);
+});
 
 // Global error handler - sanitize error messages
 app.use((err, req, res, next) => {

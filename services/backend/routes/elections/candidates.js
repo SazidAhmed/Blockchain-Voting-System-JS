@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { pool } = require('../../config/db');
-const { adminAuth } = require('../../middleware/auth');
+const { auth, adminAuth } = require('../../middleware/auth');
 const AdminAuditLogger = require('../../utils/adminAuditLogger');
 
 const adminLogger = new AdminAuditLogger(pool);
@@ -13,7 +13,7 @@ function getClientIp(req) {
 // @route   POST /api/elections/:id/candidates
 // @desc    Add candidate to election (before election starts)
 // @access  Admin only
-router.post('/:id/candidates', adminAuth, async (req, res) => {
+router.post('/:id/candidates', auth, adminAuth, async (req, res) => {
   try {
     const { name, description } = req.body;
     const electionId = req.params.id;
@@ -90,7 +90,7 @@ router.post('/:id/candidates', adminAuth, async (req, res) => {
 // @route   DELETE /api/candidates/:id
 // @desc    Delete a candidate (before election starts)
 // @access  Admin only
-router.delete('/:electionId/candidates/:candidateId', adminAuth, async (req, res) => {
+router.delete('/:electionId/candidates/:candidateId', auth, adminAuth, async (req, res) => {
   try {
     const { electionId, candidateId } = req.params;
     const adminId = req.user.id;

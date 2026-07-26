@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const crypto = require("crypto");
 const { pool } = require("../../config/db");
-const { adminAuth } = require("../../middleware/auth");
+const { auth, adminAuth } = require("../../middleware/auth");
 const {
   validateElectionId,
   validateCreateElection,
@@ -26,7 +26,7 @@ function getClientIp(req) {
 // @access  Admin only
 router.post(
   "/",
-  adminAuth,
+  auth, adminAuth,
   validateCreateElection,
   withAdminAudit("CREATE_ELECTION", "elections"),
   async (req, res) => {
@@ -74,12 +74,21 @@ router.post(
       }
 
       // Generate RSA keypair for election ballot encryption
-      const { generateKeyPairSync } = require("crypto");
+      const { generateKeyPair } = require("crypto");
       const { publicKey: electionPublicKey, privateKey: tallyKey } =
-        generateKeyPairSync("rsa", {
-          modulusLength: 2048,
-          publicKeyEncoding: { type: "spki", format: "pem" },
-          privateKeyEncoding: { type: "pkcs8", format: "pem" },
+        await new Promise((resolve, reject) => {
+          generateKeyPair(
+            "rsa",
+            {
+              modulusLength: 2048,
+              publicKeyEncoding: { type: "spki", format: "pem" },
+              privateKeyEncoding: { type: "pkcs8", format: "pem" },
+            },
+            (err, publicKey, privateKey) => {
+              if (err) reject(err);
+              else resolve({ publicKey, privateKey });
+            },
+          );
         });
 
       // Insert election into database
@@ -253,8 +262,8 @@ router.get("/:id", validateElectionId, async (req, res) => {
         }
         const cid = ballot.candidateId;
         if (cid) tally[cid] = (tally[cid] || 0) + 1;
-      } catch (_) {
-        /* skip unreadable ballots */
+      } catch (err) {
+        console.warn("Ballot decrypt error:", err.message);
       }
     }
 
@@ -312,7 +321,7 @@ router.get("/:id", validateElectionId, async (req, res) => {
 // @route   PUT /api/elections/:id
 // @desc    Update election details
 // @access  Admin only
-router.put("/:id", adminAuth, async (req, res) => {
+router.put("/:id", auth, adminAuth, async (req, res) => {
   try {
     const { title, description, startDate, endDate, candidates } = req.body;
     const electionId = req.params.id;
@@ -362,36 +371,43 @@ router.put("/:id", adminAuth, async (req, res) => {
 
     // Handle candidates if provided
     if (candidates && Array.isArray(candidates)) {
-      // Get existing candidates
-      const [existingCandidates] = await pool.query(
-        "SELECT id, name FROM candidates WHERE election_id = ?",
-        [electionId],
-      );
+      const connection = await pool.getConnection();
+      try {
+        await connection.beginTransaction();
 
-      const existingIds = existingCandidates.map((c) => c.id);
-      const updatedIds = candidates.filter((c) => c.id).map((c) => c.id);
-
-      // Delete candidates not in the updated list
-      const toDelete = existingIds.filter((id) => !updatedIds.includes(id));
-      if (toDelete.length > 0) {
-        await pool.query("DELETE FROM candidates WHERE id IN (?)", [toDelete]);
-      }
-
-      // Update or insert candidates
-      for (const candidate of candidates) {
-        if (candidate.id) {
-          // Update existing candidate
-          await pool.query(
-            "UPDATE candidates SET name = ?, description = ? WHERE id = ?",
-            [candidate.name, candidate.description || "", candidate.id],
+        const updatedIds = candidates.filter((c) => c.id).map((c) => c.id);
+        if (updatedIds.length > 0) {
+          await connection.query(
+            "DELETE FROM candidates WHERE election_id = ? AND id NOT IN (?)",
+            [electionId, updatedIds],
           );
-        } else if (candidate.name) {
-          // Insert new candidate
-          await pool.query(
-            "INSERT INTO candidates (election_id, name, description) VALUES (?, ?, ?)",
-            [electionId, candidate.name, candidate.description || ""],
+        } else {
+          await connection.query(
+            "DELETE FROM candidates WHERE election_id = ?",
+            [electionId],
           );
         }
+
+        for (const candidate of candidates) {
+          if (candidate.name) {
+            await connection.query(
+              "INSERT INTO candidates (id, election_id, name, description) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE name = VALUES(name), description = VALUES(description)",
+              [
+                candidate.id || null,
+                electionId,
+                candidate.name,
+                candidate.description || "",
+              ],
+            );
+          }
+        }
+
+        await connection.commit();
+      } catch (txErr) {
+        await connection.rollback();
+        throw txErr;
+      } finally {
+        connection.release();
       }
     }
 
@@ -405,7 +421,7 @@ router.put("/:id", adminAuth, async (req, res) => {
 // @route   PATCH /api/elections/:id/status
 // @desc    Update election status
 // @access  Admin only
-router.patch("/:id/status", adminAuth, async (req, res) => {
+router.patch("/:id/status", auth, adminAuth, async (req, res) => {
   try {
     const { status } = req.body;
     const electionId = req.params.id;
@@ -448,7 +464,7 @@ router.patch("/:id/status", adminAuth, async (req, res) => {
 // @route   PATCH /api/elections/:id/lock
 // @desc    Lock election (prevent mutations after start)
 // @access  Admin only
-router.patch("/:id/lock", adminAuth, async (req, res) => {
+router.patch("/:id/lock", auth, adminAuth, async (req, res) => {
   try {
     const electionId = req.params.id;
     const adminId = req.user.id;
@@ -514,7 +530,7 @@ router.patch("/:id/lock", adminAuth, async (req, res) => {
 // @route   DELETE /api/elections/:id
 // @desc    Delete an election
 // @access  Admin only
-router.delete("/:id", adminAuth, async (req, res) => {
+router.delete("/:id", auth, adminAuth, async (req, res) => {
   try {
     const electionId = req.params.id;
 

@@ -10,7 +10,7 @@ api.interceptors.request.use((config) => {
   const csrf = document.cookie
     .split("; ")
     .find((r) => r.startsWith("csrf-token="))
-    ?.split("=")[1];
+    ?.substring("csrf-token=".length);
   if (csrf) config.headers["x-csrf-token"] = csrf;
   return config;
 });
@@ -27,29 +27,37 @@ api.interceptors.response.use(
 
       switch (status) {
         case 400:
-          error.displayMessage = rawMessage || "Invalid request. Please check your input.";
+          error.displayMessage =
+            rawMessage || "Invalid request. Please check your input.";
           break;
         case 401:
-          error.displayMessage = rawMessage || "Authentication failed. Please log in again.";
+          error.displayMessage =
+            rawMessage || "Authentication failed. Please log in again.";
           break;
         case 403:
-          error.displayMessage = rawMessage || "You do not have permission to perform this action.";
+          error.displayMessage =
+            rawMessage || "You do not have permission to perform this action.";
           break;
         case 404:
-          error.displayMessage = rawMessage || "The requested resource was not found.";
+          error.displayMessage =
+            rawMessage || "The requested resource was not found.";
           break;
         case 429:
-          error.displayMessage = rawMessage || "Too many requests. Please try again later.";
+          error.displayMessage =
+            rawMessage || "Too many requests. Please try again later.";
           break;
         case 500:
-          error.displayMessage = rawMessage || "Server error. Please try again later.";
+          error.displayMessage =
+            rawMessage || "Server error. Please try again later.";
           break;
         case 502:
         case 503:
-          error.displayMessage = "Service temporarily unavailable. Please try again later.";
+          error.displayMessage =
+            "Service temporarily unavailable. Please try again later.";
           break;
         default:
-          error.displayMessage = rawMessage || `Request failed (${status}). Please try again.`;
+          error.displayMessage =
+            rawMessage || `Request failed (${status}). Please try again.`;
       }
     }
     return Promise.reject(error);

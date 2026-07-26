@@ -23,7 +23,7 @@ async function testConnection() {
     const connection = await pool.getConnection();
     console.log('Connected to MySQL database successfully');
     connection.release();
-    return true;
+    return { success: true };
   } catch (error) {
     console.error('Database connection error:', error.message);
     if (error.code === 'ECONNREFUSED') {
@@ -33,7 +33,7 @@ async function testConnection() {
     } else if (error.code === 'ER_BAD_DB_ERROR') {
       console.error('  → Database "' + (process.env.DB_NAME || 'voting_db') + '" does not exist');
     }
-    throw error;
+    return { success: false, error: error.message };
   }
 }
 

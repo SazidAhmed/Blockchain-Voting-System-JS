@@ -192,6 +192,7 @@ export default {
       localError: null,
       encryptingVote: false,
       showConfirmModal: false,
+      registrationError: null,
     };
   },
   computed: {
@@ -208,7 +209,7 @@ export default {
       return this.isLoading;
     },
     error() {
-      return this.getError || this.localError;
+      return this.getError || this.localError || this.registrationError;
     },
     canSubmitVote() {
       return this.selectedCandidate && keyManager.getCurrentKeys() !== null;
@@ -237,9 +238,12 @@ export default {
           throw new Error("Cryptographic keys not loaded. Please login again.");
         }
 
-        const electionPublicKey = this.election.public_key || this.election.publicKey;
+        const electionPublicKey =
+          this.election.public_key || this.election.publicKey;
         if (!electionPublicKey) {
-          throw new Error("Election public key not available. Cannot encrypt vote.");
+          throw new Error(
+            "Election public key not available. Cannot encrypt vote.",
+          );
         }
         const votePackage = await keyManager.generateVote(
           { candidateId: this.selectedCandidate },
@@ -256,7 +260,6 @@ export default {
 
         this.voteSubmitted = true;
         this.voteReceipt = response.receipt;
-        
       } catch (error) {
         this.localError =
           error.displayMessage ||
@@ -283,7 +286,8 @@ export default {
         return;
       }
     } catch (e) {
-      // Silently fail — backend will still reject double votes
+      this.registrationError =
+        "Could not verify your registration status. Please refresh.";
     }
 
     if (!keyManager.getCurrentKeys() && this.currentUser) {

@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const crypto = require('crypto');
 const { pool } = require('../../config/db');
-const { adminAuth } = require('../../middleware/auth');
+const { auth, adminAuth } = require('../../middleware/auth');
 const { encryptTally } = require('../../utils/tallyEncryption');
 const AdminAuditLogger = require('../../utils/adminAuditLogger');
 
@@ -12,10 +12,38 @@ function getClientIp(req) {
   return req.headers['x-forwarded-for']?.split(',')[0] || req.connection.remoteAddress || 'unknown';
 }
 
+function computeTally(election, votes) {
+  const tally = {};
+  for (const v of votes) {
+    try {
+      let ballot;
+      if (election.tally_key) {
+        try {
+          const decrypted = crypto.privateDecrypt(
+            { key: election.tally_key, oaepHash: 'sha256' },
+            Buffer.from(v.encrypted_ballot, 'base64')
+          );
+          ballot = JSON.parse(decrypted.toString('utf8'));
+        } catch (err) {
+          console.warn('Ballot decrypt error (admin):', err.message);
+          ballot = JSON.parse(Buffer.from(v.encrypted_ballot, 'base64').toString('utf8'));
+        }
+      } else {
+        ballot = JSON.parse(Buffer.from(v.encrypted_ballot, 'base64').toString('utf8'));
+      }
+      const cid = ballot.candidateId;
+      if (cid) tally[cid] = (tally[cid] || 0) + 1;
+    } catch (err) {
+      console.warn('Ballot tally error (admin):', err.message);
+    }
+  }
+  return tally;
+}
+
 // @route   GET /api/elections/admin
 // @desc    Get all elections with stats (admin only)
 // @access  Admin only
-router.get('/admin/all', adminAuth, async (req, res) => {
+router.get('/admin/all', auth, adminAuth, async (req, res) => {
   try {
     const [elections] = await pool.query(
       'SELECT e.*, COUNT(DISTINCT c.id) as candidates_count, COUNT(DISTINCT vr.id) as registrations_count, COUNT(DISTINCT vm.id) as votes_count FROM elections e LEFT JOIN candidates c ON e.id = c.election_id LEFT JOIN voter_registrations vr ON e.id = vr.election_id LEFT JOIN votes_meta vm ON e.id = vm.election_id GROUP BY e.id ORDER BY e.created_at DESC'
@@ -33,27 +61,7 @@ router.get('/admin/all', adminAuth, async (req, res) => {
         'SELECT encrypted_ballot FROM votes_meta WHERE election_id = ?',
         [election.id]
       );
-      const tally = {};
-      for (const v of votes) {
-        try {
-          let ballot;
-          if (election.tally_key) {
-            try {
-              const decrypted = crypto.privateDecrypt(
-                { key: election.tally_key, oaepHash: 'sha256' },
-                Buffer.from(v.encrypted_ballot, 'base64')
-              );
-              ballot = JSON.parse(decrypted.toString('utf8'));
-            } catch (_) {
-              ballot = JSON.parse(Buffer.from(v.encrypted_ballot, 'base64').toString('utf8'));
-            }
-          } else {
-            ballot = JSON.parse(Buffer.from(v.encrypted_ballot, 'base64').toString('utf8'));
-          }
-          const cid = ballot.candidateId;
-          if (cid) tally[cid] = (tally[cid] || 0) + 1;
-        } catch (_) { /* skip unreadable ballots */ }
-      }
+      const tally = computeTally(election, votes);
 
       if (election.results_released) {
         // Plaintext tally
@@ -64,7 +72,8 @@ router.get('/admin/all', adminAuth, async (req, res) => {
         if (election.tally_key && election.tally_key.length <= 64 && /^[0-9a-f]+$/i.test(election.tally_key)) {
           try {
             election.encryptedTally = encryptTally(tally, election.tally_key);
-          } catch (_) {
+          } catch (err) {
+            console.warn('Encrypted tally error:', err.message);
             election.encryptedTally = null;
           }
         }
@@ -83,7 +92,7 @@ router.get('/admin/all', adminAuth, async (req, res) => {
 // @route   GET /api/admin/audit-logs
 // @desc    Get audit logs (admin only)
 // @access  Admin only
-router.get('/admin/audit-logs', adminAuth, async (req, res) => {
+router.get('/admin/audit-logs', auth, adminAuth, async (req, res) => {
   try {
     const { adminId, limit = 100, offset = 0 } = req.query;
     const clientIp = getClientIp(req);
@@ -107,7 +116,7 @@ router.get('/admin/audit-logs', adminAuth, async (req, res) => {
 // @route   GET /api/admin/security-logs
 // @desc    Get security logs (admin only)
 // @access  Admin only
-router.get('/admin/security-logs', adminAuth, async (req, res) => {
+router.get('/admin/security-logs', auth, adminAuth, async (req, res) => {
   try {
     const { limit = 100, offset = 0 } = req.query;
     
@@ -123,7 +132,7 @@ router.get('/admin/security-logs', adminAuth, async (req, res) => {
 // @route   POST /api/admin/verify-audit-integrity
 // @desc    Verify integrity of audit log
 // @access  Admin only
-router.post('/admin/verify-audit-integrity/:logId', adminAuth, async (req, res) => {
+router.post('/admin/verify-audit-integrity/:logId', auth, adminAuth, async (req, res) => {
   try {
     const { logId } = req.params;
     const adminId = req.user.id;
@@ -148,7 +157,7 @@ router.post('/admin/verify-audit-integrity/:logId', adminAuth, async (req, res) 
 // @route   POST /api/elections/:id/release
 // @desc    Release election results (decrypt tally)
 // @access  Admin only
-router.post('/:id/release', adminAuth, async (req, res) => {
+router.post('/:id/release', auth, adminAuth, async (req, res) => {
   try {
     const electionId = req.params.id;
 

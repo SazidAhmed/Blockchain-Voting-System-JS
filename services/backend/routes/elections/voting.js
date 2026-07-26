@@ -8,11 +8,10 @@ const { validateVote } = require("../../middleware/validation");
 const {
   generateToken,
   generateNullifier,
-  encryptBallot,
-  signData,
   verifyECDSASignature,
 } = require("../../utils/signing");
-const auditLogger = require("../../utils/auditLogger");
+const AuditLogger = require("../../utils/auditLogger");
+const auditLogger = new AuditLogger(pool);
 const axios = require("axios");
 require("dotenv").config();
 
@@ -24,6 +23,33 @@ const blockchainApi = axios.create({
 const blockchainApiKey = process.env.BLOCKCHAIN_API_KEY;
 if (blockchainApiKey) {
   blockchainApi.defaults.headers.common["x-api-key"] = blockchainApiKey;
+}
+
+async function mineWithRetry(maxRetries = 3, delay = 1000) {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      await blockchainApi.post("/mine");
+      return;
+    } catch (err) {
+      if (attempt === maxRetries) {
+        console.error(
+          "Mining failed after",
+          maxRetries,
+          "attempts:",
+          err.message,
+        );
+      } else {
+        console.warn(
+          "Mining attempt",
+          attempt,
+          "failed, retrying in",
+          delay,
+          "ms",
+        );
+        await new Promise((r) => setTimeout(r, delay));
+      }
+    }
+  }
 }
 
 // @route   POST /api/elections/:id/register
@@ -127,15 +153,20 @@ router.post("/:id/vote", voteLimiter, auth, validateVote, async (req, res) => {
       process.env.NULLIFIER_SECRET,
     );
 
-    // Reject base64-encoded plaintext ballots
     if (encryptedBallot) {
+      let decoded;
       try {
-        JSON.parse(Buffer.from(encryptedBallot, "base64").toString());
+        decoded = Buffer.from(encryptedBallot, "base64").toString();
+      } catch (e) {
+        return res.status(400).json({ error: "Invalid ballot encoding" });
+      }
+      try {
+        JSON.parse(decoded);
         return res
           .status(400)
           .json({ error: "Plaintext ballots not accepted" });
       } catch (e) {
-        // Not base64 JSON — proceed (it's encrypted)
+        // Not JSON — it's encrypted, proceed
       }
     }
 
@@ -306,7 +337,11 @@ router.post("/:id/vote", voteLimiter, auth, validateVote, async (req, res) => {
       finalPublicKey = publicKey;
     } else {
       // LEGACY FLOW - Server-side encryption and signing
-      console.warn('⚠️ DEPRECATED: Legacy server-side vote flow used by user ' + userId + '. This flow is insecure and will be removed in a future version.');
+      console.warn(
+        "⚠️ DEPRECATED: Legacy server-side vote flow used by user " +
+          userId +
+          ". This flow is insecure and will be removed in a future version.",
+      );
 
       // Check if candidate exists in this election
       const [candidates] = await pool.query(
@@ -367,7 +402,7 @@ router.post("/:id/vote", voteLimiter, auth, validateVote, async (req, res) => {
       blockchainResponse = response;
 
       // Auto-mine the pending vote into a block immediately
-      blockchainApi.post("/mine").catch((err) => console.error("Mining failed:", err.message));
+      mineWithRetry();
     } catch (blockchainError) {
       console.warn(
         "⚠️ Blockchain node not available, continuing with simulated transaction (development mode)",

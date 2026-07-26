@@ -14,12 +14,11 @@ const {
   validateRegistration,
   validateLogin,
 } = require("../middleware/validation");
-const {
-  hashPassword,
-  comparePassword,
-} = require("../utils/password");
+const { hashPassword, comparePassword } = require("../utils/password");
+const tokenBlacklist = require("../utils/tokenBlacklist");
 
-const auditLogger = require("../utils/auditLogger");
+const AuditLogger = require("../utils/auditLogger");
+const auditLogger = new AuditLogger(pool);
 const otpService = require("../services/otpService");
 const emailService = require("../services/emailService");
 require("dotenv").config();
@@ -100,7 +99,7 @@ router.post("/send-otp", otpLimiter, async (req, res) => {
     // Generate OTP
     let otpData;
     try {
-      otpData = otpService.createOTP(institutionId, member.email);
+      otpData = await otpService.createOTP(institutionId, member.email);
     } catch (err) {
       return res.status(429).json({ message: err.message });
     }
@@ -143,7 +142,7 @@ router.post("/verify-otp", otpLimiter, async (req, res) => {
       });
     }
 
-    const result = otpService.verifyOTP(institutionId, code);
+    const result = await otpService.verifyOTP(institutionId, code);
 
     if (!result.valid) {
       return res.status(400).json({ message: result.message });
@@ -169,7 +168,7 @@ router.post(
         req.body;
 
       // ✅ Verify that email OTP was completed for this institution ID
-      if (!otpService.isVerified(institutionId)) {
+      if (!(await otpService.isVerified(institutionId))) {
         return res.status(403).json({
           message:
             "Email verification required. Please verify your email before registering.",
@@ -212,7 +211,10 @@ router.post(
 
       // Require client-side key generation
       if (!publicKey || !encryptionPublicKey) {
-        return res.status(400).json({ message: 'Client-side key generation required. Please generate keys in your browser.' });
+        return res.status(400).json({
+          message:
+            "Client-side key generation required. Please generate keys in your browser.",
+        });
       }
 
       const userPublicKey = publicKey;
@@ -243,6 +245,7 @@ router.post(
 
       // Auto-register user for all active and pending elections
       let electionsRegisteredCount = 0;
+      let regError;
       try {
         const [activeElections] = await pool.query(
           "SELECT id FROM elections WHERE status IN ('active', 'pending')",
@@ -263,12 +266,12 @@ router.post(
             `✅ Auto-registered user ${institutionId} for ${electionsRegisteredCount} election(s)`,
           );
         }
-      } catch (regError) {
+      } catch (e) {
+        regError = e;
         console.error(
           "Warning: Failed to auto-register user for elections:",
-          regError,
+          e,
         );
-        // Don't fail the registration if election registration fails
       }
 
       const response = {
@@ -282,6 +285,7 @@ router.post(
           encryptionPublicKey: userEncryptionPublicKey,
         },
         electionsRegistered: electionsRegisteredCount,
+        ...(regError ? { registrationWarning: regError.message } : {}),
       };
 
       // Log successful registration
@@ -320,7 +324,7 @@ router.post(
       }
 
       // Consume the OTP verification (one-time use)
-      otpService.consumeVerification(institutionId);
+      await otpService.consumeVerification(institutionId);
 
       res.status(201).json(response);
     } catch (err) {
@@ -404,7 +408,12 @@ router.post("/login", loginLimiter, validateLogin, async (req, res) => {
 
     // Create JWT token
     const token = jwt.sign(
-      { id: user.id, role: user.role, institutionId: user.institution_id, jti: crypto.randomUUID() },
+      {
+        id: user.id,
+        role: user.role,
+        institutionId: user.institution_id,
+        jti: crypto.randomUUID(),
+      },
       process.env.JWT_SECRET,
       { algorithm: "HS256", expiresIn: "1h" },
     );
@@ -497,10 +506,9 @@ router.get("/me", auth, async (req, res) => {
 // @route   POST /api/users/logout
 // @desc    Logout user, revoke token
 // @access  Private
-router.post("/auth/logout", auth, (req, res) => {
-  const tokenBlacklist = require("../utils/tokenBlacklist");
+router.post("/auth/logout", auth, async (req, res) => {
   if (req.user.jti) {
-    tokenBlacklist.add(req.user.jti);
+    await tokenBlacklist.add(req.user.jti);
   }
   res.clearCookie("token");
   res.json({ message: "Logged out" });

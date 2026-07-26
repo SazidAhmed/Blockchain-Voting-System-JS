@@ -21,21 +21,25 @@ function encryptTally(tally, keyHex) {
 }
 
 function decryptTally(packedBase64, keyHex) {
-  const key = Buffer.from(keyHex, "hex");
-  const packed = Buffer.from(packedBase64, "base64");
+  try {
+    const key = Buffer.from(keyHex, "hex");
+    const packed = Buffer.from(packedBase64, "base64");
 
-  const iv = packed.subarray(0, IV_LENGTH);
-  const authTag = packed.subarray(IV_LENGTH, IV_LENGTH + AUTH_TAG_LENGTH);
-  const ciphertext = packed.subarray(IV_LENGTH + AUTH_TAG_LENGTH);
+    const iv = packed.subarray(0, IV_LENGTH);
+    const authTag = packed.subarray(IV_LENGTH, IV_LENGTH + AUTH_TAG_LENGTH);
+    const ciphertext = packed.subarray(IV_LENGTH + AUTH_TAG_LENGTH);
 
-  const decipher = crypto.createDecipheriv(ALGORITHM, key, iv);
-  decipher.setAuthTag(authTag);
+    const decipher = crypto.createDecipheriv(ALGORITHM, key, iv);
+    decipher.setAuthTag(authTag);
 
-  const decrypted = Buffer.concat([
-    decipher.update(ciphertext),
-    decipher.final(),
-  ]);
-  return JSON.parse(decrypted.toString("utf8"));
+    const decrypted = Buffer.concat([
+      decipher.update(ciphertext),
+      decipher.final(),
+    ]);
+    return JSON.parse(decrypted.toString("utf8"));
+  } catch (e) {
+    throw new Error("Tally decryption failed: " + e.message);
+  }
 }
 
 module.exports = { encryptTally, decryptTally };
