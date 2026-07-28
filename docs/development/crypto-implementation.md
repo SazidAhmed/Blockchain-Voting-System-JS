@@ -31,7 +31,7 @@ SHA-256 of `privateKeyData + '||' + electionId`. Deterministic per voter+electio
 
 ### Key Storage
 
-Stored in `localStorage` under key `voting_keys_{userId}` (JSON, unencrypted — demo only).
+Stored in `localStorage` under key `voting_keys_{userId}`, encrypted with AES-256-GCM using a PBKDF2-derived key (100k iterations) from user password.
 
 ### Key Manager — `services/frontend/src/services/keyManager.js`
 
@@ -42,7 +42,7 @@ Lifecycle wrapper around `crypto.js`:
 - `generateVote(voteData, electionId, electionPublicKey)` — creates signed, encrypted vote package
 - `exportPrivateKeysForBackup(password)` — base64 export with warnings
 
-## Server-Side — `services/backend/utils/crypto.js`
+## Server-Side — `services/backend/utils/signing.js`
 
 Uses Node `crypto` module, `elliptic` library (P-256), and `bcryptjs`.
 

@@ -18,7 +18,7 @@
 
 ```bash
 cp .env.example .env
-docker-compose -f infra/docker/docker-compose.yml up --build -d
+docker compose -f infra/docker/docker-compose.yml up --build -d
 ```
 
 Services wait for healthchecks before starting. Backend runs migrations automatically on boot.
@@ -27,8 +27,8 @@ Services wait for healthchecks before starting. Backend runs migrations automati
 
 ```bash
 # Full stack
-docker-compose -f infra/docker/docker-compose.yml --env-file .env up --build -d
-docker-compose -f infra/docker/docker-compose.yml --env-file .env down -v
+docker compose -f infra/docker/docker-compose.yml --env-file .env up --build -d
+docker compose -f infra/docker/docker-compose.yml --env-file .env down -v
 
 # Backend only (local dev)
 cd services/backend && npm install && npm run migrate && npm run dev
@@ -64,7 +64,7 @@ No unit test framework configured — `npm test` is a stub in all services. Test
 - `tests/categories/security-suite.sh` — no-auth vote, nullifier uniqueness, XSS, rate-limit
 - `tests/categories/resilience-test.sh` — node restart, sync, backend restart
 
-Requires Docker stack running. Use `docker-compose -f infra/docker/docker-compose.test.yml up -d` for isolated test stack (ports 3005/3010-3013/4005/3307 instead of defaults).
+Requires Docker stack running. Use `docker compose -f infra/docker/docker-compose.test.yml up -d` for isolated test stack (ports 3005/3010-3013/4005/3307 instead of defaults).
 
 ## Database
 
@@ -86,7 +86,7 @@ Requires Docker stack running. Use `docker-compose -f infra/docker/docker-compos
 
 ```text
 services/
-  backend/         # API routes in routes/, models in models/, utils/crypto.js
+  backend/         # API routes in routes/, utils/signing.js
   blockchain-node/ # Core in src/core/, network in src/network/, monitoring in src/monitoring/
   frontend/        # Views in src/views/, crypto services in src/services/crypto.js
   admin-panel/     # Separate Vue app, shares backend API
@@ -120,7 +120,7 @@ tests/
 - Frontend uses `VITE_API_BASE_URL`, `VITE_BLOCKCHAIN_URL`, and `VITE_INSTITUTION_API_URL` env vars (set in docker-compose, not `.env`)
 - Blockchain node peer discovery uses `PEERS` env var with comma-separated URLs, staggered 2s connections
 - Install githooks: `git config core.hooksPath .githooks` (pre-commit checks secrets/syntax, pre-push runs `scripts/run-all-checks.sh`)
-- Convenience aliases in `.shell_aliases`: `dc` (docker-compose up), `dcm` (+monitoring), `health` (health check)
+- Convenience aliases in `.shell_aliases`: `dc` (docker compose up), `dcm` (+monitoring), `health` (health check)
 - `package-lock.json` is gitignored — run `npm install` in each service dir after cloning
 - Express 5 is used in backend/blockchain-node (not 4) — middleware API differs
 - Institution API uses Express 4 (different from backend)

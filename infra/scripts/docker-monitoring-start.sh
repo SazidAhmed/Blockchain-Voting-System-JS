@@ -25,9 +25,9 @@ echo ""
 
 # Check if main services are running
 echo -e "${YELLOW}Checking if voting system services are running...${NC}"
-if ! docker-compose -f $COMPOSE_FILE --env-file $ENV_FILE ps | grep -q "voting-mysql.*Up"; then
+if ! docker compose -f $COMPOSE_FILE --env-file $ENV_FILE ps | grep -q "voting-mysql.*Up"; then
     echo -e "${YELLOW}Main services are not running. Starting them first...${NC}"
-    docker-compose -f $COMPOSE_FILE --env-file $ENV_FILE up -d
+    docker compose -f $COMPOSE_FILE --env-file $ENV_FILE up -d
     echo "Waiting for services to be ready..."
     sleep 10
 fi
@@ -37,7 +37,7 @@ echo ""
 
 # Start monitoring stack
 echo -e "${BLUE}Starting monitoring services...${NC}"
-docker-compose -f $COMPOSE_FILE --env-file $ENV_FILE -f $COMPOSE_MONITORING_FILE --env-file $ENV_FILE up -d
+docker compose -f $COMPOSE_FILE --env-file $ENV_FILE -f $COMPOSE_MONITORING_FILE --env-file $ENV_FILE up -d
 
 echo ""
 echo -e "${BLUE}Waiting for services to initialize...${NC}"
@@ -46,7 +46,7 @@ sleep 5
 # Check status
 echo ""
 echo -e "${BLUE}Monitoring stack status:${NC}"
-docker-compose -f $COMPOSE_MONITORING_FILE --env-file $ENV_FILE ps
+docker compose -f $COMPOSE_MONITORING_FILE --env-file $ENV_FILE ps
 
 echo ""
 echo -e "${GREEN}===========================================${NC}"
@@ -59,9 +59,9 @@ echo -e "  📈 Prometheus: http://localhost:9090"
 echo -e "  🐳 cAdvisor:   http://localhost:8081"
 echo ""
 echo -e "${YELLOW}Useful commands:${NC}"
-echo -e "  View logs:      docker-compose -f $COMPOSE_MONITORING_FILE --env-file $ENV_FILE logs -f"
-echo -e "  Stop monitoring: docker-compose -f $COMPOSE_MONITORING_FILE --env-file $ENV_FILE down"
-echo -e "  Restart:        docker-compose -f $COMPOSE_MONITORING_FILE --env-file $ENV_FILE restart"
+echo -e "  View logs:      docker compose -f $COMPOSE_MONITORING_FILE --env-file $ENV_FILE logs -f"
+echo -e "  Stop monitoring: docker compose -f $COMPOSE_MONITORING_FILE --env-file $ENV_FILE down"
+echo -e "  Restart:        docker compose -f $COMPOSE_MONITORING_FILE --env-file $ENV_FILE restart"
 echo ""
 echo -e "${BLUE}Dashboard Info:${NC}"
 echo -e "  • Pre-configured dashboards are available in Grafana"

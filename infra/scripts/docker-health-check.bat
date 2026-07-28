@@ -23,7 +23,7 @@ echo [OK] Docker is running
 echo.
 
 echo Checking container status...
-docker-compose -f %COMPOSE_FILE% --env-file %ENV_FILE% ps
+docker compose -f %COMPOSE_FILE% --env-file %ENV_FILE% ps
 echo.
 
 echo Checking service endpoints (default ports)...

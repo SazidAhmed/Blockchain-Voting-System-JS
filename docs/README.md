@@ -6,7 +6,7 @@ University blockchain-based voting system. 5 Docker services, ECDSA P-256 signat
 
 ```bash
 cp .env.example .env
-docker-compose -f infra/docker/docker-compose.yml up --build -d
+docker compose -f infra/docker/docker-compose.yml up --build -d
 ```
 
 See [deployment/setup.md](deployment/setup.md) for full guide.

@@ -1,4 +1,4 @@
-# Usage: docker-compose -f infra/docker/docker-compose.test.yml up -d
+# Usage: docker compose -f infra/docker/docker-compose.test.yml up -d
 # Test stack (self-contained, no .env needed): MySQL, 4 blockchain nodes, backend,
 #   frontend, admin-panel, institution-api, phpMyAdmin. All ports default to 3xxx/4xxx range.
 

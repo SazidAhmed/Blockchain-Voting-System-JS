@@ -1,4 +1,4 @@
-# Usage: docker-compose -f infra/docker/docker-compose.yml -f infra/docker/docker-compose.multi-node.yml up -d
+# Usage: docker compose -f infra/docker/docker-compose.yml -f infra/docker/docker-compose.multi-node.yml up -d
 # Override for 5 blockchain nodes (3 validators + 2 observers). Requires .env.
 
 services:

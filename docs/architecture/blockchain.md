@@ -12,7 +12,7 @@ Development uses simplified **Proof of Work** (difficulty 2, leading zeros). `Bl
 - Socket.IO for P2P messaging
 - LevelDB persistence (`levelup` + `leveldown` at `./data/{nodeId}`)
 
-Peer discovery uses `PEERS` env var — comma-separated URLs of sibling nodes. Connections stagger by 2s to avoid thundering herd (`index.js:841`).
+Peer discovery uses `PEERS` env var — comma-separated URLs of sibling nodes. Connections stagger by 2s to avoid thundering herd.
 
 `PeerManager` (in `src/network/peerManager.js`) handles heartbeat monitoring, health tracking, and message broadcasting.
 
@@ -32,7 +32,7 @@ Vote transactions submitted to `POST /vote`:
 }
 ```
 
-`transactionHash` is **deterministic** — computed server-side as SHA-256 of `{electionId, nullifier, encryptedBallot, timestamp}` (`index.js:443-449`). This allows independent verification: anyone with the transaction data can recompute the hash and confirm it matches the chain record.
+`transactionHash` is **deterministic** — computed server-side as SHA-256 of `{electionId, nullifier, encryptedBallot, timestamp}`. This allows independent verification: anyone with the transaction data can recompute the hash and confirm it matches the chain record.
 
 Each vote is stored as a pending transaction. When a block is mined, pending transactions are snapshotted and committed into the block body.
 
@@ -50,11 +50,11 @@ Nullifiers enforce single-vote-per-election. `Blockchain.isNullifierUsed()` in `
   timestamp: 1763026068827,
   data: { transactions: [...] },
   previousHash: "abc123...",
-  merkleRoot: "22b8b069...",       // Merkle tree of block data
+  merkleRoot: "22b8b069...",        // Merkle tree of block data
   hash: "def456...",                // SHA-256 of all above + nonce
   nonce: 35293,                     // PoW counter
   validator: "node1",               // Block producer
-  signature: "<HMAC-SHA256 hex>"    // Validator signature
+  signature: "<ECDSA P-256 hex>"    // Validator signature
 }
 ```
 
@@ -66,7 +66,7 @@ Genesis block is created at index 0 with message "Genesis Block" and empty trans
 
 1. `POST /mine` or `MINE` message: create block from pending transactions
 2. `mineBlock(difficulty)`: increment nonce until hash starts with `difficulty` zeros
-3. `signBlock(privateKey)`: HMAC-SHA256 signature
+3. `signBlock(privateKey)`: ECDSA P-256 signature using node's keypair
 4. `addBlock()`: validate index, previousHash, hash, validator
 5. `commitBlock()`: remove mined transactions from pending
 6. Broadcast to peers via Socket.IO `BLOCK_BROADCAST`
@@ -97,64 +97,11 @@ API endpoints serve Merkle roots per block/election, generate proofs per vote, a
 
 LevelDB stores the full chain at `./data/{nodeId}`. `Blockchain.saveChain()` serializes all blocks, `loadChain()` reconstructs them with `Block` constructors on startup. No chain history is pruned — the full ledger persists.
 
-## Network Recovery
+## Network Recovery & Byzantine Tolerance
 
-`RecoveryManager` (`services/blockchain-node/src/security/recoveryManager.js`) handles post-attack and post-failure recovery.
+`SecurityMonitor` (`services/blockchain-node/src/security/securityMonitor.js`) handles peer behavior tracking, anomaly detection, and quarantine. Peers are auto-isolated after 5 violations; manual review required for release. Chain sync uses longest-chain rule with block index, previousHash, hash integrity, and validator signature validation.
 
-**Recovery phases:**
-
-```text
-IDLE → DETECTING → RECOVERING → VALIDATING → COMPLETE
-```
-
-| Phase      | Action                                                                                                  |
-| ---------- | ------------------------------------------------------------------------------------------------------- |
-| IDLE       | No recovery in progress                                                                                 |
-| DETECTING  | Identify affected peers via quarantine list                                                             |
-| RECOVERING | 5-step protocol: isolate healthy peers → sync state → validate consensus → reconstruct chain → finalize |
-| VALIDATING | Verify chain consistency across all peers                                                               |
-| COMPLETE   | Recovery metrics recorded, state cleared                                                                |
-
-**Key parameters:**
-
-- Max recovery time: 5 minutes (`maxRecoveryTime`)
-- Sync timeout: 10 seconds per peer (`syncTimeout`)
-- Consensus threshold: 67% for recovery decisions (`consensusThreshold`)
-- Chain validation: checks block structure, hash integrity, previousHash links
-
-`verifyByzantineFaultTolerance(totalPeers, faultyPeers)` confirms the network can continue operating — BFT tolerates up to `floor((n-1)/3)` faulty nodes (1 node in a 5-node network).
-
-Disaster recovery testing available via `testDisasterRecovery(peers, backupData)` — verifies backup integrity, restores peer data, checks consistency.
-
-## Byzantine Validator
-
-`ByzantineFaultToleranceValidator` (`services/blockchain-node/src/security/byzantineValidator.js`) tests and validates BFT limits.
-
-**Configuration:**
-
-- Total nodes: 5 (default)
-- Max faulty nodes: `floor((5-1)/3)` = 1
-- Consensus required: `ceil(5 * 0.67)` = 4 votes
-- Liveness threshold: 95% message processing rate
-
-**Behavior detection:**
-
-| Behavior     | Description                     | Detection Rate |
-| ------------ | ------------------------------- | -------------- |
-| EQUIVOCATION | Node sends conflicting messages | ~70%           |
-| OMISSION     | Node omits required messages    | ~80%           |
-| ARBITRARY    | Random/malicious actions        | ~90%           |
-| REPLAY       | Replay attack attempts          | ~95%           |
-| TIMING       | Timing-based attacks            | ~60%           |
-
-**Recovery flow with Byzantine nodes:**
-
-1. Detect Byzantine nodes (90% accuracy)
-2. Isolate from network
-3. Verify consensus with remaining healthy nodes
-4. Restore network state
-
-Reports generated via `generateBFTReport()` include consensus success rate, detected behaviors, and full consensus history.
+The 4-node network tolerates faults via peer health monitoring and quarantine — a quarantined node is excluded from consensus until manually released. Full BFT consensus (PBFT) is a documented production target but not yet implemented.
 
 ## Further Reading
 

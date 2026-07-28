@@ -6,31 +6,31 @@
 
 A secure, privacy-preserving blockchain-based voting system for university elections using modern cryptographic techniques.
 
-## 🎉 Project Status
+## Project Status
 
-**Current Phase:** Merkle Tree Integration Complete - Production Ready
-**Last Updated:** November 13, 2025
-**Completion:** 96% (~77,273+ lines of code)
+**Current Phase:** Merkle Tree Integration Complete — Production Ready
+**Last Updated:** July 28, 2026
+**Completion:** 96% (~77,000+ lines of code)
 
-### ✅ Fully Implemented
+### Fully Implemented
 
-- ✅ **Complete Docker Setup** - One-command deployment with 5 services
-- ✅ **Monitoring Stack** - Prometheus, Grafana, cAdvisor with pre-built dashboards
-- ✅ **Helper Scripts** - Backup, restore, logs, health checks, cleanup utilities
-- ✅ **Client-side Cryptography** - ECDSA P-256 signatures, RSA-OAEP encryption
-- ✅ **Encrypted Voting** - End-to-end vote casting with signatures and nullifiers
-- ✅ **Double-vote Prevention** - Nullifier-based duplicate detection **[TESTED & VERIFIED]** ✅
-- ✅ **Database Storage** - MySQL with complete schema and migrations
-- ✅ **Blockchain Node** - Custom PoW blockchain with persistent storage
-- ✅ **Transaction Hash System** - Deterministic SHA-256 hash generation **[TESTED & VERIFIED]** ✅
-- ✅ **Auto-Registration** - Users automatically enrolled in active elections
-- ✅ **Security Testing** - Complete integration testing with 100% pass rate
-- ✅ **Audit Logging** - Comprehensive event tracking with severity levels
-- ✅ **Merkle Tree System** - Efficient vote verification with O(log n) proofs **[NEW]** 🎉
+- **Complete Docker Setup** — One-command deployment with 7 services
+- **Monitoring Stack** — Prometheus, Grafana, cAdvisor with pre-built dashboards
+- **Helper Scripts** — Backup, restore, logs, health checks, cleanup utilities
+- **Client-side Cryptography** — ECDSA P-256 signatures, RSA-OAEP 2048-bit encryption
+- **Encrypted Voting** — End-to-end vote casting with signatures and nullifiers
+- **Encrypted Tally** — AES-256-GCM encrypted vote tallying with admin release
+- **Double-vote Prevention** — Nullifier-based duplicate detection [TESTED & VERIFIED]
+- **Database Storage** — MySQL with complete schema and migrations (004_fix_tally_key_column, 005_fix_schema_issues)
+- **Blockchain Node** — Custom PoW blockchain with LevelDB persistence, 4-node peer network
+- **Transaction Hash System** — Deterministic SHA-256 hash generation [TESTED & VERIFIED]
+- **Auto-Registration** — Users automatically enrolled in active elections
+- **Integration Testing** — Shell-based test suite: smoke, integration, attack, detection, security, resilience
+- **Audit Logging** — Admin audit trails with integrity verification
+- **Merkle Tree System** — Efficient vote verification with O(log n) proofs
 
-### 🔜 Remaining Tasks
+### Remaining Tasks
 
-- Final documentation and screenshots (Priority 3 - In Progress)
 - Frontend Merkle proof verification UI (Optional enhancement)
 - Multi-factor authentication (Future feature)
 - BFT consensus upgrade (Future enhancement)
@@ -38,24 +38,24 @@ A secure, privacy-preserving blockchain-based voting system for university elect
 
 ---
 
-## 🔐 Key Security Features
+## Key Security Features
 
-- ✅ **Ballot Secrecy** - RSA-OAEP 2048-bit encryption
-- ✅ **Voter Authentication** - ECDSA P-256 digital signatures
-- ✅ **Vote Privacy** - SHA-256 unlinkable nullifiers
-- ✅ **Double-Vote Prevention** - Nullifier-based duplicate detection **[100% Test Pass]**
-- ✅ **Transaction Integrity** - Deterministic SHA-256 transaction hashing **[Verified]**
-- ✅ **Non-Repudiation** - Cryptographic vote receipts with blockchain proof
-- ✅ **Audit Logging** - Complete security event tracking with severity classification
-- ✅ **Rate Limiting** - DDoS protection on all endpoints
-- ✅ **Auto-Enrollment** - Seamless voter registration for available elections
-- ✅ **Merkle Proofs** - Efficient vote verification (99% bandwidth savings) **[NEW]** 🎉
+- **Ballot Secrecy** — RSA-OAEP 2048-bit encryption
+- **Voter Authentication** — ECDSA P-256 digital signatures
+- **Vote Privacy** — SHA-256 unlinkable nullifiers
+- **Double-Vote Prevention** — Nullifier-based duplicate detection [100% Test Pass]
+- **Transaction Integrity** — Deterministic SHA-256 transaction hashing [Verified]
+- **Non-Repudiation** — Cryptographic vote receipts with blockchain proof
+- **Audit Logging** — Complete security event tracking with severity classification
+- **Rate Limiting** — DDoS protection on all endpoints
+- **Auto-Enrollment** — Seamless voter registration for available elections
+- **Merkle Proofs** — Efficient vote verification (99% bandwidth savings)
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
-### 🐳 Docker Setup (Recommended - Easiest!)
+### Docker Setup (Recommended)
 
 **Prerequisites:**
 
@@ -72,8 +72,8 @@ cd Blockchain-Voting-System-JS
 # Copy environment file
 cp .env.example .env
 
-# Start all services (MySQL, phpMyAdmin, Backend, Blockchain, Frontend)
-docker-compose -f infra/docker/docker-compose.yml up --build -d
+# Start all services (MySQL, phpMyAdmin, Backend, 4 Blockchain Nodes, Frontend, Admin Panel, Institution API)
+docker compose -f infra/docker/docker-compose.yml --env-file .env up --build -d
 
 # Or use the helper script:
 # On Linux/Mac:
@@ -85,45 +85,34 @@ infra\scripts\docker-start.bat
 
 **Access the application:**
 
-- 🖥️ **Frontend (Voters)**: [http://localhost:5173](http://localhost:5173)
-- 🔧 **Admin Panel**: [http://localhost:5174](http://localhost:5174)
-- 🔧 **Backend API**: [http://localhost:3000](http://localhost:3000)
-- ⛓️ **Blockchain**: [http://localhost:3001](http://localhost:3001)
-- 🗄️ **phpMyAdmin**: [http://localhost:8080](http://localhost:8080)
+- **Frontend (Voters)**: <http://localhost:5173>
+- **Admin Panel**: <http://localhost:5174>
+- **Backend API**: <http://localhost:3000>
+- **Blockchain Node**: <http://localhost:3001>
+- **phpMyAdmin**: <http://localhost:8080>
 
-**Done!** All 5 services running in Docker containers. See [DOCKER_SETUP.md](./docs/project-status/docker/DOCKER_SETUP.md) for details.
+See [deployment/setup.md](docs/deployment/setup.md) for detailed setup guide.
 
-### 📊 Monitoring (Optional but Recommended)
+### 📊 Monitoring (Optional)
 
 Start the monitoring stack to track system performance:
 
 ```bash
 # Start Prometheus, Grafana, cAdvisor, and exporters
 bash infra/scripts/docker-monitoring-start.sh
-
 # Or manually:
-docker-compose -f infra/docker/docker-compose.yml -f infra/docker/docker-compose.monitoring.yml up -d
+docker compose -f infra/docker/docker-compose.yml -f infra/docker/docker-compose.monitoring.yml --env-file .env up -d
 ```
 
-**Access Monitoring Tools:**
+- **Grafana**: <http://localhost:3030> (admin/admin)
+- **Prometheus**: <http://localhost:9090>
+- **cAdvisor**: <http://localhost:8081>
 
-- 📈 **Grafana**: [http://localhost:3030](http://localhost:3030) (admin/admin)
-- 📊 **Prometheus**: [http://localhost:9090](http://localhost:9090)
-- 🐳 **cAdvisor**: [http://localhost:8081](http://localhost:8081)
-
-**Features:**
-
-- Real-time service health monitoring
-- Container resource usage (CPU, memory, network)
-- MySQL database metrics
-- Pre-configured dashboards
-- Automatic alerting for issues
-
-See [MONITORING_GUIDE.md](./docs/project-status/monitoring/MONITORING_GUIDE.md) for complete documentation.
+See [monitoring/stack.md](docs/monitoring/stack.md) for complete monitoring documentation.
 
 ---
 
-## �️ Management Tools
+## Management Tools
 
 ### Helper Scripts
 
@@ -138,62 +127,55 @@ bash infra/scripts/docker-bootstrap.sh        # Bootstrap admin, validators, con
 
 ### Testing
 
+Integration tests require the Docker stack running. Use the interactive test runner:
+
 ```bash
-# Health check all services
-bash infra/scripts/docker-health-check.sh
-
-# Run backend tests
-docker-compose -f infra/docker/docker-compose.yml exec backend npm test
-
-# Integration tests
-node tests/e2e/test-system.js
+bash tests/run-tests.sh           # Interactive menu
+bash tests/run-tests.sh all       # Full suite (resets stack, seeds, runs all categories)
+bash tests/run-tests.sh smoke-test  # Quick smoke test
 ```
+
+Test categories: smoke-test, integration-test, detection-test, attack-test, security-suite, resilience-test.
 
 ---
 
-## 🏗️ Tech Stack
+## Tech Stack
 
 - **Frontend**: Vue.js 3 + Vite + Vuex + Web Crypto API
-- **Backend**: Node.js + Express + JWT + ECDSA verification
+- **Admin Panel**: Vue.js 3 + Vite + Pinia
+- **Backend**: Node.js + Express 5 + JWT + ECDSA verification
 - **Database**: MySQL 8.0 with encrypted ballot storage
-- **Blockchain**: Custom PoW with LevelDB persistence
-- **Monitoring**: Prometheus + Grafana + cAdvisor
+- **Blockchain**: Custom PoW with LevelDB persistence, 4-node peer consensus
+- **Institution API**: Express 4 + MySQL (mock directory)
+- **Monitoring**: Prometheus + Grafana + cAdvisor + Loki
 - **Infrastructure**: Docker + Docker Compose
 
 ---
 
-## 📖 Documentation
+## Documentation
 
-Comprehensive documentation available:
+Comprehensive documentation available in `docs/`:
 
-### Core Documentation
+| Domain                                                  | Description                                   |
+| ------------------------------------------------------- | --------------------------------------------- |
+| [Project Structure](docs/project/structure.md)          | Repository layout, file map                   |
+| [Frontend](docs/frontend/README.md)                     | Vue 3 app: pages, components, crypto, theming |
+| [Architecture](docs/architecture/overview.md)           | System design, blockchain mechanics, crypto   |
+| [Database](docs/database/schema.md)                     | Schema, setup, migrations, reference          |
+| [API - Backend](docs/api/backend.md)                    | Backend REST endpoints                        |
+| [API - Blockchain Node](docs/api/blockchain-node.md)    | Blockchain node endpoints                     |
+| [API - Institution](docs/api/institution-api.md)        | Institution directory API                     |
+| [Deployment](docs/deployment/docker.md)                 | Docker compose files and setup                |
+| [Environment Variables](docs/deployment/environment.md) | Full .env reference                           |
+| [Development](docs/development/getting-started.md)      | Getting started, conventions, crypto impl     |
+| [Testing](docs/testing/overview.md)                     | Test architecture, how to run, CI             |
+| [Monitoring](docs/monitoring/stack.md)                  | Grafana, Prometheus, Loki, alerts             |
+| [Security](docs/security/threat-model.md)               | Threat model, audit, operations               |
+| [Knowledge Base](docs/knowledge/blockchain.md)          | Academic explainers                           |
 
-- **[DOCKER_SETUP.md](./docs/project-status/docker/DOCKER_SETUP.md)** - Complete Docker setup guide
-- **[DOCKER_QUICK_REFERENCE.md](./docs/project-status/docker/DOCKER_QUICK_REFERENCE.md)** - Quick Docker commands
-- **[HELPER_SCRIPTS_REFERENCE.md](./docs/project-status/guides/HELPER_SCRIPTS_REFERENCE.md)** - All helper scripts
-- **[MONITORING_GUIDE.md](./docs/project-status/monitoring/MONITORING_GUIDE.md)** - Prometheus & Grafana setup
-- **[DOCKER_TEST_RESULTS.md](./docs/project-status/testing/DOCKER_TEST_RESULTS.md)** - Docker test report
+---
 
-### Development Documentation
-
-- **20_10_25.md** - Client-side cryptography implementation
-- **21_10_25.md** - Backend integration and testing session
-- **CRYPTO_IMPLEMENTATION.md** - Technical API reference
-- **CRYPTO_QUICK_START.md** - Testing guide
-- **CRYPTO_VISUAL_GUIDE.md** - Architecture diagrams
-- **DATABASE_SCHEMA.md** - Database documentation
-
-### Helper Scripts (New! ✨)
-
-- `infra/scripts/docker-backup.sh` - Backup database and blockchain
-- `infra/scripts/docker-restore.sh` - Restore from backups
-- `infra/scripts/docker-logs.sh` - Advanced log viewer
-- `infra/scripts/docker-cleanup.sh` - Clean Docker resources
-- `infra/scripts/docker-health-check.sh` - System health check
-- `infra/scripts/docker-bootstrap.sh` - Bootstrap admin, validator nodes, system config
-- `infra/scripts/docker-monitoring-start.sh` - Start monitoring stack
-
-## 🔄 Vote Casting Flow
+## Vote Casting Flow
 
 ```text
 Registration → Key Generation → Vote → Encrypt → Sign → Verify → Store → Blockchain
@@ -210,70 +192,50 @@ Registration → Key Generation → Vote → Encrypt → Sign → Verify → Sto
 
 ---
 
-## 🤝 Contributing
+## Contributing
 
-Contributions welcome! Please follow standard Git workflow:
+Follow the Git workflow: Fork → Branch → Commit → Push → Pull Request.
 
-1. Fork → 2. Branch → 3. Commit → 4. Push → 5. Pull Request
-
----
-
-## 📝 License
-
-MIT License - see LICENSE file for details
+See [development/github-workflow.md](docs/development/github-workflow.md) for full guide.
 
 ---
 
-## 👥 Team
+## License
+
+MIT License — see [LICENSE](LICENSE) file for details.
+
+---
+
+## Team
 
 **Developers:** Sazid Ahmed, Nahid Hasan Noyon
 **Institution:** Bangladesh University of Professionals
 **Program:** Masters in Information System Security
-**Year:** 2023-2024
+**Year:** 2023–2024
 
 ---
 
-## 📧 Contact
+## Contact
 
-- **Email:** [sazidahmed.official@gmail.com](sazidahmed.official@gmail.com)
-- **GitHub:** [@SazidAhmed](https://github.com/SazidAhmed)
-- **Issues:** [Report bugs or request features](https://github.com/SazidAhmed/Blockchain-Voting-System-JS/issues)
+- **Email**: <sazidahmed.official@gmail.com>
+- **GitHub**: [@SazidAhmed](https://github.com/SazidAhmed)
+- **Issues**: [Report bugs or request features](https://github.com/SazidAhmed/Blockchain-Voting-System-JS/issues)
 
 ---
 
-## ⚠️ Security Notice
+## Security Notice
 
-**This is an academic/research project (94% complete).**
-
-**Core Security Features Tested & Verified:**
-
-- ✅ Double-vote prevention (100% test pass rate)
-- ✅ Transaction hash integrity (SHA-256 deterministic generation)
-- ✅ ECDSA signature verification
-- ✅ Nullifier-based vote tracking
-- ✅ Comprehensive audit logging
-
-**Before production use, ensure:**
-
-1. Professional security audit by cryptography experts
-2. Comprehensive penetration testing
-3. Secure key storage (HSM or encrypted key stores)
-4. Legal compliance review for your jurisdiction
-5. Load testing for expected voter volume
-6. Third-party cryptographic verification
+**This is an academic/research project (96% complete).** Core security features tested and verified. Before production use, ensure professional security audit, penetration testing, secure key storage, legal compliance review, load testing, and third-party cryptographic verification.
 
 **Current Status:** Core features production-ready. Suitable for demonstrations, academic research, and proof-of-concept deployments.
 
----
+**Major Milestones Achieved:**
 
-**Last Updated:** July 13, 2026
-**Status:** Security Testing Complete - 94% Done
-**Next:** Final documentation & optional Merkle tree implementation
-
-**🎉 Major Milestones Achieved:**
-
-- ✅ Double-vote prevention system validated
-- ✅ Transaction hash integrity verified
-- ✅ End-to-end voting workflow operational
-- ✅ Auto-registration feature implemented
-- ✅ 100% test success rate (11/11 tests passed)
+- Double-vote prevention system validated
+- Transaction hash integrity verified
+- End-to-end voting workflow operational
+- Auto-registration feature implemented
+- 100% integration test success rate
+- Merkle tree vote verification system
+- Encrypted tally and results release
+- Admin audit logging with integrity checks

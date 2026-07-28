@@ -45,28 +45,28 @@ Registered voters and administrators.
 
 Election configurations and threshold encryption parameters.
 
-| Column                | Type         | Constraints                 | Description                                     |
-| --------------------- | ------------ | --------------------------- | ----------------------------------------------- |
-| `id`                  | INT          | PK, AUTO_INCREMENT          |                                                 |
-| `title`               | VARCHAR(255) | NOT NULL                    |                                                 |
-| `description`         | TEXT         |                             |                                                 |
-| `start_date`          | DATETIME     | NOT NULL                    | Voting window start                             |
-| `end_date`            | DATETIME     | NOT NULL                    | Voting window end                               |
-| `status`              | ENUM         | DEFAULT 'pending'           | pending, active, completed, cancelled, tallying |
-| `public_key`          | TEXT         | NOT NULL                    | Threshold encryption public key (ElGamal)       |
-| `threshold_params`    | JSON         |                             | {t, n, shares}                                  |
-| `eligible_roles`      | JSON         |                             | Array of allowed roles                          |
-| `created_by`          | INT          | FK → users.id, NOT NULL     | Admin who created                               |
-| `created_at`          | TIMESTAMP    | DEFAULT CURRENT_TIMESTAMP   |                                                 |
-| `updated_at`          | TIMESTAMP    | ON UPDATE CURRENT_TIMESTAMP |                                                 |
-| `tally_completed_at`  | TIMESTAMP    | NULL                        |                                                 |
-| `results_hash`        | VARCHAR(64)  |                             | SHA-256 of final tally                          |
-| `is_locked`           | BOOLEAN      | DEFAULT FALSE               | Locked for editing                              |
-| `locked_at`           | TIMESTAMP    | NULL                        |                                                 |
-| `locked_by`           | INT          | FK → users.id, NULL         |                                                 |
-| `tally_key`           | TEXT         | NULL                        | AES-256-GCM key for encrypting vote tallies     |
-| `results_released`    | BOOLEAN      | DEFAULT FALSE               | Whether plaintext results are publicly visible  |
-| `results_released_at` | TIMESTAMP    | NULL                        | When results were released                      |
+| Column                | Type         | Constraints                 | Description                                        |
+| --------------------- | ------------ | --------------------------- | -------------------------------------------------- |
+| `id`                  | INT          | PK, AUTO_INCREMENT          |                                                    |
+| `title`               | VARCHAR(255) | NOT NULL                    |                                                    |
+| `description`         | TEXT         |                             |                                                    |
+| `start_date`          | DATETIME     | NOT NULL                    | Voting window start                                |
+| `end_date`            | DATETIME     | NOT NULL                    | Voting window end                                  |
+| `status`              | ENUM         | DEFAULT 'pending'           | pending, active, completed, cancelled, tallying    |
+| `public_key`          | TEXT         | NOT NULL                    | RSA-2048 SPKI PEM public key for ballot encryption |
+| `threshold_params`    | JSON         |                             | {t, n, shares}                                     |
+| `eligible_roles`      | JSON         |                             | Array of allowed roles                             |
+| `created_by`          | INT          | FK → users.id, NOT NULL     | Admin who created                                  |
+| `created_at`          | TIMESTAMP    | DEFAULT CURRENT_TIMESTAMP   |                                                    |
+| `updated_at`          | TIMESTAMP    | ON UPDATE CURRENT_TIMESTAMP |                                                    |
+| `tally_completed_at`  | TIMESTAMP    | NULL                        |                                                    |
+| `results_hash`        | VARCHAR(64)  |                             | SHA-256 of final tally                             |
+| `is_locked`           | BOOLEAN      | DEFAULT FALSE               | Locked for editing                                 |
+| `locked_at`           | TIMESTAMP    | NULL                        |                                                    |
+| `locked_by`           | INT          | FK → users.id, NULL         |                                                    |
+| `tally_key`           | TEXT         | NULL                        | AES-256-GCM key for encrypting vote tallies        |
+| `results_released`    | BOOLEAN      | DEFAULT FALSE               | Whether plaintext results are publicly visible     |
+| `results_released_at` | TIMESTAMP    | NULL                        | When results were released                         |
 
 **Indexes:** `status`, `(start_date, end_date)`, `created_by`
 

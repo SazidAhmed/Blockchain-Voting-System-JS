@@ -20,7 +20,7 @@ Since the entire stack runs in Docker, all console output (including Ethereal cr
 ### Step 1: Find Backend Container Name
 
 ```bash
-docker-compose -f infra/docker/docker-compose.yml ps
+docker compose -f infra/docker/docker-compose.yml ps
 ```
 
 Look for the backend service. Container name is usually `voting-backend` or similar.
@@ -28,7 +28,7 @@ Look for the backend service. Container name is usually `voting-backend` or simi
 ### Step 2: View Backend Logs (Real-Time)
 
 ```bash
-docker-compose -f infra/docker/docker-compose.yml logs -f backend
+docker compose -f infra/docker/docker-compose.yml logs -f backend
 ```
 
 This streams all backend logs to your terminal. Look for these patterns:
@@ -80,7 +80,7 @@ When an OTP is sent, the backend logs:
 2. To quickly extract them:
 
 ```bash
-   docker-compose -f infra/docker/docker-compose.yml logs backend | grep -i "Ethereal ready\|Ethereal password"
+   docker compose -f infra/docker/docker-compose.yml logs backend | grep -i "Ethereal ready\|Ethereal password"
 ```
 
 1. Go to <https://ethereal.email/login>
@@ -101,25 +101,25 @@ This appears in the same Docker logs. Use this to verify without touching Ethere
 
 ```bash
 # Stream all backend logs (real-time)
-docker-compose -f infra/docker/docker-compose.yml logs -f backend
+docker compose -f infra/docker/docker-compose.yml logs -f backend
 
 # Search for Ethereal-related logs
-docker-compose -f infra/docker/docker-compose.yml logs backend | grep -i "ethereal"
+docker compose -f infra/docker/docker-compose.yml logs backend | grep -i "ethereal"
 
 # Search for OTP codes
-docker-compose -f infra/docker/docker-compose.yml logs backend | grep -i "OTP"
+docker compose -f infra/docker/docker-compose.yml logs backend | grep -i "OTP"
 
 # Search for preview URLs
-docker-compose -f infra/docker/docker-compose.yml logs backend | grep -i "preview"
+docker compose -f infra/docker/docker-compose.yml logs backend | grep -i "preview"
 
 # Get last 100 lines of backend logs
-docker-compose -f infra/docker/docker-compose.yml logs --tail=100 backend
+docker compose -f infra/docker/docker-compose.yml logs --tail=100 backend
 ```
 
 ## Complete Workflow: Sending and Viewing an OTP
 
-1. Start the stack: `docker-compose -f infra/docker/docker-compose.yml up --build -d`
-2. Open a second terminal for logs: `docker-compose -f infra/docker/docker-compose.yml logs -f backend`
+1. Start the stack: `docker compose -f infra/docker/docker-compose.yml up --build -d`
+2. Open a second terminal for logs: `docker compose -f infra/docker/docker-compose.yml logs -f backend`
 3. Register a user with a `@university.edu` email via the frontend
 4. In the logs terminal, watch for:
    - `📧 Creating Ethereal test account...` (first time only)

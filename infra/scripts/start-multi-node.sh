@@ -26,9 +26,9 @@ echo "╔═══════════════════════�
 echo "║  Starting Multi-Node Blockchain Network    ║"
 echo "╚════════════════════════════════════════════╝"
 
-# Check if docker-compose is available
-if ! command -v docker-compose &> /dev/null; then
-    echo "Error: docker-compose is not installed"
+# Check if Docker Compose is available
+if ! docker compose version &> /dev/null 2>&1; then
+    echo "Error: Docker Compose is not available"
     exit 1
 fi
 
@@ -47,7 +47,7 @@ echo "  - Node 4 (Observer)  - Port $N4"
 echo "  - Node 5 (Observer)  - Port $N5"
 echo ""
 
-docker-compose -f $COMPOSE_FILE_MULTI --env-file $ENV_FILE up -d
+docker compose -f $COMPOSE_FILE_MULTI --env-file $ENV_FILE up -d
 
 echo ""
 echo "✓ Starting nodes..."
@@ -87,8 +87,8 @@ echo "To check network status:"
 echo "  curl http://localhost:$N1/network/status"
 echo ""
 echo "To view logs:"
-echo "  docker-compose -f $COMPOSE_FILE_MULTI --env-file $ENV_FILE logs -f"
+echo "  docker compose -f $COMPOSE_FILE_MULTI --env-file $ENV_FILE logs -f"
 echo ""
 echo "To stop the network:"
-echo "  docker-compose -f $COMPOSE_FILE_MULTI --env-file $ENV_FILE down"
+echo "  docker compose -f $COMPOSE_FILE_MULTI --env-file $ENV_FILE down"
 echo ""

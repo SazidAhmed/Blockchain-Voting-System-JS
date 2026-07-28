@@ -29,7 +29,7 @@ Edit `.env` to change secrets (JWT_SECRET, DB passwords, BLOCKCHAIN_API_KEY, INS
 ### 3. Start
 
 ```bash
-docker-compose -f infra/docker/docker-compose.yml up --build -d
+docker compose -f infra/docker/docker-compose.yml up --build -d
 ```
 
 First build takes 2-3 minutes. Backend runs migrations automatically on boot.
@@ -102,17 +102,17 @@ Listens on port 3001. LevelDB data in `./data/`. Requires `BLOCKCHAIN_API_KEY` e
 ```bash
 cp .env.example .env
 # Edit ALL secrets and URLs in .env (no defaults for production)
-docker-compose -f infra/docker/docker-compose.prod.yml up --build -d
+docker compose -f infra/docker/docker-compose.prod.yml up --build -d
 ```
 
-Place SSL certs in `infra/docker/nginx/ssl/`. Frontend uses `Dockerfile.prod` (static build). Only Nginx ports (80, 443) are exposed.
+Create `infra/docker/nginx/ssl/` and place SSL certs there. Frontend uses `Dockerfile.prod` (static build). Only Nginx ports (80, 443) are exposed.
 
 ---
 
 ## Run Tests
 
 ```bash
-docker-compose -f infra/docker/docker-compose.test.yml up -d
+docker compose -f infra/docker/docker-compose.test.yml up -d
 bash tests/run-tests.sh
 ```
 
@@ -141,30 +141,30 @@ docker info
 
 ```bash
 # Check logs
-docker-compose -f infra/docker/docker-compose.yml logs <service>
+docker compose -f infra/docker/docker-compose.yml logs <service>
 
 # Rebuild without cache
-docker-compose -f infra/docker/docker-compose.yml build --no-cache <service>
+docker compose -f infra/docker/docker-compose.yml build --no-cache <service>
 ```
 
 ### MySQL not healthy
 
 ```bash
-docker-compose -f infra/docker/docker-compose.yml logs mysql | grep "ready for connections"
-docker-compose -f infra/docker/docker-compose.yml restart backend
+docker compose -f infra/docker/docker-compose.yml logs mysql | grep "ready for connections"
+docker compose -f infra/docker/docker-compose.yml restart backend
 ```
 
 ### Migration errors
 
 ```bash
-docker-compose -f infra/docker/docker-compose.yml exec backend npm run migrate
-docker-compose -f infra/docker/docker-compose.yml exec backend npm run migrate:status
+docker compose -f infra/docker/docker-compose.yml exec backend npm run migrate
+docker compose -f infra/docker/docker-compose.yml exec backend npm run migrate:status
 ```
 
 ### Reset everything (DELETES DATA)
 
 ```bash
-docker-compose -f infra/docker/docker-compose.yml down -v
+docker compose -f infra/docker/docker-compose.yml down -v
 docker system prune -a --volumes
-docker-compose -f infra/docker/docker-compose.yml up --build -d
+docker compose -f infra/docker/docker-compose.yml up --build -d
 ```

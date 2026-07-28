@@ -1,4 +1,4 @@
-# Usage: docker-compose -f infra/docker/docker-compose.yml -f infra/docker/docker-compose.monitoring.yml up -d
+# Usage: docker compose -f infra/docker/docker-compose.yml -f infra/docker/docker-compose.monitoring.yml up -d
 # Monitoring stack: Prometheus, Grafana, cAdvisor, Node Exporter, MySQL Exporter, Loki, Promtail.
 # Requires main stack running first (attaches to voting-network).
 

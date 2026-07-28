@@ -22,7 +22,7 @@ if errorlevel 1 (
 )
 
 REM Check if Docker Compose is installed
-docker-compose --version >nul 2>&1
+docker compose --version >nul 2>&1
 if errorlevel 1 (
     echo [ERROR] Docker Compose is not installed!
     pause
@@ -80,7 +80,7 @@ echo.
 echo [INFO] Building and starting all services...
 echo This may take 5-10 minutes on first run...
 echo.
-docker-compose -f %COMPOSE_FILE% --env-file %ENV_FILE% up --build -d
+docker compose -f %COMPOSE_FILE% --env-file %ENV_FILE% up --build -d
 echo.
 echo [OK] All services started!
 echo.
@@ -93,17 +93,17 @@ echo   - phpMyAdmin:   http://localhost:8080
 echo.
 echo [INFO] Bootstrapping database with admin/validator data...
 timeout /t 5 /nobreak >nul
-docker-compose -f %COMPOSE_FILE% --env-file %ENV_FILE% exec -T backend node scripts/seed.js
+docker compose -f %COMPOSE_FILE% --env-file %ENV_FILE% exec -T backend node scripts/seed.js
 echo.
 echo [OK] Database bootstrapped!
 echo.
-echo Run health check: docker-compose -f %COMPOSE_FILE% --env-file %ENV_FILE% ps
+echo Run health check: docker compose -f %COMPOSE_FILE% --env-file %ENV_FILE% ps
 goto end
 
 :start
 echo.
 echo [INFO] Starting all services...
-docker-compose -f %COMPOSE_FILE% --env-file %ENV_FILE% up -d
+docker compose -f %COMPOSE_FILE% --env-file %ENV_FILE% up -d
 echo.
 echo [OK] All services started!
 echo.
@@ -118,7 +118,7 @@ goto end
 :stop
 echo.
 echo [INFO] Stopping all services...
-docker-compose -f %COMPOSE_FILE% --env-file %ENV_FILE% down
+docker compose -f %COMPOSE_FILE% --env-file %ENV_FILE% down
 echo [OK] All services stopped!
 goto end
 
@@ -126,13 +126,13 @@ goto end
 echo.
 echo [INFO] Viewing logs (Ctrl+C to exit)...
 echo.
-docker-compose -f %COMPOSE_FILE% --env-file %ENV_FILE% logs -f
+docker compose -f %COMPOSE_FILE% --env-file %ENV_FILE% logs -f
 goto end
 
 :restart
 echo.
 echo [INFO] Restarting all services...
-docker-compose -f %COMPOSE_FILE% --env-file %ENV_FILE% restart
+docker compose -f %COMPOSE_FILE% --env-file %ENV_FILE% restart
 echo [OK] All services restarted!
 goto end
 
@@ -143,7 +143,7 @@ set /p confirm="Are you sure? (yes/no): "
 if "%confirm%"=="yes" (
     echo.
     echo [INFO] Cleaning up...
-    docker-compose -f %COMPOSE_FILE% --env-file %ENV_FILE% down -v
+    docker compose -f %COMPOSE_FILE% --env-file %ENV_FILE% down -v
     echo [OK] Cleanup complete!
 ) else (
     echo Cancelled.

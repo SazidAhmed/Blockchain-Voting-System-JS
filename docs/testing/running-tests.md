@@ -8,7 +8,7 @@
 ## Start Test Stack
 
 ```bash
-docker-compose -f infra/docker/docker-compose.test.yml up -d
+docker compose -f infra/docker/docker-compose.test.yml up -d
 ```
 
 Separate network, volumes, and ports. Backend auto-runs migrations on boot.

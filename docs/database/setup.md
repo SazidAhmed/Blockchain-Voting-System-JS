@@ -17,7 +17,7 @@
 
 ```bash
 cp .env.example .env
-docker-compose -f infra/docker/docker-compose.yml up --build -d
+docker compose -f infra/docker/docker-compose.yml up --build -d
 ```
 
 Backend auto-runs migrations on boot. Database is created if it doesn't exist.
@@ -63,7 +63,7 @@ bash infra/scripts/docker-bootstrap.sh
 Or directly inside the container:
 
 ```bash
-docker-compose -f infra/docker/docker-compose.yml exec -T backend node scripts/seed.js
+docker compose -f infra/docker/docker-compose.yml exec -T backend node scripts/seed.js
 ```
 
 ### 5. Verify

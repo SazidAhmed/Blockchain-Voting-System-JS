@@ -35,7 +35,7 @@ ECDSA uses P-256 (secp256r1) curve. RSA-OAEP uses SHA-256 as hash function with 
 
 ### Backend Verification
 
-`services/backend/utils/crypto.js:73` — `verifyECDSASignature()`:
+`services/backend/utils/signing.js:73` — `verifyECDSASignature()`:
 
 1. Parse SPKI public key DER → extract P-256 x,y coordinates
 2. Hash signed data with SHA-256
@@ -96,9 +96,9 @@ Keys are held in memory as `CryptoKey` objects for the session lifetime. `clearK
 
 ## Key Storage
 
-**Current (development):** localStorage, JSON-serialized, no encryption. See `crypto.js:364-390`.
+**Current:** localStorage, PBKDF2-derived key from password → AES-256-GCM encrypt private keys. See `crypto.js:373-427`.
 
-**Production recommendation:** PBKDF2-derived key from password → AES-256-GCM encrypt private keys → store in IndexedDB. Hardware Security Module (HSM) or WebAuthn for key access.
+**Production recommendation:** IndexedDB with Hardware Security Module (HSM) or WebAuthn for key access.
 
 ## Transaction Hash
 
@@ -129,7 +129,7 @@ Receipt proves participation, not choice — coercion resistant.
 
 ## Legacy Server-Side Crypto
 
-`services/backend/utils/crypto.js` contains fallback functions (`generateKeypair`, `signData`, `verifySignature`) using HMAC-SHA256 simulation. These exist for backward compatibility; all new usage goes through client-side Web Crypto API.
+`services/backend/utils/signing.js` contains fallback functions (`generateKeypair`, `signData`, `verifySignature`) using HMAC-SHA256 simulation. These exist for backward compatibility; all new usage goes through client-side Web Crypto API.
 
 ## Further Reading
 

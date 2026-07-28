@@ -1,6 +1,6 @@
 #!/bin/bash
 # generate-secrets.sh — Auto-generate missing secrets and persist to .env
-# Called by docker-start.sh before docker-compose up.
+# Called by docker-start.sh before docker compose up.
 # In production, set secrets via env vars / secrets manager instead.
 
 set -e

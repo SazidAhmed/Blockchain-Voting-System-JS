@@ -1,4 +1,4 @@
-# Usage: docker-compose -f infra/docker/docker-compose.yml --env-file .env up -d
+# Usage: docker compose -f infra/docker/docker-compose.yml --env-file .env up -d
 # Dev stack: MySQL, blockchain (4 nodes), backend, frontend, admin-panel, institution-api, phpMyAdmin
 
 services:

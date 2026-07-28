@@ -48,7 +48,7 @@ All files in `infra/docker/`:
 | --------------- | -------------------- | -------- | ------- |
 | mysql           | `mysqladmin ping`    | 10s      | 10      |
 | blockchain-node | `GET /node`          | 15s      | 5       |
-| backend         | `GET /api/elections` | 15s      | 5       |
+| backend         | `GET /health`        | 15s      | 5       |
 | institution-api | `GET /api/health`    | 15s      | 5       |
 
 ### Startup Order
@@ -66,7 +66,7 @@ backend → frontend, admin-panel
 
 **blockchain-node**: `NODE_ID=node1`, `PORT=3001`, `PEERS` (URLs of other 3 nodes), `NODE_ENV`.
 
-**backend**: `DB_HOST=mysql`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `JWT_SECRET`, `BLOCKCHAIN_NODE_URL`, `FRONTEND_URL`, `INSTITUTION_API_URL`.
+**backend**: `DB_HOST=mysql`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `JWT_SECRET`, `NULLIFIER_SECRET`, `BLOCKCHAIN_NODE_URL`, `BLOCKCHAIN_API_KEY`, `INSTITUTION_API_KEY`, `FRONTEND_URL`, `ADMIN_PANEL_URL`, `INSTITUTION_API_URL`, `CORS_ALLOWED_ORIGINS`.
 
 **frontend**: `VITE_API_BASE_URL`, `VITE_BLOCKCHAIN_URL`, `VITE_INSTITUTION_API_URL`.
 
@@ -109,7 +109,7 @@ Extends main stack. Includes:
 | promtail       | —    | Log shipper              |
 
 ```bash
-docker-compose -f docker-compose.yml -f docker-compose.monitoring.yml --env-file .env up -d
+docker compose -f infra/docker/docker-compose.yml -f infra/docker/docker-compose.monitoring.yml --env-file .env up -d
 ```
 
 Networks: `monitoring` (new bridge) + `voting-network` (external). Volumes: `prometheus_data`, `grafana_data`, `loki_data`.
@@ -166,29 +166,29 @@ All commands below require `--env-file` (compose interpolates `.env` vars from t
 
 ```bash
 # Start (first time builds images)
-docker-compose -f infra/docker/docker-compose.yml --env-file .env up --build -d
+docker compose -f infra/docker/docker-compose.yml --env-file .env up --build -d
 
 # Stop and remove containers
-docker-compose -f infra/docker/docker-compose.yml --env-file .env down
+docker compose -f infra/docker/docker-compose.yml --env-file .env down
 
 # Stop and destroy volumes (DELETES DATA)
-docker-compose -f infra/docker/docker-compose.yml --env-file .env down -v
+docker compose -f infra/docker/docker-compose.yml --env-file .env down -v
 
 # View logs (all)
-docker-compose -f infra/docker/docker-compose.yml --env-file .env logs -f
+docker compose -f infra/docker/docker-compose.yml --env-file .env logs -f
 
 # View logs (single service)
-docker-compose -f infra/docker/docker-compose.yml --env-file .env logs -f backend
+docker compose -f infra/docker/docker-compose.yml --env-file .env logs -f backend
 
 # Rebuild single service
-docker-compose -f infra/docker/docker-compose.yml --env-file .env up --build backend
+docker compose -f infra/docker/docker-compose.yml --env-file .env up --build backend
 
 # Rebuild without cache
-docker-compose -f infra/docker/docker-compose.yml --env-file .env build --no-cache backend
+docker compose -f infra/docker/docker-compose.yml --env-file .env build --no-cache backend
 
 # Execute command in container (uses container env, --env-file optional)
-docker-compose -f infra/docker/docker-compose.yml exec backend sh
+docker compose -f infra/docker/docker-compose.yml exec backend sh
 
 # Run migrations manually
-docker-compose -f infra/docker/docker-compose.yml exec backend npm run migrate
+docker compose -f infra/docker/docker-compose.yml exec backend npm run migrate
 ```

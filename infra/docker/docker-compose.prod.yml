@@ -1,4 +1,4 @@
-# Usage: docker-compose -f infra/docker/docker-compose.prod.yml --env-file .env up -d
+# Usage: docker compose -f infra/docker/docker-compose.prod.yml --env-file .env up -d
 # Production stack: MySQL, blockchain (4 nodes), backend, frontend (nginx), admin-panel (nginx),
 #   institution-api, phpMyAdmin, nginx reverse proxy
 

@@ -10,7 +10,7 @@
 
 ```bash
 cp .env.example .env
-docker-compose -f infra/docker/docker-compose.yml up --build -d
+docker compose -f infra/docker/docker-compose.yml up --build -d
 ```
 
 See [deployment/setup.md](../deployment/setup.md) for detailed Docker guide.

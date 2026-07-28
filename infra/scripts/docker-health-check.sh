@@ -50,11 +50,11 @@ echo ""
 
 # Check container status
 echo -e "${BLUE}Checking container status...${NC}"
-containers=$(docker-compose -f $COMPOSE_FILE --env-file $ENV_FILE ps --format json 2>/dev/null | jq -r '. | "\(.Service)|\(.State)|\(.Health)"' 2>/dev/null || echo "")
+containers=$(docker compose -f $COMPOSE_FILE --env-file $ENV_FILE ps --format json 2>/dev/null | jq -r '. | "\(.Service)|\(.State)|\(.Health)"' 2>/dev/null || echo "")
 
 if [ -z "$containers" ]; then
     echo -e "${RED}✗ No containers are running!${NC}"
-    echo -e "${YELLOW}Run 'docker-compose -f $COMPOSE_FILE --env-file $ENV_FILE up -d' to start services${NC}"
+    echo -e "${YELLOW}Run 'docker compose -f $COMPOSE_FILE --env-file $ENV_FILE up -d' to start services${NC}"
     exit 1
 fi
 
@@ -115,7 +115,7 @@ echo ""
 
 # Check database connectivity
 echo -e "${BLUE}Checking database connectivity...${NC}"
-if docker-compose -f $COMPOSE_FILE --env-file $ENV_FILE exec -T mysql mysql -u"${MYSQL_USER}" -p"${MYSQL_PASSWORD}" -e "SELECT 1" > /dev/null 2>&1; then
+if docker compose -f $COMPOSE_FILE --env-file $ENV_FILE exec -T mysql mysql -u"${MYSQL_USER}" -p"${MYSQL_PASSWORD}" -e "SELECT 1" > /dev/null 2>&1; then
     echo -e "${GREEN}✓ MySQL database accessible${NC}"
     HEALTHY=$((HEALTHY + 1))
 else
@@ -147,7 +147,7 @@ else
     echo ""
     echo -e "${YELLOW}Troubleshooting:${NC}"
     echo -e "  1. Check logs: bash $(dirname "$0")/docker-logs.sh"
-    echo -e "  2. Restart services: docker-compose -f $COMPOSE_FILE --env-file $ENV_FILE restart"
-    echo -e "  3. View container status: docker-compose -f $COMPOSE_FILE --env-file $ENV_FILE ps"
+    echo -e "  2. Restart services: docker compose -f $COMPOSE_FILE --env-file $ENV_FILE restart"
+    echo -e "  3. View container status: docker compose -f $COMPOSE_FILE --env-file $ENV_FILE ps"
     exit 1
 fi

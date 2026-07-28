@@ -31,33 +31,34 @@ Blockchain nodes discover each other via `PEERS` env var (comma-separated HTTP U
 
 ## Health Check Flow
 
-| Service         | Probe                  | Interval |
-| --------------- | ---------------------- | -------- |
-| mysql           | `mysqladmin ping`      | 10s      |
-| backend         | `wget /api/elections`  | 15s      |
-| blockchain-node | `wget /node`           | 15s      |
-| institution-api | `wget /api/health`     | 15s      |
-| frontend        | none (Vite dev server) | —        |
+| Service         | Probe                  | Interval | Notes                                               |
+| --------------- | ---------------------- | -------- | --------------------------------------------------- |
+| mysql           | `mysqladmin ping`      | 10s      |                                                     |
+| backend         | `wget /health`         | 15s      |                                                     |
+| blockchain-node | `wget /node`           | 15s      | Dockerfile default is 30s, compose overrides to 15s |
+| institution-api | `wget /api/health`     | 15s      |                                                     |
+| frontend        | none (Vite dev server) | —        |                                                     |
 
 ## CORS
 
-Backend (`services/backend/index.js:37-43`) restricts origins to:
+Backend reads `CORS_ALLOWED_ORIGINS` env var (comma-separated). Fallback dev defaults:
 
 - `http://localhost:5173` (frontend)
 - `http://127.0.0.1:5173`
 - `http://localhost:5174` (admin-panel)
 - `http://127.0.0.1:5174`
 
-Also allows `FRONTEND_URL` env var for custom origins. Requests with no `Origin` header (Postman, curl, server-to-server) are permitted — suitable for dev only.
+Requests with no `Origin` header (Postman, curl, server-to-server) are permitted — suitable for dev only.
 
 ## Environment Variables
-
 
 - `VITE_API_BASE_URL` — API endpoint for frontend (`http://localhost:3000`)
 - `VITE_BLOCKCHAIN_URL` — Blockchain node URL (`http://localhost:3001`)
 - `VITE_INSTITUTION_API_URL` — Institution API URL (`http://localhost:4000`)
 - `BLOCKCHAIN_NODE_URL` — Backend uses this to submit votes to blockchain
-- `JWT_SECRET` — JWT signing secret (must match between backend and frontend expectations)
+- `JWT_SECRET` — JWT signing secret
+- `NULLIFIER_SECRET` — Separate secret for server-side nullifier derivation (required, backend exits if missing)
+- `CORS_ALLOWED_ORIGINS` — Comma-separated CORS origins (fallback to dev defaults)
 
 ## Authentication Flow
 
@@ -73,13 +74,14 @@ OTP service uses in-memory storage with automatic cleanup. No OTP data persisted
 
 ## Route Organization
 
-Election routes are split into three files under `routes/elections/`:
+Election routes are split into four files under `routes/elections/`:
 
-| File | Responsibility |
-| ---- | -------------- |
-| `crud.js` | Create, update, delete elections |
-| `candidates.js` | Add/remove candidates |
-| `voting.js` | Vote casting, registration, results |
+| File            | Responsibility                                       |
+| --------------- | ---------------------------------------------------- |
+| `crud.js`       | Create, update, delete elections, status transitions |
+| `candidates.js` | Add/remove candidates                                |
+| `voting.js`     | Vote casting, registration, double-vote prevention   |
+| `results.js`    | Admin audit logs, security logs, result release      |
 
 All mounted under `/api/elections`. Election status follows a state machine: `pending → active → completed`.
 
@@ -87,10 +89,10 @@ All mounted under `/api/elections`. Election status follows a state machine: `pe
 
 Emails are routed based on recipient domain:
 
-| Domain | Transporter | Use case |
-| ------ | ----------- | -------- |
+| Domain                                                             | Transporter     | Use case                                          |
+| ------------------------------------------------------------------ | --------------- | ------------------------------------------------- |
 | `university.edu`, `faculty.university.edu`, `staff.university.edu` | Ethereal (test) | Institutional emails — viewable at ethereal.email |
-| All other domains | Real SMTP | Personal emails — delivered to inbox |
+| All other domains                                                  | Real SMTP       | Personal emails — delivered to inbox              |
 
 ## Election Locking
 
@@ -102,6 +104,14 @@ Emails are routed based on recipient domain:
 - Voting continues normally
 
 Intended for freezing election configuration before or during voting.
+
+## Auto-Release Results
+
+Backend runs a 60-second scheduler (`setInterval`) that automatically transitions ended elections:
+
+- Checks every 60s for elections with `status = 'active'` AND `end_date < NOW()` AND `results_released = FALSE`
+- Sets `results_released = TRUE` and `results_released_at = NOW()`
+- Allows public access to vote tallies without manual admin action
 
 ## Auto-Registration
 

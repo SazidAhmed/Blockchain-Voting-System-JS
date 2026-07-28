@@ -39,19 +39,23 @@ Every port is configurable via `.env`. Defaults shown below:
 
 ### Node Environment
 
-| Variable   | Default       | Description  |
-| ---------- | ------------- | ------------ |
-| `NODE_ENV` | `development` | Runtime mode |
+| Variable        | Default       | Description                          |
+| --------------- | ------------- | ------------------------------------ |
+| `NODE_ENV`      | `development` | Runtime mode                         |
+| `DEV_OTP_DEBUG` | `false`       | Log OTP codes to console for dev use |
 
 ### Backend (port ${BACKEND_PORT})
 
-| Variable              | Default                                                | Description                                  |
-| --------------------- | ------------------------------------------------------ | -------------------------------------------- |
-| `JWT_SECRET`          | `change-me-to-a-random-secret-at-least-32-chars`       | JWT signing key                              |
-| `NULLIFIER_SECRET`    | `change-me-to-another-random-secret-at-least-32-chars` | Nullifier derivation key (separate from JWT) |
-| `FRONTEND_URL`        | `http://localhost:5173`                                | CORS allowed origin                          |
-| `INSTITUTION_API_URL` | `http://institution-api:4000`                          | Institution API host                         |
-| `BACKEND_URL`         | `http://backend:3000`                                  | Internal backend URL                         |
+| Variable               | Default                                                | Description                                            |
+| ---------------------- | ------------------------------------------------------ | ------------------------------------------------------ |
+| `JWT_SECRET`           | `change-me-to-a-random-secret-at-least-32-chars`       | JWT signing key                                        |
+| `NULLIFIER_SECRET`     | `change-me-to-another-random-secret-at-least-32-chars` | Nullifier derivation key (required, separate from JWT) |
+| `FRONTEND_URL`         | `http://localhost:5173`                                | Frontend URL for blockchain-node CORS                  |
+| `ADMIN_PANEL_URL`      | `http://localhost:5174`                                | Admin panel URL for CORS                               |
+| `INSTITUTION_API_URL`  | `http://institution-api:4000`                          | Institution API host                                   |
+| `BACKEND_URL`          | `http://backend:3000`                                  | Internal backend URL                                   |
+| `CORS_ALLOWED_ORIGINS` | `http://localhost:5173,http://localhost:5174`          | Comma-separated CORS origins for backend               |
+| `BLOCKCHAIN_API_KEY`   | _(required)_                                           | API key for blockchain-node requests (backend → node)  |
 
 ### MySQL
 
@@ -115,38 +119,6 @@ Configured SMTP is used for **real email addresses** (non-institutional). Instit
 
 ---
 
-## Backend `.env` (`services/backend/.env.example`)
-
-Extends root `.env` with backend-specific variables. Used for local (non-Docker) development.
-
-| Variable                  | Default                                                        | Description                |
-| ------------------------- | -------------------------------------------------------------- | -------------------------- |
-| `SESSION_SECRET`          | `change_this_session_secret_in_production`                     | Express session secret     |
-| `MFA_ISSUER`              | `University Voting System`                                     | MFA issuer label           |
-| `ENCRYPTION_KEY`          | `32_byte_hex_key_for_encrypting_sensitive_data_change_in_prod` | AES encryption key         |
-| `ENCRYPTION_IV`           | `16_byte_hex_initialization_vector_change_in_production`       | AES initialization vector  |
-| `CORS_ORIGIN`             | `http://localhost:5173`                                        | CORS allowed origin        |
-| `RATE_LIMIT_WINDOW_MS`    | `900000`                                                       | Rate limit window (15 min) |
-| `RATE_LIMIT_MAX_REQUESTS` | `100`                                                          | Max requests per window    |
-| `LOG_LEVEL`               | `info`                                                         | Log level                  |
-| `LOG_FILE`                | `./logs/app.log`                                               | Log file path              |
-
-### Future / Production-Only
-
-These are commented out in `.env.example`:
-
-| Variable            | Description             |
-| ------------------- | ----------------------- |
-| `IDP_URL`           | Identity provider URL   |
-| `IDP_CLIENT_ID`     | IdP client ID           |
-| `IDP_CLIENT_SECRET` | IdP client secret       |
-| `VAULT_ADDR`        | HashiCorp Vault address |
-| `VAULT_TOKEN`       | Vault auth token        |
-| `HSM_SLOT`          | HSM slot number         |
-| `HSM_PIN`           | HSM PIN                 |
-
----
-
 ## Production Requirements
 
 `docker-compose.prod.yml` has **no default values** (all `:?` required). These variables must be set in `.env`:
@@ -173,4 +145,4 @@ These are commented out in `.env.example`:
 - `TEST_JWT_SECRET=test-jwt-secret-for-integration-tests`
 - `TEST_PMA_PORT=8081`, `TEST_ADMIN_PANEL_PORT=5176`
 
-Run test stack without `.env`: `docker-compose -f infra/docker/docker-compose.test.yml up -d`
+Run test stack without `.env`: `docker compose -f infra/docker/docker-compose.test.yml up -d`

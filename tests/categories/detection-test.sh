@@ -9,13 +9,13 @@ echo ""
 ADMIN_TOKEN=$(curl -s -X POST "$BACKEND_URL/users/login" -H "Content-Type: application/json" \
   -d "{\"institutionId\":\"$SEED_ADMIN_ID\",\"password\":\"$SEED_ADMIN_PASS\"}" | "$JQ_CMD" -r '.token')
 
-# D1: Node health (use root / endpoint)
+# D1: Node health (use /node endpoint)
 echo -e "\n${BLUE}[D1] Node health${NC}"
 for port in "${BLOCKCHAIN_PORTS[@]}"; do
-  NFO=$(curl -s "http://localhost:$port/" 2>/dev/null || echo '{"status":"unreachable"}')
-  STATUS=$(echo "$NFO" | "$JQ_CMD" -r '.status // "unknown"')
+  NFO=$(curl -s "http://localhost:$port/node" 2>/dev/null || echo '{"nodeType":"unreachable"}')
+  NTYPE=$(echo "$NFO" | "$JQ_CMD" -r '.nodeType // "unknown"')
   NID=$(echo "$NFO" | "$JQ_CMD" -r '.nodeId // "?"')
-  check "d1-n$port" "Node $port ($NID): $STATUS" [ "$STATUS" = "running" ]
+  check "d1-n$port" "Node $port ($NID): $NTYPE" [ "$NTYPE" = "validator" ]
 done
 
 # D2: Chain height from /chain
@@ -45,7 +45,7 @@ done
 # D5: Merkle stats
 echo -e "\n${BLUE}[D5] Merkle stats${NC}"
 for port in "${BLOCKCHAIN_PORTS[@]}"; do
-  MS=$(curl -s "http://localhost:$port/merkle/stats" 2>/dev/null || echo '{}')
+  MS=$(curl -s -H "x-api-key: ${TEST_BLOCKCHAIN_API_KEY:-test-blockchain-key}" "http://localhost:$port/merkle/stats" 2>/dev/null || echo '{}')
   TE=$(echo "$MS" | "$JQ_CMD" -r '.totalElections // -1')
   check "d5-n$port" "Node $port elections: $TE" [ "$TE" -ge 0 ]
 done

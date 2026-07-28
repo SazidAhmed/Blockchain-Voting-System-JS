@@ -12,11 +12,11 @@ Nodes run on ports 3001, 3002, 3003, 3004. Each is an independent instance with 
 
 ## Authentication
 
-All API endpoints require an API key via `x-api-key` header. Set via `BLOCKCHAIN_API_KEY` env var. Health endpoints (`/node`, `/chain`) are exempt.
+Most API endpoints require an API key via `x-api-key` header (set via `BLOCKCHAIN_API_KEY` env var). Exempt endpoints: `/node`, `/chain`, `/peers`, `/peers/discovery-status`, `/elections/:electionId/results`, `/nullifier/:nullifier`, and root `/`.
 
 ## CORS
 
-Restricted to the backend service URL only (set via `BACKEND_URL` env var). No browser origins permitted.
+Restricted to `BACKEND_URL`, `FRONTEND_URL` env vars, and `localhost:5174` fallback. No browser origins permitted in production.
 
 ## Rate Limiting
 

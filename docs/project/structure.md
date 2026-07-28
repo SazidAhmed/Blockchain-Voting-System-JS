@@ -19,7 +19,6 @@
             ├── docker-build.yml
             ├── pr-automation.yml
         ├── labeler.yml
-    └── 📁.opencode
     └── 📁docs
         └── 📁api
             ├── backend.md
@@ -33,7 +32,6 @@
             ├── docs-archive.zip
             ├── README.md
         └── 📁database
-            ├── database-review-findings.md
             ├── reference.md
             ├── schema.md
             ├── setup.md
@@ -74,16 +72,13 @@
         └── 📁security
             ├── audit.md
             ├── operations.md
-            ├── SECURITY_AUDIT_REPORT.md
-            ├── SECURITY_DECISION.md
             ├── threat-model.md
         └── 📁testing
             ├── ci.md
             ├── overview.md
             ├── running-tests.md
-        ├── CODE_REVIEW_REPORT.md
+        ├── appendix.md
         ├── README.md
-        ├── UNFIXABLE_REVIEW_DECISION.md
     └── 📁infra
         └── 📁alerts
             ├── voting-system-alerts.yml
@@ -288,7 +283,6 @@
                 ├── test-script.js
             └── 📁src
                 └── 📁assets
-                    ├── main.css
                     ├── tokens.css
                 └── 📁components
                     ├── AppFooter.vue
@@ -356,7 +350,6 @@
         └── 📁deprecated
             ├── quick-test.sh
             ├── run-comprehensive-tests.sh
-        └── 📁results
         ├── run-tests.sh
         ├── test-config.sh
     ├── .env.example

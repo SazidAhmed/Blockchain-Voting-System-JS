@@ -149,9 +149,11 @@ Vuex store with single module:
 
 - **Auth**: `user`, `token`, `isAuthenticated`, `isAdmin`
 - **Elections**: `elections`, `currentElection`
-- **UI**: `loading`, `error`
+- **UI**: `loading`, `error`, `keyLoadError`
 
-User and token persist to `localStorage` for session recovery on refresh.
+User data persists to `localStorage` under `voter_user` for session recovery on refresh.
+
+**Actions:** `login` sends `loginType: "voter"` (role-filtered). `restoreKeys` auto-loads cryptographic keys from localStorage on app init (called from `App.vue`). `logout` calls `keyManager.clearKeys()` to wipe in-memory keys.
 
 ## Routing
 

@@ -38,7 +38,7 @@ if ! command -v docker &> /dev/null; then
     exit 1
 fi
 
-if ! command -v docker-compose &> /dev/null; then
+if ! docker compose version &> /dev/null 2>&1; then
     echo -e "${RED} Docker Compose is not installed!${NC}"
     exit 1
 fi
@@ -83,7 +83,7 @@ case $choice in
         echo ""
         echo -e "${GREEN} Building and starting all services...${NC}"
         echo ""
-        docker-compose -f $COMPOSE_FILE --env-file $ENV_FILE up --build -d
+        docker compose -f $COMPOSE_FILE --env-file $ENV_FILE up --build -d
         echo ""
         echo -e "${GREEN} All services started!${NC}"
         echo ""
@@ -94,12 +94,12 @@ case $choice in
         echo "  - Blockchain:   http://localhost:${BC_PORT}"
         echo "  - phpMyAdmin:   http://localhost:${PMA_PORT}"
         echo ""
-        echo "View logs with: docker-compose -f $COMPOSE_FILE --env-file $ENV_FILE logs -f"
+        echo "View logs with: docker compose -f $COMPOSE_FILE --env-file $ENV_FILE logs -f"
         ;;
     2)
         echo ""
         echo -e "${GREEN} Starting all services...${NC}"
-        docker-compose -f $COMPOSE_FILE --env-file $ENV_FILE up -d
+        docker compose -f $COMPOSE_FILE --env-file $ENV_FILE up -d
         echo ""
         echo -e "${GREEN} All services started!${NC}"
         echo ""
@@ -113,19 +113,19 @@ case $choice in
     3)
         echo ""
         echo -e "${YELLOW} Stopping all services...${NC}"
-        docker-compose -f $COMPOSE_FILE --env-file $ENV_FILE down
+        docker compose -f $COMPOSE_FILE --env-file $ENV_FILE down
         echo -e "${GREEN} All services stopped!${NC}"
         ;;
     4)
         echo ""
         echo -e "${GREEN} Viewing logs (Ctrl+C to exit)...${NC}"
         echo ""
-        docker-compose -f $COMPOSE_FILE --env-file $ENV_FILE logs -f
+        docker compose -f $COMPOSE_FILE --env-file $ENV_FILE logs -f
         ;;
     5)
         echo ""
         echo -e "${YELLOW} Restarting all services...${NC}"
-        docker-compose -f $COMPOSE_FILE --env-file $ENV_FILE restart
+        docker compose -f $COMPOSE_FILE --env-file $ENV_FILE restart
         echo -e "${GREEN} All services restarted!${NC}"
         ;;
     6)
@@ -135,7 +135,7 @@ case $choice in
         if [ "$confirm" = "yes" ]; then
             echo ""
             echo -e "${YELLOW} Cleaning up...${NC}"
-            docker-compose -f $COMPOSE_FILE --env-file $ENV_FILE down -v
+            docker compose -f $COMPOSE_FILE --env-file $ENV_FILE down -v
             echo -e "${GREEN} Cleanup complete!${NC}"
         else
             echo "Cancelled."

@@ -381,7 +381,6 @@ scripts/
     chore.yml               # Chore → chore/
     config.yml              # Disables blank issues
   labeler.yml               # Maps file paths to PR labels
-  pull_request_template.md  # PR description template
 ```
 
 ---
@@ -433,7 +432,7 @@ Start the full stack locally:
 
 ```bash
 # Build and start
-docker-compose -f infra/docker/docker-compose.yml up --build -d
+docker compose -f infra/docker/docker-compose.yml up --build -d
 
 # Check health
 bash infra/scripts/docker-health-check.sh
@@ -442,16 +441,16 @@ bash infra/scripts/docker-health-check.sh
 bash infra/scripts/docker-bootstrap.sh
 
 # View logs
-docker-compose -f infra/docker/docker-compose.yml logs -f
+docker compose -f infra/docker/docker-compose.yml logs -f
 
 # Stop and clean volumes
-docker-compose -f infra/docker/docker-compose.yml down -v
+docker compose -f infra/docker/docker-compose.yml down -v
 ```
 
 ### Isolated Test Stack
 
 ```bash
-docker-compose -f infra/docker/docker-compose.test.yml up -d
+docker compose -f infra/docker/docker-compose.test.yml up -d
 ```
 
 Uses offset ports (3005/3010-3013/3307) — runs alongside your dev stack.
@@ -493,7 +492,6 @@ This repo uses **opencode** for AI-assisted development. Configuration:
 
 - `.opencode/` — opencode settings and skills
 - `AGENTS.md` (root) — project context for AI agents (architecture, commands, conventions)
-- `CLAUDE.md` — user-level opencode instructions
 
 ### Agent Tips
 

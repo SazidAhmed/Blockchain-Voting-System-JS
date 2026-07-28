@@ -70,7 +70,7 @@ ls -la
 cat docker-compose.yml | head -50
 
 # Start all services
-docker-compose up -d
+docker compose up -d
 
 # Wait 10-15 seconds
 ```
@@ -254,7 +254,7 @@ localStorage.getItem("encryptionPrivateKey");
 **In Terminal:**
 
 ```bash
-docker-compose logs backend | tail -50
+docker compose logs backend | tail -50
 ```
 
 **Look for:**
@@ -346,7 +346,7 @@ Error: Duplicate nullifier detected
 
 ```bash
 # In terminal
-docker-compose exec blockchain-node ls -la /app/data
+docker compose exec blockchain-node ls -la /app/data
 ```
 
 **What to Say:**
@@ -357,7 +357,7 @@ docker-compose exec blockchain-node ls -la /app/data
 **In Terminal:**
 
 ```bash
-docker-compose logs blockchain-node | grep "New block mined"
+docker compose logs blockchain-node | grep "New block mined"
 ```
 
 **What to Say:**
@@ -634,7 +634,7 @@ A: "Votes are encrypted until election closes. Then, election administrators use
 
 ### If Something Goes Wrong
 
-- **Service won't start:** Use `docker-compose restart`
+- **Service won't start:** Use `docker compose restart`
 - **Frontend not loading:** Show phpMyAdmin or backend instead
 - **Demo vote fails:** Show previous vote in database
 - **System slow:** Explain resource constraints, show monitoring
@@ -653,13 +653,13 @@ A: "Votes are encrypted until election closes. Then, election administrators use
 
 ```bash
 # Start everything
-docker-compose up -d
+docker compose up -d
 
 # Check health
 ./docker-health-check.sh
 
 # View logs
-docker-compose logs -f backend
+docker compose logs -f backend
 
 # Start monitoring
 ./docker-monitoring-start.sh
@@ -668,10 +668,10 @@ docker-compose logs -f backend
 ./docker-backup.sh
 
 # Stop everything
-docker-compose down
+docker compose down
 
 # Emergency restart
-docker-compose restart
+docker compose restart
 
 # Seed database with Admin data
 ./docker-bootstrap.sh
@@ -721,7 +721,7 @@ docker-compose restart
 
 ### 1 Hour Before
 
-- [ ] Start Docker services: `docker-compose up -d`
+- [ ] Start Docker services: `docker compose up -d`
 - [ ] Seed database with Admin data: `infra/scripts/docker-bootstrap.sh`
 - [ ] Test user registration
 - [ ] Test vote casting
