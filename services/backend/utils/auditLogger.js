@@ -95,9 +95,12 @@ class AuditLogger {
         return { success: true, logHash };
       } catch (txError) {
         await connection.rollback();
-        if (event && event.category === "security" && event.severity === "critical") {
-          console.error("CRITICAL AUDIT FAILURE - event not logged:", JSON.stringify(event));
-        }
+        console.error(
+          "AUDIT LOG FAILURE - event not logged:",
+          event && event.category === "security"
+            ? JSON.stringify(event)
+            : `${event?.type || "unknown"} (${event?.category || "unknown"})`,
+        );
         return { success: false, error: txError.message };
       } finally {
         connection.release();

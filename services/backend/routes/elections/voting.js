@@ -5,11 +5,7 @@ const { pool } = require("../../config/db");
 const { auth } = require("../../middleware/auth");
 const { voteLimiter } = require("../../middleware/rateLimiter");
 const { validateVote } = require("../../middleware/validation");
-const {
-  generateToken,
-  generateNullifier,
-  verifyECDSASignature,
-} = require("../../utils/signing");
+const { generateToken, verifyECDSASignature } = require("../../utils/signing");
 const AuditLogger = require("../../utils/auditLogger");
 const auditLogger = new AuditLogger(pool);
 const axios = require("axios");
@@ -137,57 +133,30 @@ router.post("/:id/vote", voteLimiter, auth, validateVote, async (req, res) => {
     const electionId = req.params.id;
     const userId = req.user.id;
     const {
-      candidateId,
-      privateKey, // Legacy mode
-      encryptedBallot, // New: encrypted ballot from client
-      nullifier: clientNullifier, // New: nullifier from client
-      signature, // New: ECDSA signature
-      publicKey, // New: public key for verification
-      timestamp, // New: timestamp from client
+      encryptedBallot,
+      nullifier: clientNullifier,
+      signature,
+      publicKey,
+      timestamp,
     } = req.body;
 
-    // Server-side nullifier derivation (prevents client from generating multiple nullifiers)
-    const nullifier = generateNullifier(
-      userId.toString(),
-      electionId.toString(),
-      process.env.NULLIFIER_SECRET,
-    );
-
-    if (encryptedBallot) {
-      let decoded;
-      try {
-        decoded = Buffer.from(encryptedBallot, "base64").toString();
-      } catch (e) {
-        return res.status(400).json({ error: "Invalid ballot encoding" });
-      }
-      try {
-        JSON.parse(decoded);
-        return res
-          .status(400)
-          .json({ error: "Plaintext ballots not accepted" });
-      } catch (e) {
-        // Not JSON — it's encrypted, proceed
-      }
-    }
-
-    // Determine if this is a new crypto flow or legacy flow
-    const isNewCryptoFlow =
-      encryptedBallot && clientNullifier && signature && publicKey;
-    const voteTimestamp = timestamp || Date.now();
-
-    if (!isNewCryptoFlow && (!candidateId || !privateKey)) {
-      return res
-        .status(400)
-        .json({ message: "Please provide all required fields" });
-    }
-
-    if (
-      isNewCryptoFlow &&
-      (!encryptedBallot || !clientNullifier || !signature || !publicKey)
-    ) {
+    if (!encryptedBallot || !clientNullifier || !signature || !publicKey) {
       return res
         .status(400)
         .json({ message: "Please provide encrypted vote package" });
+    }
+
+    let decoded;
+    try {
+      decoded = Buffer.from(encryptedBallot, "base64").toString();
+    } catch (e) {
+      return res.status(400).json({ error: "Invalid ballot encoding" });
+    }
+    try {
+      JSON.parse(decoded);
+      return res.status(400).json({ error: "Plaintext ballots not accepted" });
+    } catch (e) {
+      // Not JSON — it's encrypted, proceed
     }
 
     // Check if election exists and is active
@@ -219,31 +188,15 @@ router.post("/:id/vote", voteLimiter, auth, validateVote, async (req, res) => {
         .json({ message: "Voting is not currently open for this election" });
     }
 
-    // Check if user is registered; auto-register if not (any verified user can vote in any active election)
+    // Check if user is registered; will auto-register inside the vote transaction if not
     const [registrations] = await pool.query(
       "SELECT id, status, registration_token FROM voter_registrations WHERE user_id = ? AND election_id = ?",
       [userId, electionId],
     );
 
-    let registration;
-    if (registrations.length === 0) {
-      // Auto-register the user for this election now
-      const registrationToken = crypto.randomBytes(32).toString("hex");
-      const [insertResult] = await pool.query(
-        "INSERT INTO voter_registrations (user_id, election_id, registration_token, status) VALUES (?, ?, ?, ?)",
-        [userId, electionId, registrationToken, "registered"],
-      );
-      registration = {
-        id: insertResult.insertId,
-        status: "registered",
-        registration_token: registrationToken,
-      };
-    } else {
-      registration = registrations[0];
-    }
+    const registration = registrations[0] || null;
 
-    if (registration.status === "voted") {
-      // Log double-vote attempt
+    if (registration && registration.status === "voted") {
       await auditLogger.logDoubleVoteAttempt(
         userId,
         electionId,
@@ -255,193 +208,130 @@ router.post("/:id/vote", voteLimiter, auth, validateVote, async (req, res) => {
         .json({ message: "You have already voted in this election" });
     }
 
-    if (registration.status === "revoked") {
+    if (registration && registration.status === "revoked") {
       return res
         .status(400)
         .json({ message: "Your registration has been revoked" });
     }
 
-    let finalEncryptedBallot, finalNullifier, finalSignature, finalPublicKey;
+    // Verify the signature
+    // IMPORTANT: Use the same data structure as was signed on the client
+    // The client signs electionId as a string (from route param), not an integer
+    const voteData = {
+      encryptedBallot,
+      nullifier: clientNullifier,
+      electionId: electionId, // Keep as string to match frontend signature
+      timestamp,
+    };
 
-    if (isNewCryptoFlow) {
-      // NEW CRYPTO FLOW - Client-side encryption and signing
-      console.log("Processing vote with client-side cryptography");
+    const isValidSignature = verifyECDSASignature(
+      publicKey,
+      signature,
+      voteData,
+    );
 
-      // Use client's nullifier for verification to match what was signed on the frontend
-      if (!clientNullifier) {
-        return res
-          .status(400)
-          .json({ message: "Nullifier is required from client" });
-      }
+    await auditLogger.logSignatureVerification(
+      userId,
+      electionId,
+      isValidSignature,
+      {
+        signatureLength: signature?.length,
+        publicKeyLength: publicKey?.length,
+        nullifierPreview: clientNullifier?.substring(0, 16),
+      },
+      req,
+    );
 
-      // Verify the signature
-      // IMPORTANT: Use the same data structure as was signed on the client
-      // The client signs electionId as a string (from route param), not an integer
-      const voteData = {
-        encryptedBallot,
-        nullifier: clientNullifier,
-        electionId: electionId, // Keep as string to match frontend signature
-        timestamp,
-      };
-
-      const isValidSignature = verifyECDSASignature(
-        publicKey,
-        signature,
-        voteData,
-      );
-
-      // Log signature verification
-      await auditLogger.logSignatureVerification(
-        userId,
-        electionId,
-        isValidSignature,
-        {
-          signatureLength: signature?.length,
-          publicKeyLength: publicKey?.length,
-          nullifierPreview: clientNullifier?.substring(0, 16),
-        },
-        req,
-      );
-
-      if (!isValidSignature) {
-        console.error("Invalid signature for vote");
-        return res.status(400).json({ message: "Invalid vote signature" });
-      }
-
-      // Check for duplicate nullifier (prevents double voting)
-      const [existingVotes] = await pool.query(
-        "SELECT id FROM votes_meta WHERE nullifier_hash = ? AND election_id = ?",
-        [clientNullifier, electionId],
-      );
-
-      if (existingVotes.length > 0) {
-        // Log duplicate nullifier attempt
-        await auditLogger.logDoubleVoteAttempt(
-          userId,
-          electionId,
-          {
-            reason: "Duplicate nullifier detected",
-            nullifier: clientNullifier.substring(0, 16) + "...",
-          },
-          req,
-        );
-        return res.status(400).json({
-          message:
-            "This nullifier has already been used (possible double-vote attempt)",
-        });
-      }
-
-      finalEncryptedBallot = encryptedBallot;
-      finalNullifier = clientNullifier;
-      finalSignature = signature;
-      finalPublicKey = publicKey;
-    } else {
-      // LEGACY FLOW - Server-side encryption and signing
-      console.warn(
-        "⚠️ DEPRECATED: Legacy server-side vote flow used by user " +
-          userId +
-          ". This flow is insecure and will be removed in a future version.",
-      );
-
-      // Check if candidate exists in this election
-      const [candidates] = await pool.query(
-        "SELECT id FROM candidates WHERE id = ? AND election_id = ?",
-        [candidateId, electionId],
-      );
-
-      if (candidates.length === 0) {
-        return res
-          .status(404)
-          .json({ message: "Candidate not found in this election" });
-      }
-
-      // Generate nullifier
-      finalNullifier = generateNullifier(
-        userId.toString(),
-        electionId.toString(),
-        process.env.NULLIFIER_SECRET,
-      );
-
-      // Create ballot
-      const ballot = {
-        candidateId,
-        timestamp: Date.now(),
-      };
-
-      // Encrypt ballot
-      finalEncryptedBallot = encryptBallot(ballot, election.public_key);
-
-      // Sign vote
-      const voteData = {
-        electionId,
-        encryptedBallot: finalEncryptedBallot,
-        nullifier: finalNullifier,
-      };
-      finalSignature = signData(voteData, privateKey);
-
-      // Get user's public key from database
-      const [users] = await pool.query(
-        "SELECT public_key FROM users WHERE id = ?",
-        [userId],
-      );
-      finalPublicKey = users[0]?.public_key || "";
+    if (!isValidSignature) {
+      console.error("Invalid signature for vote");
+      return res.status(400).json({ message: "Invalid vote signature" });
     }
 
-    // Submit vote to blockchain
-    let blockchainResponse = null;
+    const voteTimestamp = timestamp || Date.now();
+
+    // Submit vote to blockchain — fail closed if the node is unreachable (H-09)
+    let blockchainResponse;
     try {
       const response = await blockchainApi.post("/vote", {
         voterId: userId,
         electionId,
-        encryptedBallot: finalEncryptedBallot,
-        nullifier: finalNullifier,
-        signature: finalSignature,
-        publicKey: finalPublicKey,
+        encryptedBallot,
+        nullifier: clientNullifier,
+        signature,
+        publicKey,
         timestamp: voteTimestamp,
       });
       blockchainResponse = response;
-
-      // Auto-mine the pending vote into a block immediately
-      mineWithRetry();
     } catch (blockchainError) {
-      console.warn(
-        "⚠️ Blockchain node not available, continuing with simulated transaction (development mode)",
+      console.error(
+        "Blockchain node unreachable, rejecting vote:",
+        blockchainError.message,
       );
-      // In development, continue without blockchain
-      // In production, this should fail
+      return res.status(503).json({
+        message: "Voting service temporarily unavailable, please retry",
+      });
     }
 
-    // Store vote metadata in database
-    const receipt = blockchainResponse?.data?.receipt || {};
-    const transactionHash =
-      receipt.transactionHash || crypto.randomBytes(32).toString("hex");
+    const receipt = blockchainResponse.data.receipt || {};
+    const transactionHash = receipt.transactionHash;
     const blockIndex = receipt.blockIndex || 0;
 
     const connection = await pool.getConnection();
+    let finalTransactionHash = transactionHash;
     try {
       await connection.beginTransaction();
 
-      await connection.query(
-        "UPDATE voter_registrations SET status = ? WHERE id = ?",
-        ["voted", registration.id],
-      );
+      let registrationId = registration?.id;
+      if (!registrationId) {
+        const registrationToken = crypto.randomBytes(32).toString("hex");
+        const [insertResult] = await connection.query(
+          "INSERT INTO voter_registrations (user_id, election_id, registration_token, status) VALUES (?, ?, ?, ?)",
+          [userId, electionId, registrationToken, "registered"],
+        );
+        registrationId = insertResult.insertId;
+      }
 
       await connection.query(
-        "INSERT INTO votes_meta (tx_hash, block_index, election_id, nullifier_hash, encrypted_ballot, signature, voter_public_key) VALUES (?, ?, ?, ?, ?, ?, ?)",
-        [
-          transactionHash,
-          blockIndex,
-          electionId,
-          finalNullifier,
-          finalEncryptedBallot,
-          finalSignature,
-          finalPublicKey,
-        ],
+        "UPDATE voter_registrations SET status = ? WHERE id = ?",
+        ["voted", registrationId],
       );
+
+      try {
+        await connection.query(
+          "INSERT INTO votes_meta (tx_hash, block_index, election_id, nullifier_hash, encrypted_ballot, signature, voter_public_key) VALUES (?, ?, ?, ?, ?, ?, ?)",
+          [
+            transactionHash,
+            blockIndex,
+            electionId,
+            clientNullifier,
+            encryptedBallot,
+            signature,
+            publicKey,
+          ],
+        );
+      } catch (insertErr) {
+        if (insertErr.code === "ER_DUP_ENTRY") {
+          await connection.rollback();
+          await auditLogger.logDoubleVoteAttempt(
+            userId,
+            electionId,
+            {
+              reason: "Duplicate nullifier detected",
+              nullifier: clientNullifier.substring(0, 16) + "...",
+            },
+            req,
+          );
+          return res.status(400).json({
+            message:
+              "This nullifier has already been used (possible double-vote attempt)",
+          });
+        }
+        throw insertErr;
+      }
 
       await connection.query(
         "INSERT INTO vote_receipts (election_id, nullifier_hash, transaction_hash) VALUES (?, ?, ?)",
-        [electionId, finalNullifier, transactionHash],
+        [electionId, clientNullifier, transactionHash],
       );
 
       await connection.commit();
@@ -452,6 +342,9 @@ router.post("/:id/vote", voteLimiter, auth, validateVote, async (req, res) => {
       connection.release();
     }
 
+    // Auto-mine the pending vote into a block immediately (L-01)
+    await mineWithRetry();
+
     // Log successful vote
     await auditLogger.logVote(
       userId,
@@ -460,20 +353,26 @@ router.post("/:id/vote", voteLimiter, auth, validateVote, async (req, res) => {
       {
         transactionHash: transactionHash.substring(0, 16) + "...",
         blockIndex,
-        nullifier: finalNullifier.substring(0, 16) + "...",
-        encryptionUsed: isNewCryptoFlow ? "client-side" : "server-side",
+        nullifier: clientNullifier.substring(0, 16) + "...",
+        encryptionUsed: "client-side",
       },
       req,
     );
 
+    // Return an opaque receipt ID — never expose the nullifier (H-02)
+    const receiptId = crypto
+      .createHash("sha256")
+      .update(transactionHash)
+      .digest("hex")
+      .substring(0, 16);
+
     res.json({
       message: "Vote cast successfully",
       receipt: {
+        receiptId,
         transactionHash,
         blockIndex,
         timestamp: receipt.timestamp || voteTimestamp,
-        nullifier: finalNullifier,
-        signature: finalSignature,
       },
     });
   } catch (err) {

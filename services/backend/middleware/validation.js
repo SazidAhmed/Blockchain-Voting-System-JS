@@ -78,14 +78,6 @@ const validateLogin = [
     .isLength({ min: 3, max: 50 })
     .withMessage("Invalid institution ID length"),
 
-  body("institution_id")
-    .optional()
-    .trim()
-    .notEmpty()
-    .withMessage("Institution ID is required")
-    .isLength({ min: 3, max: 50 })
-    .withMessage("Invalid institution ID length"),
-
   body("password")
     .notEmpty()
     .withMessage("Password is required")
@@ -235,31 +227,11 @@ const validateCreateElection = [
   validate,
 ];
 
-/**
- * Generic validation to prevent XSS in text fields
- */
-const sanitizeText = (fieldName, options = {}) => {
-  const { minLength = 1, maxLength = 1000, optional = false } = options;
-
-  let validator = body(fieldName).trim();
-
-  if (!optional) {
-    validator = validator.notEmpty().withMessage(`${fieldName} is required`);
-  } else {
-    validator = validator.optional();
-  }
-
-  return validator
-    .isLength({ min: minLength, max: maxLength })
-    .withMessage(`${fieldName} must be ${minLength}-${maxLength} characters`)
-    .escape();
-};
-
 module.exports = {
   validate,
   validateRegistration,
   validateLogin,
   validateVote,
   validateElectionId,
-  validateCreateElection
+  validateCreateElection,
 };

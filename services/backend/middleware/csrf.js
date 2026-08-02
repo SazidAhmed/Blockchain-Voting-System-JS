@@ -37,4 +37,23 @@ function setCsrfToken(req, res, next) {
   next();
 }
 
-module.exports = { csrfProtection, setCsrfToken };
+// Rotate the CSRF token after a successful state-changing request (M-54)
+function rotateCsrfToken(req, res, next) {
+  if (["POST", "PUT", "PATCH", "DELETE"].includes(req.method)) {
+    const originalJson = res.json.bind(res);
+    res.json = (body) => {
+      if (res.statusCode < 400) {
+        const token = crypto.randomBytes(32).toString("hex");
+        res.cookie("csrf-token", token, {
+          sameSite: "strict",
+          secure: process.env.NODE_ENV === "production",
+          maxAge: 86400000,
+        });
+      }
+      return originalJson(body);
+    };
+  }
+  next();
+}
+
+module.exports = { csrfProtection, setCsrfToken, rotateCsrfToken };

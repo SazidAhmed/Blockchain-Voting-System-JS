@@ -25,13 +25,19 @@ require("dotenv").config();
 
 const INSTITUTION_API_URL =
   process.env.INSTITUTION_API_URL || "http://localhost:4000";
+const INSTITUTION_API_KEY = process.env.INSTITUTION_API_KEY || "";
 
 // Helper: look up a member in the institutional directory
 async function lookupInstitutionMember(institutionId) {
   try {
     const response = await axios.get(
       `${INSTITUTION_API_URL}/api/lookup/${institutionId}`,
-      { timeout: 5000 },
+      {
+        timeout: 5000,
+        headers: INSTITUTION_API_KEY
+          ? { "x-api-key": INSTITUTION_API_KEY }
+          : {},
+      },
     );
     return response.data;
   } catch (err) {
@@ -252,15 +258,15 @@ router.post(
         );
 
         if (activeElections.length > 0) {
-          const registrationPromises = activeElections.map((election) => {
+          // M-19: single multi-row INSERT instead of N round-trips
+          const values = activeElections.map((election) => {
             const registrationToken = crypto.randomBytes(32).toString("hex");
-            return pool.query(
-              "INSERT INTO voter_registrations (user_id, election_id, registration_token, status) VALUES (?, ?, ?, ?)",
-              [userId, election.id, registrationToken, "registered"],
-            );
+            return [userId, election.id, registrationToken, "registered"];
           });
-
-          await Promise.all(registrationPromises);
+          await pool.query(
+            "INSERT INTO voter_registrations (user_id, election_id, registration_token, status) VALUES ?",
+            [values],
+          );
           electionsRegisteredCount = activeElections.length;
           console.log(
             `✅ Auto-registered user ${institutionId} for ${electionsRegisteredCount} election(s)`,
@@ -418,12 +424,18 @@ router.post("/login", loginLimiter, validateLogin, async (req, res) => {
       { algorithm: "HS256", expiresIn: "1h" },
     );
 
-    // Set httpOnly cookie
-    res.cookie("token", token, {
+    // Set httpOnly cookie with lax sameSite for better compatibility
+    // Use different cookie names for admin vs voter to prevent session conflicts
+    const cookieName =
+      user.role === "admin" || user.role === "board_member"
+        ? "admin_token"
+        : "voter_token";
+
+    res.cookie(cookieName, token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-      maxAge: 3600000,
+      sameSite: "lax", // Changed from "strict" to "lax" for better navigation support
+      maxAge: 3600000, // 1 hour in milliseconds
     });
 
     // Log successful login
@@ -436,7 +448,7 @@ router.post("/login", loginLimiter, validateLogin, async (req, res) => {
     );
 
     res.json({
-      token,
+      success: true,
       user: {
         id: user.id,
         institutionId: user.institution_id,
@@ -503,15 +515,20 @@ router.get("/me", auth, async (req, res) => {
   }
 });
 
-// @route   POST /api/users/logout
+// @route   POST /api/users/logout (legacy alias: /api/users/auth/logout)
 // @desc    Logout user, revoke token
 // @access  Private
-router.post("/auth/logout", auth, async (req, res) => {
+const logoutHandler = async (req, res) => {
   if (req.user.jti) {
-    await tokenBlacklist.add(req.user.jti);
+    await tokenBlacklist.add(req.user.jti, req.user.exp * 1000);
   }
-  res.clearCookie("token");
+  // Clear both admin and voter cookies to ensure proper logout
+  res.clearCookie("admin_token");
+  res.clearCookie("voter_token");
+  res.clearCookie("token"); // Legacy support
   res.json({ message: "Logged out" });
-});
+};
+router.post("/logout", auth, logoutHandler);
+router.post("/auth/logout", auth, logoutHandler);
 
 module.exports = router;

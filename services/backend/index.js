@@ -1,27 +1,42 @@
 const path = require("path");
 require("dotenv").config({ path: path.resolve(__dirname, "../../.env") });
 
-if (!process.env.NULLIFIER_SECRET) {
-  console.error("FATAL: NULLIFIER_SECRET environment variable is required");
-  process.exit(1);
-}
+// Environment validation (M-55): run at startup, not at module scope
+function validateEnv() {
+  if (!process.env.NULLIFIER_SECRET) {
+    console.error("FATAL: NULLIFIER_SECRET environment variable is required");
+    process.exit(1);
+  }
 
-if (
-  process.env.NODE_ENV === "production" &&
-  process.env.JWT_SECRET ===
-    "your-super-secret-jwt-key-change-in-production-minimum-32-chars"
-) {
-  console.error(
-    "CRITICAL: Default JWT_SECRET detected. Generate a random secret and update .env",
-  );
-  process.exit(1);
+  // M-02: require a strong JWT secret (>=32 chars), reject known-weak values
+  const jwtSecret = process.env.JWT_SECRET || "";
+  if (jwtSecret.length < 32) {
+    console.error(
+      "CRITICAL: JWT_SECRET must be at least 32 characters. Generate a random secret and update .env",
+    );
+    process.exit(1);
+  }
+  if (
+    process.env.NODE_ENV === "production" &&
+    jwtSecret ===
+      "your-super-secret-jwt-key-change-in-production-minimum-32-chars"
+  ) {
+    console.error(
+      "CRITICAL: Default JWT_SECRET detected. Generate a random secret and update .env",
+    );
+    process.exit(1);
+  }
 }
 
 const express = require("express");
 const cors = require("cors");
 const helmet = require("helmet");
 const cookieParser = require("cookie-parser");
-const { csrfProtection, setCsrfToken } = require("./middleware/csrf");
+const {
+  csrfProtection,
+  setCsrfToken,
+  rotateCsrfToken,
+} = require("./middleware/csrf");
 const { generalLimiter } = require("./middleware/rateLimiter");
 const { pool } = require("./config/db");
 const userRoutes = require("./routes/users");
@@ -128,14 +143,15 @@ app.use(express.urlencoded({ extended: false, limit: "1mb" }));
 app.use(cookieParser());
 app.use(setCsrfToken);
 app.use(csrfProtection);
+app.use(rotateCsrfToken);
 
 // Request timeout middleware (30 seconds)
 app.use((req, res, next) => {
   req.setTimeout(30000, () => {
-    res.status(408).json({ message: "Request timeout" });
+    if (!res.headersSent) res.status(408).json({ message: "Request timeout" });
   });
   res.setTimeout(30000, () => {
-    res.status(408).json({ message: "Response timeout" });
+    if (!res.headersSent) res.status(408).json({ message: "Response timeout" });
   });
   next();
 });
@@ -199,8 +215,8 @@ app.use((err, req, res, next) => {
   // Determine status code
   const statusCode = err.statusCode || err.status || 500;
 
-  // Send safe error message
-  const isDev = process.env.NODE_ENV !== "production";
+  // Only expose stack traces when explicitly in development mode (L-38)
+  const isDev = process.env.NODE_ENV === "development";
 
   res.status(statusCode).json({
     message: isDev
@@ -217,7 +233,8 @@ app.use((err, req, res, next) => {
 });
 
 // Email service initializes lazily on first institutional email (Ethereal account created on demand)
-app.listen(PORT, () => {
+validateEnv();
+const server = app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
   console.log("Security features enabled:");
   console.log("  ✓ Helmet.js (Security headers)");
@@ -227,6 +244,15 @@ app.listen(PORT, () => {
   console.log("  ✓ Request timeouts");
   console.log("  ✓ Body size limits");
   console.log("  ✓ Email OTP verification");
+});
+
+// M-38: handle port-in-use instead of crashing with an uncaught error
+server.on("error", (err) => {
+  if (err.code === "EADDRINUSE") {
+    console.error(`FATAL: Port ${PORT} already in use`);
+    process.exit(1);
+  }
+  throw err;
 });
 
 module.exports = app; // Export for testing

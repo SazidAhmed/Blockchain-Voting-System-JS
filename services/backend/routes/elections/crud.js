@@ -8,7 +8,6 @@ const {
   validateCreateElection,
 } = require("../../middleware/validation");
 const { withAdminAudit } = require("../../middleware/auditMiddleware");
-const { encryptTally } = require("../../utils/tallyEncryption");
 const AdminAuditLogger = require("../../utils/adminAuditLogger");
 
 const adminLogger = new AdminAuditLogger(pool);
@@ -26,7 +25,8 @@ function getClientIp(req) {
 // @access  Admin only
 router.post(
   "/",
-  auth, adminAuth,
+  auth,
+  adminAuth,
   validateCreateElection,
   withAdminAudit("CREATE_ELECTION", "elections"),
   async (req, res) => {
@@ -219,7 +219,7 @@ router.get("/", async (req, res) => {
 router.get("/:id", validateElectionId, async (req, res) => {
   try {
     const [elections] = await pool.query(
-      "SELECT id, title, description, start_date, end_date, status, public_key, created_at FROM elections WHERE id = ?",
+      "SELECT id, title, description, start_date, end_date, status, public_key, created_at, results_released, tally_key FROM elections WHERE id = ?",
       [req.params.id],
     );
 
@@ -235,12 +235,6 @@ router.get("/:id", validateElectionId, async (req, res) => {
       [req.params.id],
     );
 
-    // Check if results are released
-    const [[electionMeta]] = await pool.query(
-      "SELECT results_released, tally_key FROM elections WHERE id = ?",
-      [req.params.id],
-    );
-
     // Tally votes per candidate from votes_meta (RSA-encrypted ballots)
     const [votes] = await pool.query(
       "SELECT encrypted_ballot FROM votes_meta WHERE election_id = ?",
@@ -250,9 +244,9 @@ router.get("/:id", validateElectionId, async (req, res) => {
     for (const v of votes) {
       try {
         let ballot;
-        if (electionMeta && electionMeta.tally_key) {
+        if (election.tally_key) {
           const decrypted = crypto.privateDecrypt(
-            { key: electionMeta.tally_key, oaepHash: "sha256" },
+            { key: election.tally_key, oaepHash: "sha256" },
             Buffer.from(v.encrypted_ballot, "base64"),
           );
           ballot = JSON.parse(decrypted.toString("utf8"));
@@ -272,40 +266,26 @@ router.get("/:id", validateElectionId, async (req, res) => {
       0,
     );
 
-    if (electionMeta && electionMeta.results_released) {
+    if (election.results_released) {
       // Results released — return plaintext tally
       const candidatesWithVotes = candidates.map((c) => ({
         ...c,
         votes_count: tally[c.id] || 0,
       }));
 
+      const { tally_key, ...safeElection } = election;
       res.json({
-        ...election,
+        ...safeElection,
         candidates: candidatesWithVotes,
         totalVotes,
         resultsReleased: true,
       });
     } else {
-      // Results not released — return encrypted tally
-      let encryptedTally = null;
-      if (
-        electionMeta &&
-        electionMeta.tally_key &&
-        electionMeta.tally_key.length <= 64 &&
-        /^[0-9a-f]+$/i.test(electionMeta.tally_key)
-      ) {
-        try {
-          encryptedTally = encryptTally(tally, electionMeta.tally_key);
-        } catch (_) {
-          encryptedTally = null;
-        }
-      }
-
+      // Results not released — do not expose any tally (H-17)
+      const { tally_key, ...safeElection } = election;
       res.json({
-        ...election,
+        ...safeElection,
         candidates: candidates.map((c) => ({ ...c, votes_count: null })),
-        totalVotes,
-        encryptedTally,
         resultsReleased: false,
       });
     }

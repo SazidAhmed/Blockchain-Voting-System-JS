@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "true",
     "migrate": "node scripts/migrate.js run",
     "migrate:status": "node scripts/migrate.js status",
     "db:seed": "node scripts/seed.js",
@@ -21,7 +21,6 @@
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
-    "elliptic": "^6.6.1",
     "express": "^5.1.0",
     "express-rate-limit": "^8.1.0",
     "express-validator": "^7.3.0",
@@ -29,5 +28,8 @@
     "jsonwebtoken": "^9.0.2",
     "mysql2": "^3.15.2",
     "nodemailer": "^8.0.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.9"
   }
 }

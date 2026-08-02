@@ -1,22 +1,18 @@
 const { pool } = require("../config/db");
 
-pool
-  .query(
-    `CREATE TABLE IF NOT EXISTS token_blacklist (
-  jti VARCHAR(255) PRIMARY KEY,
-  expires_at BIGINT NOT NULL,
-  INDEX idx_expires_at (expires_at)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
-  )
-  .catch((err) => {
-    console.error("Failed to create token_blacklist table:", err.message);
-  });
+// token_blacklist table DDL lives in migrations/001_initial_schema.sql (M-09)
 
 module.exports = {
-  async add(token) {
+  // expiresAtMs optional; falls back to JWT exp (ms) or +1h
+  async add(token, expiresAtMs) {
+    if (expiresAtMs === undefined) {
+      const decoded = require("jsonwebtoken").decode(token);
+      expiresAtMs =
+        decoded && decoded.exp ? decoded.exp * 1000 : Date.now() + 3600000;
+    }
     await pool.query(
       "INSERT INTO token_blacklist (jti, expires_at) VALUES (?, ?) ON DUPLICATE KEY UPDATE expires_at = VALUES(expires_at)",
-      [token, Date.now() + 3600000],
+      [token, expiresAtMs],
     );
   },
   async has(token) {
@@ -32,4 +28,19 @@ module.exports = {
   async clear() {
     await pool.query("DELETE FROM token_blacklist");
   },
+  // Periodic cleanup of expired entries (M-05)
+  async cleanupExpired() {
+    await pool.query("DELETE FROM token_blacklist WHERE expires_at <= ?", [
+      Date.now(),
+    ]);
+  },
 };
+
+// Run cleanup hourly
+setInterval(() => {
+  module.exports
+    .cleanupExpired()
+    .catch((err) =>
+      console.error("Token blacklist cleanup failed:", err.message),
+    );
+}, 3600000);

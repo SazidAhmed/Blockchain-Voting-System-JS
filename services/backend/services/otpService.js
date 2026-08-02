@@ -1,22 +1,7 @@
 const crypto = require("crypto");
 const { pool } = require("../config/db");
 
-pool
-  .query(
-    `CREATE TABLE IF NOT EXISTS otp_codes (
-  institution_id VARCHAR(20) PRIMARY KEY,
-  code VARCHAR(10) NOT NULL,
-  email VARCHAR(255) NOT NULL,
-  expires_at BIGINT NOT NULL,
-  created_at BIGINT NOT NULL,
-  attempts INT DEFAULT 0,
-  verified BOOLEAN DEFAULT FALSE,
-  verified_at BIGINT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
-  )
-  .catch((err) => {
-    console.error("Failed to create otp_codes table:", err.message);
-  });
+// otp_codes table DDL lives in migrations/001_initial_schema.sql (M-08)
 
 class OTPService {
   constructor() {
@@ -24,6 +9,7 @@ class OTPService {
     this.OTP_EXPIRY_MINUTES = 10;
     this.MAX_ATTEMPTS = 3;
     this.COOLDOWN_SECONDS = 60;
+    this.startCleanup();
   }
 
   generateOTP() {
@@ -83,7 +69,7 @@ class OTPService {
   async verifyOTP(institutionId, code) {
     const normalizedId = institutionId.toUpperCase();
     const [rows] = await pool.query(
-      "SELECT * FROM otp_codes WHERE institution_id = ?",
+      "SELECT code, expires_at, attempts, verified FROM otp_codes WHERE institution_id = ?",
       [normalizedId],
     );
 
@@ -185,11 +171,18 @@ class OTPService {
   }
 
   cleanup() {
-    // ponytail: DB cleanup via expiration checks in queries
+    pool
+      .query("DELETE FROM otp_codes WHERE expires_at < ?", [Date.now()])
+      .catch((err) => console.error("OTP cleanup error:", err.message));
+  }
+
+  startCleanup() {
+    this._cleanupTimer = setInterval(() => this.cleanup(), 60 * 60 * 1000);
+    this._cleanupTimer.unref?.();
   }
 
   shutdown() {
-    // ponytail: no cleanup interval needed
+    if (this._cleanupTimer) clearInterval(this._cleanupTimer);
   }
 }
 

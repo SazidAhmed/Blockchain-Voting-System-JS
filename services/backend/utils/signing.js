@@ -4,22 +4,15 @@ function generateToken(length = 32) {
   return crypto.randomBytes(length).toString("hex");
 }
 
-function generateKeypair() {
-  return {
-    publicKey: crypto.randomBytes(32).toString("hex"),
-    privateKey: crypto.randomBytes(32).toString("hex"),
-  };
-}
-
-function generateNullifier(userId, electionId, privateKey) {
-  const data = userId + electionId + privateKey;
-  return crypto.createHash("sha256").update(data).digest("hex");
+// Canonical JSON: keys sorted for deterministic serialization (H-03)
+function canonicalJson(obj) {
+  return JSON.stringify(obj, Object.keys(obj).sort());
 }
 
 function verifyECDSASignature(publicKeyBase64, signatureBase64, data) {
   try {
     const dataStr =
-      typeof data === "object" ? JSON.stringify(data) : String(data);
+      typeof data === "object" ? canonicalJson(data) : String(data);
     const verifier = crypto.createVerify("sha256");
     verifier.update(dataStr, "utf8");
     verifier.end();
@@ -44,7 +37,5 @@ function verifyECDSASignature(publicKeyBase64, signatureBase64, data) {
 
 module.exports = {
   generateToken,
-  generateKeypair,
-  generateNullifier,
   verifyECDSASignature,
 };
