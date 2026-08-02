@@ -1,97 +1,103 @@
 -- =====================================================
 -- University Blockchain Voting System - Initial Schema
--- Migration: 001
--- Description: Create all required tables for the voting system
--- Date: 2025-10-20
+-- Migration: 001 (Consolidated)
+-- Description: Complete database schema for the voting system
+-- Date: 2026-08-02
+-- 
+-- TABLE OF CONTENTS:
+-- 1. Core Tables (Users, Elections, Candidates)
+-- 2. Voting Tables (Blind Tokens, Voter Registrations, Votes, Receipts)
+-- 3. Blockchain Tables (Nodes, Threshold Keys, Partial Decryptions)
+-- 4. Audit Tables (Audit Logs, Admin Audit/Security Logs)
+-- 5. System Tables (Config, OTP, Token Blacklist, Migrations)
+-- 6. Views (Active Elections, Node Health, Admin Activity)
 -- =====================================================
 
--- Set character set and collation
 SET NAMES utf8mb4;
 SET CHARACTER SET utf8mb4;
 
 -- =====================================================
+-- SECTION 1: CORE TABLES
+-- =====================================================
+
+-- =====================================================
 -- USERS TABLE
--- Stores voter information with encrypted profile data
+-- Stores voter/admin accounts with encrypted profile data
+-- Key fields: institution_id, pseudonym_id, public keys
 -- =====================================================
 CREATE TABLE IF NOT EXISTS users (
     id INT AUTO_INCREMENT PRIMARY KEY,
     institution_id VARCHAR(50) UNIQUE NOT NULL COMMENT 'Unique university ID',
     username VARCHAR(100) NOT NULL,
-    password VARCHAR(255) NOT NULL COMMENT 'Bcrypt hashed password',
+    password VARCHAR(60) NOT NULL COMMENT 'Bcrypt hashed password (60 chars)',
     role ENUM('student', 'teacher', 'staff', 'board_member', 'admin') NOT NULL,
     email VARCHAR(100) UNIQUE NOT NULL,
     public_key TEXT COMMENT 'User public key for signing votes',
+    encryption_public_key TEXT COMMENT 'RSA-OAEP public key for encrypting ballots',
     
-    -- Pseudonymous identifier (not linkable to institution_id on-chain)
     pseudonym_id VARCHAR(64) UNIQUE NOT NULL COMMENT 'SHA256 hash for on-chain identity',
     
-    -- Encrypted profile data (AES-256)
     encrypted_profile_blob TEXT COMMENT 'Encrypted PII data',
     
-    -- Status and metadata
     registration_status ENUM('pending', 'verified', 'active', 'suspended') DEFAULT 'pending',
     mfa_enabled BOOLEAN DEFAULT FALSE,
-    mfa_secret VARCHAR(255) COMMENT 'Encrypted TOTP secret',
+    mfa_secret VARCHAR(64) COMMENT 'Encrypted TOTP secret',
     
-    -- Timestamps
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     last_login TIMESTAMP NULL,
     
-    -- Indexes for performance
-    INDEX idx_institution_id (institution_id),
-    INDEX idx_email (email),
-    INDEX idx_pseudonym_id (pseudonym_id),
-    INDEX idx_role (role),
     INDEX idx_registration_status (registration_status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Registered voters and administrators';
 
 -- =====================================================
 -- ELECTIONS TABLE
--- Stores election configurations and threshold public keys
+-- Election configurations with threshold encryption keys
+-- Key fields: status, public_key, tally_key, threshold_params
 -- =====================================================
 CREATE TABLE IF NOT EXISTS elections (
     id INT AUTO_INCREMENT PRIMARY KEY,
     title VARCHAR(255) NOT NULL,
     description TEXT,
     
-    -- Election schedule
     start_date DATETIME NOT NULL,
     end_date DATETIME NOT NULL,
     
-    -- Status management
     status ENUM('pending', 'active', 'completed', 'cancelled', 'tallying') DEFAULT 'pending',
     
-    -- Cryptographic keys
     public_key TEXT NOT NULL COMMENT 'Threshold encryption public key (ElGamal)',
+    tally_key TEXT NULL COMMENT 'AES key for encrypted tally (RSA PEM ~1700 chars)',
     threshold_params JSON COMMENT 'Threshold parameters (t, n, shares)',
     
-    -- Eligibility rules
+    results_released BOOLEAN DEFAULT FALSE,
+    results_released_at TIMESTAMP NULL,
+    
     eligible_roles JSON COMMENT 'Array of roles allowed to vote',
     
-    -- Creator and metadata
     created_by INT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     
-    -- Results
     tally_completed_at TIMESTAMP NULL,
     results_hash VARCHAR(64) COMMENT 'SHA256 hash of final tally',
     
-    -- Lock management
     is_locked BOOLEAN DEFAULT FALSE,
     locked_at TIMESTAMP NULL,
     locked_by INT NULL,
     
     FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE RESTRICT,
+    FOREIGN KEY (locked_by) REFERENCES users(id) ON DELETE SET NULL,
     INDEX idx_status (status),
     INDEX idx_dates (start_date, end_date),
-    INDEX idx_created_by (created_by)
+    INDEX idx_created_by (created_by),
+    INDEX idx_locked_by (locked_by),
+    INDEX idx_auto_release (status, results_released, end_date) COMMENT 'Composite index for auto-release scheduler'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Election configurations';
 
 -- =====================================================
 -- CANDIDATES TABLE
--- Stores candidates for each election
+-- Candidate information for each election
+-- Key fields: election_id, name, display_order
 -- =====================================================
 CREATE TABLE IF NOT EXISTS candidates (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -100,185 +106,177 @@ CREATE TABLE IF NOT EXISTS candidates (
     description TEXT,
     metadata JSON COMMENT 'Additional candidate information',
     
-    -- Display order
     display_order INT DEFAULT 0,
     
-    -- Lock management
     is_locked BOOLEAN DEFAULT FALSE,
     locked_at TIMESTAMP NULL,
+    locked_by INT NULL,
     
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     
     FOREIGN KEY (election_id) REFERENCES elections(id) ON DELETE CASCADE,
+    FOREIGN KEY (locked_by) REFERENCES users(id) ON DELETE SET NULL,
     INDEX idx_election_id (election_id),
-    INDEX idx_display_order (display_order)
+    INDEX idx_election_name (election_id, name)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Election candidates';
+
+
+-- =====================================================
+-- SECTION 2: VOTING TABLES
+-- =====================================================
 
 -- =====================================================
 -- BLIND_TOKENS TABLE
--- Stores issued blind-signed tokens (hashed, not linkable)
+-- Blind-signed eligibility tokens for unlinkable voting
+-- Key fields: token_id_hash, pseudonym_id, election_id
 -- =====================================================
 CREATE TABLE IF NOT EXISTS blind_tokens (
-    id INT AUTO_INCREMENT PRIMARY KEY,
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     
-    -- Token identifier (hashed, not the actual token)
     token_id_hash VARCHAR(64) UNIQUE NOT NULL COMMENT 'SHA256 hash of token ID',
     
-    -- Pseudonymous link (not institution_id)
     pseudonym_id VARCHAR(64) NOT NULL COMMENT 'Links to users.pseudonym_id',
     
-    -- Election binding
     election_id INT NOT NULL COMMENT 'Token valid for this election',
     
-    -- Token lifecycle
     issued_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     revoked BOOLEAN DEFAULT FALSE,
     revoked_at TIMESTAMP NULL,
     revocation_reason VARCHAR(255),
     
-    -- Cryptographic data
     blind_signature TEXT COMMENT 'Signed blinded token (base64)',
     
     FOREIGN KEY (election_id) REFERENCES elections(id) ON DELETE CASCADE,
-    INDEX idx_token_id_hash (token_id_hash),
-    INDEX idx_pseudonym_id (pseudonym_id),
+    FOREIGN KEY (pseudonym_id) REFERENCES users(pseudonym_id) ON DELETE CASCADE,
     INDEX idx_election_id (election_id),
-    INDEX idx_revoked (revoked)
+    INDEX idx_revoked (revoked),
+    INDEX idx_pseudonym_election (pseudonym_id, election_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Blind-signed eligibility tokens';
 
 -- =====================================================
 -- VOTER_REGISTRATIONS TABLE
--- Tracks voter registration status for elections
+-- Tracks voter registration and voting status
+-- Key fields: user_id, election_id, status (registered/voted)
 -- =====================================================
 CREATE TABLE IF NOT EXISTS voter_registrations (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
     election_id INT NOT NULL,
     
-    -- Registration token (for backward compatibility, prefer blind_tokens)
     registration_token VARCHAR(255) UNIQUE,
     
-    -- Status
     status ENUM('registered', 'voted', 'revoked') DEFAULT 'registered',
     
-    -- Timestamps
     registered_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     voted_at TIMESTAMP NULL,
     
     UNIQUE KEY unique_user_election (user_id, election_id),
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (election_id) REFERENCES elections(id) ON DELETE CASCADE,
-    INDEX idx_user_id (user_id),
     INDEX idx_election_id (election_id),
-    INDEX idx_status (status)
+    INDEX idx_status (status),
+    INDEX idx_election_status (election_id, status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Voter registration tracking';
 
 -- =====================================================
 -- VOTES_META TABLE
--- On-chain vote metadata and nullifiers (no ballot content)
+-- Vote metadata with blockchain references and nullifiers
+-- Key fields: tx_hash, nullifier_hash, encrypted_ballot, signature
 -- =====================================================
 CREATE TABLE IF NOT EXISTS votes_meta (
-    id INT AUTO_INCREMENT PRIMARY KEY,
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     
-    -- Blockchain reference
     tx_hash VARCHAR(64) UNIQUE NOT NULL COMMENT 'Transaction hash from blockchain',
     block_index INT NOT NULL COMMENT 'Block number where vote was included',
     
-    -- Election
     election_id INT NOT NULL,
     
-    -- Privacy-preserving nullifier (prevents double voting)
     nullifier_hash VARCHAR(64) UNIQUE NOT NULL COMMENT 'SHA256 of nullifier',
     
-    -- Encrypted ballot reference
     cipher_ref TEXT COMMENT 'Reference to encrypted ballot (on-chain or off-chain)',
     encrypted_ballot TEXT COMMENT 'Encrypted ballot data (threshold encrypted)',
     
-    -- Merkle proof data
+    signature TEXT COMMENT 'ECDSA signature of the vote package',
+    voter_public_key TEXT COMMENT 'Public key used for signature verification (unlinkable to user)',
+    
     merkle_root VARCHAR(64) COMMENT 'Merkle root of block',
     merkle_proof JSON COMMENT 'Merkle inclusion proof',
     
-    -- Timestamps
     timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     
     FOREIGN KEY (election_id) REFERENCES elections(id) ON DELETE RESTRICT,
-    INDEX idx_tx_hash (tx_hash),
     INDEX idx_election_id (election_id),
-    INDEX idx_nullifier_hash (nullifier_hash),
     INDEX idx_block_index (block_index),
-    INDEX idx_timestamp (timestamp)
+    INDEX idx_timestamp (timestamp),
+    INDEX idx_signature (signature(64)),
+    INDEX idx_election_block (election_id, block_index)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Vote metadata and nullifiers';
 
 -- =====================================================
 -- VOTE_RECEIPTS TABLE
--- Cryptographic receipts given to voters
+-- Cryptographic receipts for vote verification
+-- Key fields: transaction_hash, nullifier_hash, merkle_proof
 -- =====================================================
 CREATE TABLE IF NOT EXISTS vote_receipts (
-    id INT AUTO_INCREMENT PRIMARY KEY,
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     
-    -- Election reference
     election_id INT NOT NULL,
     
-    -- Nullifier (allows voter to verify their vote was counted)
     nullifier_hash VARCHAR(64) NOT NULL COMMENT 'SHA256 of nullifier for verification',
     
-    -- Blockchain proof
     transaction_hash VARCHAR(64) NOT NULL COMMENT 'Transaction ID on blockchain',
     block_height INT COMMENT 'Block number',
     block_hash VARCHAR(64) COMMENT 'Block hash',
     
-    -- Merkle inclusion proof
     merkle_proof JSON COMMENT 'Merkle proof for verification',
     
-    -- Validator signatures
     validator_signatures JSON COMMENT 'Array of validator signatures on receipt',
     
-    -- Timestamp
     issued_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     
     FOREIGN KEY (election_id) REFERENCES elections(id) ON DELETE RESTRICT,
+    UNIQUE KEY unique_tx (transaction_hash),
     INDEX idx_election_id (election_id),
     INDEX idx_nullifier_hash (nullifier_hash),
-    INDEX idx_transaction_hash (transaction_hash),
     INDEX idx_block_height (block_height)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Vote receipts for verification';
 
+
+-- =====================================================
+-- SECTION 3: BLOCKCHAIN TABLES
+-- =====================================================
+
 -- =====================================================
 -- NODES TABLE
--- Validator nodes in the permissioned network
+-- Validator/observer node registry and health tracking
+-- Key fields: node_id, status, node_type, misbehavior_count
 -- =====================================================
 CREATE TABLE IF NOT EXISTS nodes (
     id INT AUTO_INCREMENT PRIMARY KEY,
     
-    -- Node identification
     node_id VARCHAR(64) UNIQUE NOT NULL COMMENT 'Unique node identifier',
     pubkey TEXT NOT NULL COMMENT 'Node public key for validation',
     
-    -- Network information
     endpoint VARCHAR(255) NOT NULL COMMENT 'Node API endpoint (host:port)',
     p2p_endpoint VARCHAR(255) COMMENT 'P2P connection endpoint',
     
-    -- Node type and status
     node_type ENUM('validator', 'observer', 'seed') DEFAULT 'validator',
     status ENUM('active', 'inactive', 'quarantined', 'removed') DEFAULT 'active',
     
-    -- Governance
     added_by INT COMMENT 'Admin who added this node',
     approved_at TIMESTAMP NULL,
     quorum_votes JSON COMMENT 'Votes from other validators for approval',
     
-    -- Health monitoring
     last_seen TIMESTAMP NULL,
     last_block_validated INT,
     blocks_validated_count INT DEFAULT 0,
     
-    -- Misbehavior tracking
     misbehavior_count INT DEFAULT 0,
     evidence JSON COMMENT 'Array of misbehavior evidence',
     quarantined_at TIMESTAMP NULL,
     quarantine_reason VARCHAR(255),
     
-    -- Timestamps
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     
@@ -286,40 +284,40 @@ CREATE TABLE IF NOT EXISTS nodes (
     INDEX idx_node_id (node_id),
     INDEX idx_status (status),
     INDEX idx_node_type (node_type),
-    INDEX idx_last_seen (last_seen)
+    INDEX idx_last_seen (last_seen),
+    INDEX idx_added_by (added_by)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Validator and observer nodes';
+
+
+-- =====================================================
+-- SECTION 4: AUDIT TABLES
+-- =====================================================
 
 -- =====================================================
 -- AUDIT_LOGS TABLE
--- Tamper-evident audit trail
+-- Tamper-evident audit trail for all system events
+-- Key fields: event_type, user_id, log_hash, previous_hash
 -- =====================================================
 CREATE TABLE IF NOT EXISTS audit_logs (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     
-    -- Event details
     event_type VARCHAR(50) NOT NULL COMMENT 'e.g., USER_REGISTERED, VOTE_CAST, NODE_ADDED',
     event_category ENUM('auth', 'vote', 'election', 'node', 'admin', 'security') NOT NULL,
     
-    -- Actor information
     user_id INT COMMENT 'User who performed the action (if applicable)',
     ip_address VARCHAR(45) COMMENT 'IPv4 or IPv6 address',
     user_agent TEXT COMMENT 'Browser/client information',
     
-    -- Target information
     target_type VARCHAR(50) COMMENT 'e.g., election, vote, node',
     target_id VARCHAR(64) COMMENT 'ID of the affected resource',
     
-    -- Event data
     details JSON COMMENT 'Additional event details',
     
-    -- Severity
     severity ENUM('info', 'warning', 'error', 'critical') DEFAULT 'info',
     
-    -- Tamper-evident chaining
     previous_hash VARCHAR(64) COMMENT 'Hash of previous log entry',
     log_hash VARCHAR(64) COMMENT 'Hash of this log entry',
     
-    -- Timestamp
     timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
@@ -328,20 +326,22 @@ CREATE TABLE IF NOT EXISTS audit_logs (
     INDEX idx_user_id (user_id),
     INDEX idx_timestamp (timestamp),
     INDEX idx_severity (severity),
-    INDEX idx_log_hash (log_hash)
+    INDEX idx_log_hash (log_hash),
+    INDEX idx_event_type_timestamp (event_type, timestamp)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Tamper-evident audit trail';
 
 -- =====================================================
 -- ADMIN_AUDIT_LOGS TABLE
--- Admin action tracking for the admin panel
+-- Admin action audit trail with change tracking
+-- Key fields: admin_id, action_type, resource_type, change_hash
 -- =====================================================
 CREATE TABLE IF NOT EXISTS admin_audit_logs (
-    id INT PRIMARY KEY AUTO_INCREMENT,
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     admin_id INT NOT NULL,
     action_type VARCHAR(50) NOT NULL,
     resource_type VARCHAR(50) NOT NULL,
     resource_id INT,
-    changes LONGTEXT,
+    changes MEDIUMTEXT,
     change_hash VARCHAR(64),
     action_signature VARCHAR(64),
     reason VARCHAR(500),
@@ -356,15 +356,17 @@ CREATE TABLE IF NOT EXISTS admin_audit_logs (
     INDEX idx_action_type (action_type),
     INDEX idx_resource_type (resource_type),
     INDEX idx_timestamp (timestamp),
+    INDEX idx_admin_timestamp (admin_id, timestamp),
     FOREIGN KEY (admin_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Admin audit log entries';
 
 -- =====================================================
 -- ADMIN_SECURITY_LOGS TABLE
--- Security-relevant events for admin monitoring
+-- Security event logging for admin actions
+-- Key fields: admin_id, event_type, severity, acknowledged
 -- =====================================================
 CREATE TABLE IF NOT EXISTS admin_security_logs (
-    id INT PRIMARY KEY AUTO_INCREMENT,
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     admin_id INT NOT NULL,
     event_type VARCHAR(50) NOT NULL,
     severity ENUM('LOW', 'MEDIUM', 'HIGH', 'CRITICAL') DEFAULT 'MEDIUM',
@@ -379,41 +381,37 @@ CREATE TABLE IF NOT EXISTS admin_security_logs (
     INDEX idx_event_type (event_type),
     INDEX idx_severity (severity),
     INDEX idx_timestamp (timestamp),
+    INDEX idx_acknowledged_by (acknowledged_by),
     FOREIGN KEY (admin_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (acknowledged_by) REFERENCES users(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Admin security log entries';
 
 -- =====================================================
 -- THRESHOLD_KEY_SHARES TABLE
--- Stores information about distributed key shares
--- (Actual shares stored in HSM/Vault, this is metadata)
+-- Threshold decryption key share metadata (shares stored in vault)
+-- Key fields: election_id, node_id, share_index, ceremony_id
 -- =====================================================
 CREATE TABLE IF NOT EXISTS threshold_key_shares (
     id INT AUTO_INCREMENT PRIMARY KEY,
     
-    -- Election binding
     election_id INT NOT NULL,
     
-    -- Node holding the share
     node_id VARCHAR(64) NOT NULL,
     
-    -- Share metadata (not the actual share)
     share_index INT NOT NULL COMMENT 'Index of this share (1 to n)',
     public_verification_key TEXT COMMENT 'Public key for verifying this share',
     
-    -- DKG ceremony information
     ceremony_id VARCHAR(64) COMMENT 'Unique ID for the DKG ceremony',
     ceremony_completed_at TIMESTAMP NULL,
     
-    -- Status
     status ENUM('pending', 'active', 'revoked', 'rotated') DEFAULT 'pending',
     
-    -- Vault/HSM reference (actual share stored externally)
     vault_path VARCHAR(255) COMMENT 'Path to encrypted share in vault',
     
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     
     FOREIGN KEY (election_id) REFERENCES elections(id) ON DELETE RESTRICT,
+    FOREIGN KEY (node_id) REFERENCES nodes(node_id) ON DELETE RESTRICT,
     UNIQUE KEY unique_election_node_share (election_id, node_id, share_index),
     INDEX idx_election_id (election_id),
     INDEX idx_node_id (node_id),
@@ -422,23 +420,20 @@ CREATE TABLE IF NOT EXISTS threshold_key_shares (
 
 -- =====================================================
 -- TALLY_PARTIAL_DECRYPTIONS TABLE
--- Stores partial decryptions from validators during tallying
+-- Partial decryptions from validators for threshold tallying
+-- Key fields: election_id, vote_meta_id, node_id, partial_decryption
 -- =====================================================
 CREATE TABLE IF NOT EXISTS tally_partial_decryptions (
-    id INT AUTO_INCREMENT PRIMARY KEY,
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     
-    -- Election and vote reference
     election_id INT NOT NULL,
-    vote_meta_id INT NOT NULL COMMENT 'References votes_meta.id',
+    vote_meta_id BIGINT UNSIGNED NOT NULL COMMENT 'References votes_meta.id',
     
-    -- Validator who provided this partial decryption
     node_id VARCHAR(64) NOT NULL,
     
-    -- Partial decryption data
     partial_decryption TEXT NOT NULL COMMENT 'Base64 encoded partial decryption',
     proof_of_correctness TEXT COMMENT 'ZK proof that decryption is correct',
     
-    -- Signature
     signature TEXT COMMENT 'Validator signature on partial decryption',
     
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -451,9 +446,15 @@ CREATE TABLE IF NOT EXISTS tally_partial_decryptions (
     INDEX idx_node_id (node_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Partial decryptions for threshold tallying';
 
+
+-- =====================================================
+-- SECTION 5: SYSTEM TABLES
+-- =====================================================
+
 -- =====================================================
 -- SYSTEM_CONFIG TABLE
--- Global system configuration and parameters
+-- Runtime configuration parameters
+-- Key fields: config_key, config_value, config_type
 -- =====================================================
 CREATE TABLE IF NOT EXISTS system_config (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -467,11 +468,41 @@ CREATE TABLE IF NOT EXISTS system_config (
     updated_by INT,
     
     FOREIGN KEY (updated_by) REFERENCES users(id) ON DELETE SET NULL,
-    INDEX idx_config_key (config_key)
+    INDEX idx_config_key (config_key),
+    INDEX idx_updated_by (updated_by)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='System configuration';
 
 -- =====================================================
--- Insert default system configuration
+-- OTP_CODES TABLE
+-- One-time passwords for voter registration
+-- Key fields: institution_id, code, email, expires_at
+-- =====================================================
+CREATE TABLE IF NOT EXISTS otp_codes (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    institution_id VARCHAR(20) UNIQUE NOT NULL,
+    code VARCHAR(10) NOT NULL,
+    email VARCHAR(255) NOT NULL,
+    expires_at BIGINT NOT NULL,
+    created_at BIGINT NOT NULL,
+    attempts INT DEFAULT 0,
+    verified BOOLEAN DEFAULT FALSE,
+    verified_at BIGINT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='OTP codes for voter registration';
+
+-- =====================================================
+-- TOKEN_BLACKLIST TABLE
+-- Revoked JWT tokens (logout/invalidation)
+-- Key fields: jti (JWT ID), expires_at
+-- =====================================================
+CREATE TABLE IF NOT EXISTS token_blacklist (
+    jti VARCHAR(255) PRIMARY KEY,
+    expires_at BIGINT NOT NULL,
+    INDEX idx_expires_at (expires_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Revoked JWT tokens';
+
+-- =====================================================
+-- DEFAULT SYSTEM CONFIGURATION
+-- Inserts default blockchain and security parameters
 -- =====================================================
 INSERT INTO system_config (config_key, config_value, config_type, description) VALUES
     ('consensus_type', 'pbft', 'string', 'Consensus algorithm: pbft, tendermint, raft'),
@@ -484,12 +515,15 @@ INSERT INTO system_config (config_key, config_value, config_type, description) V
 ON DUPLICATE KEY UPDATE config_value=VALUES(config_value);
 
 -- =====================================================
--- Create views for common queries
+-- SECTION 6: VIEWS
 -- =====================================================
 
--- View for active elections with candidate counts
+-- =====================================================
+-- v_active_elections VIEW
+-- Active/pending elections with counts
+-- =====================================================
 CREATE OR REPLACE VIEW v_active_elections AS
-SELECT 
+SELECT
     e.id,
     e.title,
     e.description,
@@ -501,14 +535,17 @@ SELECT
     COUNT(DISTINCT vm.id) as votes_cast
 FROM elections e
 LEFT JOIN candidates c ON e.id = c.election_id
-LEFT JOIN voter_registrations vr ON e.id = vr.election_id
+LEFT JOIN voter_registrations vr ON e.id = vr.election_id AND vr.status = 'registered'
 LEFT JOIN votes_meta vm ON e.id = vm.election_id
 WHERE e.status IN ('pending', 'active')
-GROUP BY e.id, e.title, e.description, e.start_date, e.end_date, e.status;
+GROUP BY e.id;
 
--- View for node health monitoring
+-- =====================================================
+-- v_node_health VIEW
+-- Validator node health status monitoring
+-- =====================================================
 CREATE OR REPLACE VIEW v_node_health AS
-SELECT 
+SELECT
     n.node_id,
     n.endpoint,
     n.status,
@@ -516,7 +553,7 @@ SELECT
     n.blocks_validated_count,
     n.misbehavior_count,
     TIMESTAMPDIFF(MINUTE, n.last_seen, NOW()) as minutes_since_last_seen,
-    CASE 
+    CASE
         WHEN n.status = 'removed' THEN 'removed'
         WHEN n.status = 'quarantined' THEN 'quarantined'
         WHEN TIMESTAMPDIFF(MINUTE, n.last_seen, NOW()) > 10 THEN 'offline'
@@ -526,9 +563,12 @@ SELECT
 FROM nodes n
 WHERE n.node_type = 'validator';
 
--- View for admin activity summary
+-- =====================================================
+-- admin_activity_summary VIEW
+-- Admin action statistics and last activity
+-- =====================================================
 CREATE OR REPLACE VIEW admin_activity_summary AS
-SELECT 
+SELECT
     u.id,
     u.username,
     u.email,
@@ -545,7 +585,8 @@ WHERE u.role = 'admin'
 GROUP BY u.id, u.username, u.email;
 
 -- =====================================================
--- Schema version tracking
+-- SCHEMA_MIGRATIONS TABLE
+-- Migration version tracking with checksums
 -- =====================================================
 CREATE TABLE IF NOT EXISTS schema_migrations (
     id INT AUTO_INCREMENT PRIMARY KEY,
