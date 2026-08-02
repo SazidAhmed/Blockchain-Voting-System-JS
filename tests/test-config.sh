@@ -29,6 +29,10 @@ BACKEND_HOST="${TEST_BACKEND_HOST:-http://localhost:3005}"
 # Blockchain nodes
 BLOCKCHAIN_PORTS=(${TEST_BLOCKCHAIN_PORTS:-3010 3011 3012 3013})
 BLOCKCHAIN_URL="${TEST_BLOCKCHAIN_URL:-${VITE_BLOCKCHAIN_URL:-http://localhost:3010}}"
+BLOCKCHAIN_API_KEY="${TEST_BLOCKCHAIN_API_KEY:-test-blockchain-key}"
+
+# Vote package helper (builds a client-side encrypted vote payload)
+VOTE_PACKAGE_HELPER="$TEST_CONFIG_DIR/helpers/vote-package.js"
 
 # Institution API
 INSTITUTION_API_URL="${TEST_INSTITUTION_URL:-${VITE_INSTITUTION_API_URL:-http://localhost:4005}}"
@@ -62,6 +66,11 @@ NC='\033[0m'
 
 # Test counters (declare as globals, reset per script)
 PASS=0; FAIL=0
+
+# Read the CSRF token from a curl cookie jar (login sets csrf-token via backend)
+csrf_token() {
+  awk '$6 == "csrf-token" {print $7}' "$1" 2>/dev/null | tail -1
+}
 
 # Helper assert
 check() {

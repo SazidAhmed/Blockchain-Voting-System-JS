@@ -6,14 +6,18 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/test-config.sh"
 
 declare -a ORDERED_CATEGORIES=(smoke-test integration-test detection-test attack-test security-suite resilience-test)
-declare -A DESCRIPTIONS=(
-  [smoke-test]="Core flow: health, login, vote, double-vote, DB"
-  [integration-test]="Full vote lifecycle, blockchain, audit trail"
-  [detection-test]="Node health, chain consistency, merkle stats"
-  [attack-test]="Tampered ballot, replay, SQLi, no-auth, rate-limit, JWT, large payload"
-  [security-suite]="No-auth vote, nullifier uniqueness, XSS, rate-limit"
-  [resilience-test]="Node restart, post-restart vote, sync, backend restart"
-)
+
+description() {
+  case "$1" in
+    smoke-test)        echo "Core flow: health, login, vote, double-vote, DB" ;;
+    integration-test)  echo "Full vote lifecycle, blockchain, audit trail" ;;
+    detection-test)    echo "Node health, chain consistency, merkle stats" ;;
+    attack-test)       echo "Tampered ballot, replay, SQLi, no-auth, rate-limit, JWT, large payload" ;;
+    security-suite)    echo "No-auth vote, nullifier uniqueness, XSS, rate-limit" ;;
+    resilience-test)   echo "Node restart, post-restart vote, sync, backend restart" ;;
+    *) echo "" ;;
+  esac
+}
 
 show_menu() {
   echo -e "${BLUE}========================================${NC}"
@@ -24,7 +28,7 @@ show_menu() {
   for i in "${!ORDERED_CATEGORIES[@]}"; do
     cat="${ORDERED_CATEGORIES[$i]}"
     echo "  $((i+1))) $cat"
-    echo "      ${DESCRIPTIONS[$cat]}"
+    echo "      $(description "$cat")"
   done
   echo ""
   echo "  a) Run ALL categories (with full stack reset)"
@@ -50,7 +54,7 @@ run_selected() {
 
   for script in "${categories[@]}"; do
     echo -e "\n${BLUE}==================================${NC}"
-    echo -e "${BLUE}[${script}]${NC} ${DESCRIPTIONS[$script]}"
+    echo -e "${BLUE}[${script}]${NC} $(description "$script")"
     echo -e "${BLUE}==================================${NC}"
     if run_category "$script"; then
       results+=("$script: ${GREEN}PASS${NC}")
@@ -61,7 +65,12 @@ run_selected() {
     # Restart backend between categories to reset rate-limiter
     echo -e "\n${YELLOW}→ Restarting backend...${NC}"
     docker compose -f "$COMPOSE_FILE" restart backend 2>/dev/null
-    sleep 5
+    for i in $(seq 1 30); do
+      if curl -s -o /dev/null "$BACKEND_HOST/health" 2>/dev/null; then
+        break
+      fi
+      sleep 2
+    done
   done
 
   echo -e "\n${BLUE}==================================${NC}"
