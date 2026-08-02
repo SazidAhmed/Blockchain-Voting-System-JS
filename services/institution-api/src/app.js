@@ -1,5 +1,7 @@
 const express = require("express");
 const cors = require("cors");
+const helmet = require("helmet");
+const rateLimit = require("express-rate-limit");
 
 const healthRoute = require("./routes/health");
 const membersRoute = require("./routes/members");
@@ -8,7 +10,25 @@ const voterPickerRoute = require("./routes/voter-picker");
 const errorHandler = require("./middleware/errorHandler");
 
 const app = express();
-app.disable('x-powered-by');
+app.disable("x-powered-by");
+app.use(helmet({ hsts: false }));
+
+const generalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    message: "Too many requests from this IP, please try again later",
+  },
+});
+const lookupLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: "Too many lookups from this IP, please try again later" },
+});
 
 const allowedOrigins = (process.env.CORS_ALLOWED_ORIGINS || "")
   .split(",")
@@ -21,14 +41,16 @@ if (allowedOrigins.length === 0) {
     "http://localhost:5174",
   );
 }
-app.use(cors({
-  origin: function (origin, callback) {
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.includes(origin)) return callback(null, true);
-    callback(new Error("Not allowed by CORS"));
-  },
-  credentials: true,
-}));
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.includes(origin)) return callback(null, true);
+      callback(new Error("Not allowed by CORS"));
+    },
+    credentials: true,
+  }),
+);
 app.use(express.json());
 
 // Root discovery route — dev only
@@ -48,6 +70,10 @@ if (process.env.NODE_ENV !== "production") {
 }
 
 app.use(healthRoute);
+app.use("/api", generalLimiter);
+app.use("/api/members", lookupLimiter);
+app.use("/api/lookup", lookupLimiter);
+app.use("/api/search", lookupLimiter);
 app.use(membersRoute);
 app.use(lookupRoute);
 app.use(voterPickerRoute);

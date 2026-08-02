@@ -3,6 +3,7 @@ const { Router } = require("express");
 const router = Router();
 
 router.get("/voter-picker", (_req, res) => {
+  const apiKey = process.env.INSTITUTION_API_KEY || "";
   res.send(`<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -98,6 +99,8 @@ router.get("/voter-picker", (_req, res) => {
 
 <script>
 function h(s) { return String(s).replace(/[&<>"']/g, function(c) { return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#x27;'}[c]; }); }
+const API_KEY = ${JSON.stringify(apiKey)};
+const AUTH_HEADERS = API_KEY ? { 'x-api-key': API_KEY } : {};
 const LIMIT = 20;
 let state = { page: 1, role: '', voterFilter: null, search: '', lastPage: 1 };
 let debounceTimer;
@@ -113,7 +116,7 @@ async function load() {
 
   let data;
   try {
-    const r = await fetch(url);
+    const r = await fetch(url, { headers: AUTH_HEADERS });
     data = await r.json();
   } catch (err) {
     const td = document.createElement('td');
