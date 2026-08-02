@@ -121,7 +121,7 @@ module.exports = function createMerkleRoutes(blockchain) {
     }
   });
 
-  router.post("/merkle/verify", (req, res) => {
+  router.post("/merkle/verify", apiKeyAuth, (req, res) => {
     const { vote, proof, merkleRoot } = req.body;
 
     if (!vote || !proof || !merkleRoot) {

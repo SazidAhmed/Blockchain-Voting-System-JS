@@ -39,8 +39,7 @@ class SecurityMonitor extends EventEmitter {
       duplicateBlocks: 0,
       invalidSignatures: 0,
       networkAttacks: 0,
-      eclipseAttempts: 0,
-      sybilAttempts: 0,
+
       doubleSpendsDetected: 0,
     };
 
@@ -242,122 +241,6 @@ class SecurityMonitor extends EventEmitter {
     }
 
     return anomalies;
-  }
-
-  /**
-   * Detect replay attacks
-   */
-  detectReplayAttack(message, fromPeerId) {
-    const messageHash = require("crypto")
-      .createHash("sha256")
-      .update(JSON.stringify(message))
-      .digest("hex");
-
-    const peer = this.peerBehavior.get(fromPeerId);
-    if (peer && peer.behaviors) {
-      const recentMessages = peer.behaviors.filter(
-        (b) => Date.now() - b.timestamp < 60000,
-      ); // Last 60 seconds
-
-      for (const behavior of recentMessages) {
-        if (
-          behavior.type === "REPLAY_MESSAGE" &&
-          behavior.messageHash === messageHash
-        ) {
-          this.trackPeerBehavior(fromPeerId, "REPLAY_ATTACK_DETECTED", "high");
-          this.emit("replay_attack_detected", {
-            peerId: fromPeerId,
-            messageHash,
-            timestamp: Date.now(),
-          });
-
-          return true;
-        }
-      }
-    }
-
-    if (!this.peerBehavior.has(fromPeerId)) {
-      this.peerBehavior.set(fromPeerId, {
-        violations: 0,
-        behaviors: [],
-        reputation: 0,
-        lastSeen: Date.now(),
-        isQuarantined: false,
-      });
-    }
-    this.peerBehavior.get(fromPeerId).behaviors.push({
-      type: "REPLAY_MESSAGE",
-      messageHash,
-      timestamp: Date.now(),
-    });
-
-    return false;
-  }
-
-  /**
-   * Detect Sybil attack patterns
-   */
-  detectSybilAttack(peerId, otherPeerIds) {
-    // If one peer controls multiple IDs, it's a Sybil attack
-    let suspiciousConnections = 0;
-
-    for (const otherId of otherPeerIds) {
-      const otherPeer = this.peerBehavior.get(otherId);
-
-      // If other peer has similar violation patterns, might be Sybil
-      const peer = this.peerBehavior.get(peerId);
-      if (
-        peer &&
-        otherPeer &&
-        peer.violations > 0 &&
-        otherPeer.violations > 0 &&
-        Math.abs(peer.violations - otherPeer.violations) < 1
-      ) {
-        suspiciousConnections++;
-      }
-    }
-
-    if (suspiciousConnections >= 3) {
-      this.trackPeerBehavior(peerId, "SYBIL_ATTACK_DETECTED", "high");
-      this.behavioralMetrics.sybilAttempts++;
-
-      this.emit("sybil_attack_detected", {
-        peerId,
-        suspiciousCount: suspiciousConnections,
-        timestamp: Date.now(),
-      });
-
-      return true;
-    }
-
-    return false;
-  }
-
-  /**
-   * Detect eclipse attack patterns
-   */
-  detectEclipseAttack(peerId, connectedPeers) {
-    // If one peer tries to isolate us from others, it's an eclipse attack
-    const isolationRisk =
-      connectedPeers.length === 1 ||
-      (connectedPeers.length > 0 &&
-        connectedPeers.filter((p) => p === peerId).length ===
-          connectedPeers.length);
-
-    if (isolationRisk) {
-      this.trackPeerBehavior(peerId, "ECLIPSE_ATTACK_DETECTED", "high");
-      this.behavioralMetrics.eclipseAttempts++;
-
-      this.emit("eclipse_attack_detected", {
-        peerId,
-        connectedPeerCount: connectedPeers.length,
-        timestamp: Date.now(),
-      });
-
-      return true;
-    }
-
-    return false;
   }
 
   /**

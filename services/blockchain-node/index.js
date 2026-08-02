@@ -1,8 +1,7 @@
 const express = require("express");
 const cors = require("cors");
-const crypto = require("crypto-js");
-const EC = require("elliptic").ec;
-const ec = new EC("p256");
+const helmet = require("helmet");
+const crypto = require("crypto");
 const http = require("http");
 const socketIo = require("socket.io");
 const Blockchain = require("./src/core/blockchain");
@@ -13,6 +12,7 @@ const NodeMonitor = require("./src/monitoring/nodeMonitor");
 const PrometheusMetrics = require("./src/monitoring/prometheusMetrics");
 const SecurityMonitor = require("./src/security/securityMonitor");
 const { apiKeyAuth } = require("./middleware/auth");
+const { sha256 } = require("./src/core/signature");
 
 const createChainRoutes = require("./src/routes/chain");
 const createVotesRoutes = require("./src/routes/votes");
@@ -28,6 +28,7 @@ const PORT = process.env.PORT || 3001;
 // Create express app
 const app = express();
 app.disable("x-powered-by");
+app.use(helmet({ hsts: { maxAge: 31536000, includeSubDomains: true } }));
 app.use(express.json());
 
 // Root discovery route — dev only
@@ -64,6 +65,11 @@ if (nodeAllowedOrigins.length === 0) {
   nodeAllowedOrigins.push(process.env.FRONTEND_URL || "http://localhost:5173");
   nodeAllowedOrigins.push("http://localhost:5174");
 }
+
+// Public health endpoint (used by Docker healthchecks — no auth required)
+app.get("/health", (req, res) => {
+  res.status(200).json({ status: "ok", nodeId, timestamp: Date.now() });
+});
 app.use(
   cors({
     origin: function (origin, callback) {
@@ -90,8 +96,6 @@ const io = socketIo(server, {
 // Initialize blockchain
 const blockchain = new Blockchain(nodeId);
 
-const sockets = [];
-
 // Initialize PeerManager
 const peerManager = new PeerManager(nodeId, nodeType);
 
@@ -103,15 +107,19 @@ const metrics = new PrometheusMetrics(nodeId, nodeType);
 
 // Initialize Security Modules
 const securityMonitor = new SecurityMonitor({ nodeId });
-// In production, this would use proper cryptographic key generation
-const key = ec.genKeyPair();
-const nodeKeyPair = {
-  privateKey: key.getPrivate("hex"),
-  publicKey: key.getPublic("hex"),
-};
 
-// Register this node as a validator
-blockchain.registerValidator(nodeId, nodeKeyPair.publicKey);
+// Load or create persistent node keypair (C-02 — never regenerate on restart)
+let nodeKeyPair;
+blockchain
+  .getOrCreateNodeKey()
+  .then((kp) => {
+    nodeKeyPair = kp;
+    blockchain.registerValidator(nodeId, kp.publicKey);
+  })
+  .catch((err) => {
+    console.error("FATAL: failed to load/create node keypair:", err.message);
+    process.exit(1);
+  });
 
 // Listen for peer manager events
 peerManager.on("peer_connected", (data) => {
@@ -141,9 +149,24 @@ peerManager.on("peer_unhealthy", (data) => {
 });
 
 // Socket.io connection handling
+io.use((socket, next) => {
+  const token = socket.handshake.auth?.token;
+  const expected = process.env.BLOCKCHAIN_API_KEY;
+  if (!expected) {
+    return next(new Error("Server misconfigured: BLOCKCHAIN_API_KEY not set"));
+  }
+  if (
+    !token ||
+    token.length !== expected.length ||
+    !crypto.timingSafeEqual(Buffer.from(token), Buffer.from(expected))
+  ) {
+    return next(new Error("Unauthorized peer connection"));
+  }
+  next();
+});
+
 io.on("connection", (socket) => {
   console.log("New peer connected");
-  sockets.push(socket);
 
   socket.on("message", (message) => {
     console.log("Received message:", message);
@@ -154,10 +177,6 @@ io.on("connection", (socket) => {
 
   socket.on("disconnect", () => {
     console.log("Peer disconnected");
-    const index = sockets.indexOf(socket);
-    if (index !== -1) {
-      sockets.splice(index, 1);
-    }
   });
 
   socket.emit("message", { type: "CHAIN", data: blockchain.chain });
@@ -179,14 +198,20 @@ async function handleMessage(senderId, message) {
     case MessageTypes.NODE_JOIN:
       console.log(`[MSG] Node join: ${message.data.nodeId}`);
       if (message.data.nodeId && typeof senderId === "object") {
-        if (!peerManager.peers.has(message.data.nodeId) ||
-            !peerManager.peers.get(message.data.nodeId)?.socket?.connected) {
+        if (
+          !peerManager.peers.has(message.data.nodeId) ||
+          !peerManager.peers.get(message.data.nodeId)?.socket?.connected
+        ) {
           peerManager.addPeer(message.data.nodeId, senderId, {
             nodeId: message.data.nodeId,
             port: "unknown",
           });
         }
       }
+      break;
+
+    case "CHAIN":
+      validateAndAcceptChain(message.data);
       break;
 
     case MessageTypes.CHAIN_REQUEST:
@@ -262,7 +287,7 @@ async function handleMessage(senderId, message) {
         break;
       }
       if (
-        blockchain.addBlock(
+        await blockchain.addBlock(
           receivedBlock,
           receivedBlock.validator,
           receivedBlock.signature,
@@ -290,17 +315,23 @@ async function handleMessage(senderId, message) {
 
     case "MINE":
       console.log("[MSG] Received mining request");
-      const { block: minedBlock, pendingSnapshot: minedSnapshot } =
-        await blockchain.createBlock(nodeId);
-      minedBlock.signBlock(nodeKeyPair.privateKey);
+      try {
+        const { block: minedBlock, pendingSnapshot: minedSnapshot } =
+          await blockchain.createBlock(nodeId);
+        minedBlock.signBlock(nodeKeyPair.privateKey);
 
-      if (blockchain.addBlock(minedBlock, nodeId, minedBlock.signature)) {
-        blockchain.commitBlock(minedBlock, minedSnapshot);
-        nodeMonitor.recordBlockProduced(minedBlock);
-        nodeMonitor.updateChainHeight(blockchain.chain.length);
-        metrics.recordBlockCreated(minedBlock);
-        peerManager.broadcastBlock(minedBlock);
-        console.log("New block mined and added to chain");
+        if (
+          await blockchain.addBlock(minedBlock, nodeId, minedBlock.signature)
+        ) {
+          blockchain.commitBlock(minedBlock, minedSnapshot);
+          nodeMonitor.recordBlockProduced(minedBlock);
+          nodeMonitor.updateChainHeight(blockchain.chain.length);
+          metrics.recordBlockCreated(minedBlock);
+          peerManager.broadcastBlock(minedBlock);
+          console.log("New block mined and added to chain");
+        }
+      } catch (error) {
+        console.error("Error mining block:", error.message);
       }
       break;
 
@@ -366,6 +397,7 @@ async function validateAndAcceptChain(receivedChain) {
 
   if (chainValid) {
     blockchain.chain = receivedChain;
+    blockchain.rebuildVoteIndex();
     await blockchain.saveChain();
     nodeMonitor.updateChainHeight(receivedChain.length);
     console.log("Chain synchronized");
@@ -379,7 +411,13 @@ async function validateAndAcceptChain(receivedChain) {
 app.use("/", createChainRoutes(blockchain, nodeMonitor, peerManager));
 app.use(
   "/",
-  createVotesRoutes(blockchain, nodeMonitor, metrics, peerManager, nodeKeyPair),
+  createVotesRoutes(
+    blockchain,
+    nodeMonitor,
+    metrics,
+    peerManager,
+    () => nodeKeyPair,
+  ),
 );
 app.use("/", createMerkleRoutes(blockchain));
 app.use("/", createSecurityRoutes(securityMonitor));
@@ -483,7 +521,7 @@ app.use((req, res) => {
     message: `${req.method} ${req.originalUrl} does not exist`,
     status: 404,
     availableEndpoints: [
-      "GET /",
+      "GET /health",
       "GET /chain",
       "GET /node",
       "GET /peers",
@@ -495,8 +533,17 @@ app.use((req, res) => {
   });
 });
 
+// Global error handler (C-08)
+app.use((err, req, res, next) => {
+  console.error("Unhandled error:", err);
+  res.status(500).json({
+    error: "Internal Server Error",
+    status: 500,
+  });
+});
+
 // Start the server
-server.listen(PORT, () => {
+const serverInstance = server.listen(PORT, () => {
   console.log(`
 ╔════════════════════════════════════════════╗
 ║  Blockchain Node Server Started            ║
@@ -507,6 +554,17 @@ server.listen(PORT, () => {
 ║  Timestamp: ${new Date().toISOString()} ║
 ╚════════════════════════════════════════════╝
     `);
+});
+
+serverInstance.on("error", (err) => {
+  if (err.code === "EADDRINUSE") {
+    console.error(
+      `FATAL: Port ${PORT} is already in use. Is another blockchain node running?`,
+    );
+    process.exit(1);
+  }
+  console.error("Server error:", err.message);
+  process.exit(1);
 });
 
 // Connect to peer nodes if specified

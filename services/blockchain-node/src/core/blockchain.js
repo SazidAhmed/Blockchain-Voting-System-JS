@@ -1,4 +1,5 @@
 const Block = require("./block");
+const { verifyECDSASignature, canonicalJson } = require("./signature");
 
 const EC = require("elliptic").ec;
 const ec = new EC("p256");
@@ -16,14 +17,12 @@ class Blockchain {
     this.nodes = new Set();
     this.validators = new Map();
     this.usedNullifiers = new Set();
+    this.electionVoteIndex = new Map();
 
     // Initialize database for persistence
     this.db = level(leveldown(`./data/${nodeId}`));
 
     this.ready = this.init();
-
-    // Create genesis block
-    this.createGenesisBlock();
   }
 
   async loadChain() {
@@ -50,7 +49,27 @@ class Blockchain {
   }
 
   async init() {
-    return this.loadChain();
+    await this.loadChain();
+    if (this.chain.length === 0) {
+      this.createGenesisBlock();
+    }
+    this.rebuildVoteIndex();
+  }
+
+  rebuildVoteIndex() {
+    this.electionVoteIndex = new Map();
+    for (const block of this.chain) {
+      if (block.data && block.data.transactions) {
+        for (const tx of block.data.transactions) {
+          if (tx.type === "VOTE" && tx.electionId) {
+            if (!this.electionVoteIndex.has(tx.electionId)) {
+              this.electionVoteIndex.set(tx.electionId, []);
+            }
+            this.electionVoteIndex.get(tx.electionId).push(tx);
+          }
+        }
+      }
+    }
   }
 
   async saveChain() {
@@ -103,9 +122,21 @@ class Blockchain {
       return false;
     }
 
+    // Verify the validator's signature on the block (H-18)
+    const validatorKey = this.validators.get(validatorId);
+    if (
+      !newBlock.signature ||
+      !validatorKey ||
+      !newBlock.verifySignature(validatorKey)
+    ) {
+      console.log("Invalid block signature");
+      return false;
+    }
+
     // Add the block to the chain
     this.chain.push(newBlock);
-    this.saveChain();
+    await this.saveChain();
+    this.rebuildVoteIndex();
     return true;
   }
 
@@ -184,7 +215,7 @@ class Blockchain {
 
     this.usedNullifiers.add(vote.nullifier);
 
-    this.pendingTransactions.push({
+    const tx = {
       type: "VOTE",
       electionId: vote.electionId,
       encryptedBallot: vote.encryptedBallot,
@@ -194,7 +225,9 @@ class Blockchain {
       signature: vote.signature,
       publicKey: vote.publicKey || "",
       voterId: vote.voterId || null,
-    });
+    };
+
+    this.pendingTransactions.push(tx);
 
     return this.getLatestBlock().index + 1;
   }
@@ -230,44 +263,46 @@ class Blockchain {
       return false;
     }
     try {
-      const publicKeyDer = Buffer.from(vote.publicKey, "base64");
-      let keyStart = -1;
-      for (let i = 0; i < publicKeyDer.length - 65; i++) {
-        if (
-          publicKeyDer[i] === 0x03 &&
-          publicKeyDer[i + 2] === 0x00 &&
-          publicKeyDer[i + 3] === 0x04
-        ) {
-          keyStart = i + 3;
-          break;
-        }
-      }
-      if (keyStart === -1) return false;
-      if (publicKeyDer[keyStart] !== 0x04) return false;
-      const xHex = publicKeyDer
-        .slice(keyStart + 1, keyStart + 33)
-        .toString("hex");
-      const yHex = publicKeyDer
-        .slice(keyStart + 33, keyStart + 65)
-        .toString("hex");
-      const key = ec.keyFromPublic({ x: xHex, y: yHex }, "hex");
-      const dataStr = JSON.stringify({
-        encryptedBallot: vote.encryptedBallot,
-        nullifier: vote.nullifier,
-        electionId: vote.electionId,
-        timestamp: vote.timestamp,
-      });
-      const hash = nodeCrypto
-        .createHash("sha256")
-        .update(dataStr, "utf8")
-        .digest();
-      const sigBuf = Buffer.from(vote.signature, "base64");
-      if (sigBuf.length !== 64) return false;
-      const r = sigBuf.slice(0, 32).toString("hex");
-      const s = sigBuf.slice(32, 64).toString("hex");
-      return key.verify(hash, { r, s });
+      const canonicalData = JSON.stringify(
+        {
+          encryptedBallot: vote.encryptedBallot,
+          nullifier: vote.nullifier,
+          electionId: vote.electionId,
+          timestamp: vote.timestamp,
+        },
+        Object.keys({
+          encryptedBallot: vote.encryptedBallot,
+          nullifier: vote.nullifier,
+          electionId: vote.electionId,
+          timestamp: vote.timestamp,
+        }).sort(),
+      );
+      return verifyECDSASignature(
+        vote.publicKey,
+        vote.signature,
+        canonicalData,
+      );
     } catch (e) {
       return false;
+    }
+  }
+
+  // Persist this node's ECDSA keypair to the database
+  async getOrCreateNodeKey() {
+    await this.ready;
+    try {
+      const saved = await this.db.get("nodeKeyPair");
+      return JSON.parse(saved);
+    } catch (err) {
+      if (!err.notFound) throw err;
+      const key = ec.genKeyPair();
+      const keyPair = {
+        privateKey: key.getPrivate("hex"),
+        publicKey: key.getPublic("hex"),
+      };
+      await this.db.put("nodeKeyPair", JSON.stringify(keyPair));
+      console.log("Generated and persisted new node keypair");
+      return keyPair;
     }
   }
 
@@ -338,19 +373,7 @@ class Blockchain {
 
   // Get all votes for a specific election
   getElectionVotes(electionId) {
-    const votes = [];
-
-    for (const block of this.chain) {
-      if (block.data && block.data.transactions) {
-        for (const tx of block.data.transactions) {
-          if (tx.type === "VOTE" && tx.electionId === electionId) {
-            votes.push(tx);
-          }
-        }
-      }
-    }
-
-    return votes;
+    return this.electionVoteIndex.get(electionId) || [];
   }
 }
 

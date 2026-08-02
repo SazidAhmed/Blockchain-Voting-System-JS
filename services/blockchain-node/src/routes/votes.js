@@ -1,5 +1,5 @@
 const express = require("express");
-const crypto = require("crypto-js");
+const crypto = require("crypto");
 const { apiKeyAuth } = require("../../middleware/auth");
 const { voteLimiter } = require("../../middleware/rateLimiter");
 
@@ -8,13 +8,26 @@ module.exports = function createVotesRoutes(
   nodeMonitor,
   metrics,
   peerManager,
-  nodeKeyPair,
+  getNodeKeyPair,
 ) {
   const router = express.Router();
   const nodeId = process.env.NODE_ID || "node1";
 
   router.post("/vote", apiKeyAuth, voteLimiter, (req, res) => {
-    const vote = req.body;
+    const vote = req.body || {};
+
+    if (
+      typeof vote.electionId !== "string" ||
+      typeof vote.nullifier !== "string" ||
+      typeof vote.encryptedBallot !== "string" ||
+      typeof vote.signature !== "string" ||
+      typeof vote.publicKey !== "string"
+    ) {
+      return res.status(400).json({
+        message:
+          "Missing or invalid vote fields (electionId, nullifier, encryptedBallot, signature, publicKey)",
+      });
+    }
 
     try {
       const voteTimestamp = vote.timestamp || Date.now();
@@ -24,7 +37,10 @@ module.exports = function createVotesRoutes(
         encryptedBallot: vote.encryptedBallot,
         timestamp: voteTimestamp,
       });
-      const transactionHash = crypto.SHA256(txData).toString();
+      const transactionHash = crypto
+        .createHash("sha256")
+        .update(txData, "utf8")
+        .digest("hex");
 
       vote.transactionHash = transactionHash;
       vote.timestamp = voteTimestamp;
@@ -51,6 +67,19 @@ module.exports = function createVotesRoutes(
 
   router.post("/transactions/new", apiKeyAuth, (req, res) => {
     const transaction = req.body;
+
+    if (
+      !transaction ||
+      typeof transaction !== "object" ||
+      typeof transaction.fromAddress !== "string" ||
+      typeof transaction.toAddress !== "string" ||
+      !(typeof transaction.amount === "number" && transaction.amount > 0)
+    ) {
+      return res.status(400).json({
+        message:
+          "Transaction body required with fromAddress, toAddress, and numeric amount",
+      });
+    }
 
     try {
       const index = blockchain.addTransaction(transaction);
@@ -79,9 +108,15 @@ module.exports = function createVotesRoutes(
       }
       const { block: newBlock, pendingSnapshot } =
         await blockchain.createBlock(nodeId);
+      const nodeKeyPair = getNodeKeyPair();
+      if (!nodeKeyPair) {
+        return res
+          .status(503)
+          .json({ message: "Node key not ready, retry shortly" });
+      }
       newBlock.signBlock(nodeKeyPair.privateKey);
 
-      if (blockchain.addBlock(newBlock, nodeId, newBlock.signature)) {
+      if (await blockchain.addBlock(newBlock, nodeId, newBlock.signature)) {
         blockchain.commitBlock(newBlock, pendingSnapshot);
         nodeMonitor.recordBlockProduced(newBlock);
         nodeMonitor.updateChainHeight(blockchain.chain.length);

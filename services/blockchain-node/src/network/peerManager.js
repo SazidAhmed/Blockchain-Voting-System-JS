@@ -39,7 +39,11 @@ class PeerManager extends EventEmitter {
   addPeer(nodeId, socket, peerInfo = {}) {
     if (this.peers.has(nodeId)) {
       const existing = this.peers.get(nodeId);
-      if (existing.socket && existing.socket.connected && existing.socket !== socket) {
+      if (
+        existing.socket &&
+        existing.socket.connected &&
+        existing.socket !== socket
+      ) {
         console.warn(`Peer ${nodeId} already connected, ignoring duplicate`);
         return;
       }
@@ -104,6 +108,7 @@ class PeerManager extends EventEmitter {
           reconnectionDelayMax: 30000,
           reconnectionAttempts: Infinity,
           transports: ["websocket"],
+          auth: { token: process.env.BLOCKCHAIN_API_KEY || "" },
         });
 
         socket.on("connect", () => {
@@ -324,7 +329,10 @@ class PeerManager extends EventEmitter {
         const responseTimeout = setTimeout(() => {
           if (this.peers.has(nodeId)) {
             const currentHealth = this.peerHealth.get(nodeId);
-            if (currentHealth && currentHealth.lastHeartbeat === lastHeartbeatSnapshot) {
+            if (
+              currentHealth &&
+              currentHealth.lastHeartbeat === lastHeartbeatSnapshot
+            ) {
               this.markPeerUnhealthy(nodeId, "heartbeat_timeout");
             }
           }
