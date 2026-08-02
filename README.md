@@ -14,19 +14,19 @@ A secure, privacy-preserving blockchain-based voting system for university elect
 
 ### Fully Implemented
 
-- **Complete Docker Setup** — One-command deployment with 7 services
-- **Monitoring Stack** — Prometheus, Grafana, cAdvisor with pre-built dashboards
+- **Complete Docker Setup** — One-command deployment with 10 services
+- **Monitoring Stack** — Prometheus, Grafana, Loki, cAdvisor with pre-built dashboards
 - **Helper Scripts** — Backup, restore, logs, health checks, cleanup utilities
-- **Client-side Cryptography** — ECDSA P-256 signatures, RSA-OAEP 2048-bit encryption
-- **Encrypted Voting** — End-to-end vote casting with signatures and nullifiers
+- **Client-side Cryptography** — ECDSA P-256 signatures, RSA-OAEP 2048-bit encryption (native Web Crypto API)
+- **Encrypted Voting** — End-to-end vote casting with signatures and client-supplied nullifiers
 - **Encrypted Tally** — AES-256-GCM encrypted vote tallying with admin release
-- **Double-vote Prevention** — Nullifier-based duplicate detection [TESTED & VERIFIED]
-- **Database Storage** — MySQL with complete schema and migrations (004_fix_tally_key_column, 005_fix_schema_issues)
-- **Blockchain Node** — Custom PoW blockchain with LevelDB persistence, 4-node peer network
+- **Double-vote Prevention** — Nullifier-based duplicate detection with UNIQUE constraint [TESTED & VERIFIED]
+- **Database Storage** — MySQL with complete schema and migrations
+- **Blockchain Node** — Custom PoW blockchain with LevelDB persistence, 4-node peer network with persistent ECDSA keys
 - **Transaction Hash System** — Deterministic SHA-256 hash generation [TESTED & VERIFIED]
 - **Auto-Registration** — Users automatically enrolled in active elections
 - **Integration Testing** — Shell-based test suite: smoke, integration, attack, detection, security, resilience
-- **Audit Logging** — Admin audit trails with integrity verification
+- **Audit Logging** — Admin audit trails with hash-chain integrity verification
 - **Merkle Tree System** — Efficient vote verification with O(log n) proofs
 
 ### Remaining Tasks
@@ -40,16 +40,18 @@ A secure, privacy-preserving blockchain-based voting system for university elect
 
 ## Key Security Features
 
+- **JWT Security** — HS256 algorithm restricted, token in httpOnly cookie only (not response body)
 - **Ballot Secrecy** — RSA-OAEP 2048-bit encryption
-- **Voter Authentication** — ECDSA P-256 digital signatures
-- **Vote Privacy** — SHA-256 unlinkable nullifiers
-- **Double-Vote Prevention** — Nullifier-based duplicate detection [100% Test Pass]
+- **Voter Authentication** — ECDSA P-256 digital signatures (native crypto.verify)
+- **Vote Privacy** — Client-supplied SHA-256 nullifiers (not server-derived)
+- **Double-vote Prevention** — UNIQUE constraint on nullifier_hash, ER_DUP_ENTRY handling [100% Test Pass]
 - **Transaction Integrity** — Deterministic SHA-256 transaction hashing [Verified]
-- **Non-Repudiation** — Cryptographic vote receipts with blockchain proof
-- **Audit Logging** — Complete security event tracking with severity classification
-- **Rate Limiting** — DDoS protection on all endpoints
+- **Non-Repudiation** — Cryptographic vote receipts with opaque receipt ID (nullifier never exposed)
+- **Audit Logging** — Complete security event tracking with hash-chain integrity
+- **Rate Limiting** — DDoS protection on all endpoints (institution API, backend, blockchain)
 - **Auto-Enrollment** — Seamless voter registration for available elections
 - **Merkle Proofs** — Efficient vote verification (99% bandwidth savings)
+- **Helmet Security** — CSP, HSTS, X-Frame-Options on all services
 
 ---
 

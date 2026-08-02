@@ -11,8 +11,12 @@ NC='\033[0m'
 echo "Checking .env.example covers all required env vars..."
 
 # Extract env vars from code (process.env.VAR_NAME pattern)
-CODE_VARS=$(grep -rohE 'process\.env\.([A-Z_]+)' services/ --include="*.js" --exclude-dir=node_modules 2>/dev/null \
+CODE_VARS=$(grep -rohE 'process\.env\.([A-Z0-9_]+)' services/ --include="*.js" --exclude-dir=node_modules 2>/dev/null \
   | sed 's/process\.env\.//' | sort -u)
+
+# Vars with an inline fallback (process.env.X || default) are optional — not required in .env.example
+FALLBACK_VARS=$(grep -rohE 'process\.env\.[A-Z0-9_]+[[:space:]]*\|\|' services/ --include="*.js" --exclude-dir=node_modules 2>/dev/null \
+  | sed 's/process\.env\.//; s/[[:space:]]*||.*//' | sort -u)
 
 # Extract vars from .env.example
 if [ -f ".env.example" ]; then
@@ -24,6 +28,9 @@ fi
 
 MISSING=0
 for var in $CODE_VARS; do
+  if echo "$FALLBACK_VARS" | grep -qx "$var"; then
+    continue
+  fi
   if ! echo "$EXAMPLE_VARS" | grep -qx "$var"; then
     echo -e "${RED}✗ Missing from .env.example: $var${NC}"
     MISSING=$((MISSING + 1))

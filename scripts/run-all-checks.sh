@@ -26,18 +26,29 @@ else
   echo ""
 fi
 
-# 2. Commit message (check latest commit)
-echo -e "${YELLOW}[2/6] Latest commit message${NC}"
-LATEST_MSG=$(git log -1 --pretty=%s 2>/dev/null || echo "")
-if [ -n "$LATEST_MSG" ]; then
-  if bash "$SCRIPT_DIR/check-commit-msg.sh" "$LATEST_MSG"; then
-    echo ""
-  else
-    ERRORS=$((ERRORS + 1))
-    echo ""
-  fi
+# 2. Commit messages (check all unpushed commits)
+echo -e "${YELLOW}[2/6] Commit messages${NC}"
+if git rev-parse --verify origin/main >/dev/null 2>&1; then
+  COMMITS=$(git log --pretty=%s origin/main..HEAD 2>/dev/null || true)
 else
-  echo "  No commits yet, skipping."
+  COMMITS=$(git log --pretty=%s -n 10 2>/dev/null || true)
+fi
+if [ -n "$COMMITS" ]; then
+  BAD=0
+  while IFS= read -r msg; do
+    [ -z "$msg" ] && continue
+    if bash "$SCRIPT_DIR/check-commit-msg.sh" "$msg"; then
+      :
+    else
+      BAD=$((BAD + 1))
+    fi
+  done <<< "$COMMITS"
+  if [ "$BAD" -gt 0 ]; then
+    ERRORS=$((ERRORS + 1))
+  fi
+  echo ""
+else
+  echo "  No unpushed commits, skipping."
   echo ""
 fi
 
