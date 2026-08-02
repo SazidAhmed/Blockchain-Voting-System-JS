@@ -252,6 +252,10 @@
 
 <script>
 const API = import.meta.env.VITE_INSTITUTION_API_URL || "http://localhost:4000";
+const INSTITUTION_API_KEY = import.meta.env.VITE_INSTITUTION_API_KEY || "";
+const authHeaders = INSTITUTION_API_KEY
+  ? { "x-api-key": INSTITUTION_API_KEY }
+  : {};
 const LIMIT = 20;
 
 const emptyForm = () => ({
@@ -313,7 +317,7 @@ export default {
           if (this.voterFilter) p.set("voter", this.voterFilter);
           url = `${API}/api/members?${p}`;
         }
-        const res = await fetch(url);
+        const res = await fetch(url, { headers: authHeaders });
         const data = await res.json();
         this.members = this.isSearchMode
           ? data.results || []
@@ -391,7 +395,7 @@ export default {
         const method = this.isEditing ? "PUT" : "POST";
         const res = await fetch(url, {
           method,
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", ...authHeaders },
           body: JSON.stringify(this.form),
         });
         const data = await res.json();
@@ -420,6 +424,7 @@ export default {
       try {
         const res = await fetch(`${API}/api/members/${member.institution_id}`, {
           method: "DELETE",
+          headers: authHeaders,
         });
         const data = await res.json();
         if (!res.ok) {

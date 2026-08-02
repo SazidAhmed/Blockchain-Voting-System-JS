@@ -56,7 +56,9 @@
       </div>
     </div>
 
-    <div v-if="error" class="alert alert-danger">{{ error }}</div>
+    <div v-if="error" class="error-banner">
+      <PhWarning :size="16" /> {{ error }}
+    </div>
 
     <div class="search-bar">
       <div class="search-input-wrapper">
@@ -318,17 +320,30 @@ import {
   PhCaretDown,
   PhMagnifyingGlass,
   PhLeaf,
+  PhWarning,
 } from "@phosphor-icons/vue";
 
 const BLOCKCHAIN_URL =
   import.meta.env.VITE_BLOCKCHAIN_URL || "http://localhost:3001";
+
+const blockchainHeaders = import.meta.env.VITE_BLOCKCHAIN_API_KEY
+  ? { "x-api-key": import.meta.env.VITE_BLOCKCHAIN_API_KEY }
+  : {};
 
 export default {
   name: "AdminBlockchainExplorer",
   props: {
     tabActive: { type: Boolean, default: false },
   },
-  components: { PhCheckCircle, PhXCircle, PhCaretUp, PhCaretDown, PhMagnifyingGlass, PhLeaf },
+  components: {
+    PhCheckCircle,
+    PhXCircle,
+    PhCaretUp,
+    PhCaretDown,
+    PhMagnifyingGlass,
+    PhLeaf,
+    PhWarning,
+  },
   data() {
     return {
       chain: [],
@@ -417,9 +432,13 @@ export default {
       this.error = null;
       try {
         const [chainRes, statusRes, networkRes] = await Promise.all([
-          axios.get(`${BLOCKCHAIN_URL}/chain`),
-          axios.get(`${BLOCKCHAIN_URL}/node/status`),
-          axios.get(`${BLOCKCHAIN_URL}/network/status`),
+          axios.get(`${BLOCKCHAIN_URL}/chain`, { headers: blockchainHeaders }),
+          axios.get(`${BLOCKCHAIN_URL}/node/status`, {
+            headers: blockchainHeaders,
+          }),
+          axios.get(`${BLOCKCHAIN_URL}/network/status`, {
+            headers: blockchainHeaders,
+          }),
         ]);
         this.chain = chainRes.data.chain || [];
         this.nodeStatus = statusRes.data || {};
@@ -666,6 +685,20 @@ export default {
 
 .auto-refresh-toggle .toggle-text {
   font-weight: 600;
+}
+
+/* ── Error Banner ── */
+.error-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: color-mix(in srgb, var(--warning) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--warning) 30%, transparent);
+  border-radius: var(--radius-md);
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  color: var(--warning);
+  font-weight: 500;
 }
 
 /* ── Search ── */

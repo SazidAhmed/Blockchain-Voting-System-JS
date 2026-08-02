@@ -25,7 +25,6 @@ export const useAuthStore = defineStore("auth", () => {
 
       user.value = data.user;
       localStorage.setItem("admin_user", JSON.stringify(data.user));
-      localStorage.setItem("admin_token", data.token);
 
       return data;
     } catch (err) {
@@ -62,7 +61,6 @@ export const useAuthStore = defineStore("auth", () => {
   function logout() {
     user.value = null;
     localStorage.removeItem("admin_user");
-    localStorage.removeItem("admin_token");
     error.value = null;
   }
 

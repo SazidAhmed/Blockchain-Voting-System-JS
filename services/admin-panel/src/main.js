@@ -1,20 +1,23 @@
-import './assets/tokens.css'
+import "./assets/tokens.css";
 
-import { createApp } from 'vue'
-import { createPinia } from 'pinia'
-import App from './App.vue'
-import router from './router/index.js'
-import { useAuthStore } from './store/auth.js'
+import { createPinia } from "pinia";
+import { createApp } from "vue";
+import App from "./App.vue";
+import router from "./router/index.js";
+import { useAuthStore } from "./store/auth.js";
 
-const app = createApp(App)
+const app = createApp(App);
 
-const pinia = createPinia()
-app.use(pinia)
+const pinia = createPinia();
+app.use(pinia);
 
 // Initialize auth from localStorage before mounting
-const authStore = useAuthStore()
-authStore.initializeAuth()
+const authStore = useAuthStore();
+authStore.initializeAuth();
 
-app.use(router)
+// Make authStore globally accessible for API interceptor
+window.__authStore = authStore;
 
-app.mount('#app')
+app.use(router);
+
+app.mount("#app");

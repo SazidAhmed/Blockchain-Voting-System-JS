@@ -851,8 +851,8 @@ export default {
 
     // Lifecycle
     onMounted(async () => {
-      const hasToken = localStorage.getItem("admin_token");
-      if (!hasToken) {
+      const storedUser = localStorage.getItem("admin_user");
+      if (!storedUser) {
         await router.push("/login");
         return;
       }
