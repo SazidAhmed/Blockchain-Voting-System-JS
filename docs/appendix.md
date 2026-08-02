@@ -79,7 +79,7 @@ A mathematical curve defined by y^2 = x^3 + ax + b over a finite field. Points o
 NIST-standardized elliptic curve with 256-bit key size. Provides ~128-bit security level. Faster and smaller keys than RSA for equivalent security. Used for ECDSA digital signatures in this project.
 
 **Private Key**
-Secret scalar value (256 bits for P-256). Never shared. Used to sign data. Stored encrypted in browser localStorage. If compromised, attacker can forge signatures.
+Secret scalar value (256 bits for P-256). Never shared. Used to sign data. Stored encrypted in browser IndexedDB with AES-256-GCM using random salt and PBKDF2-derived key from user password. If compromised, attacker can forge signatures.
 
 **Public Key**
 Point on the curve derived from the private key via scalar multiplication (Q = d \* G). Freely shared. Used to verify signatures. Does not reveal the private key.
@@ -105,13 +105,16 @@ Produces digital signatures using ECC. Provides: authentication (only private ke
 
 **Verification Process**
 
-1. Hash the message with SHA-256
+1. Hash the message with SHA-256 (using canonical JSON if object)
 2. Compute u1 = h \* s^-1 mod n
 3. Compute u2 = r \* s^-1 mod n
 4. Compute point (x1, y1) = u1 _G + u2_ Q
 5. Valid if x1 mod n == r
 
 Uses only the public key — anyone can verify without accessing the private key.
+
+**Canonical JSON**
+Deterministic serialization where object keys are sorted alphabetically before stringification. Ensures `{"a": 1, "b": 2}` and `{"b": 2, "a": 1}` produce identical strings. Required for signature verification across platforms (H-03).
 
 **IEEE P1363**
 Signature encoding format where r and s values are concatenated (r || s, 64 bytes for P-256). The backend parses signatures in this format for verification.
@@ -166,7 +169,7 @@ Browser native cryptographic API (`window.crypto.subtle`). Provides ECDSA P-256,
 Client-side creation of ECDSA + RSA keypairs via Web Crypto API. Happens during voter registration. Private keys never leave the browser.
 
 **Key Storage**
-Private keys encrypted with AES-256-GCM using a PBKDF2-derived key from the user's password, stored in browser localStorage under `voting_keys_{userId}`. Public keys sent to backend during registration.
+Private keys encrypted with AES-256-GCM using a random salt per encryption (not derived from userId) + PBKDF2-derived key from the user's password, stored in browser **IndexedDB** under `voting_keys_{userId}`. Public keys sent to backend during registration.
 
 **Key Lifecycle**
 Generate (registration) → Load (login) → Use (signing/encryption) → Clear (logout). Keys held in memory as CryptoKey objects for session lifetime.
@@ -182,7 +185,7 @@ Not currently implemented. Production recommendation: IndexedDB with Hardware Se
 ## Password & Key Derivation
 
 **PBKDF2 (Password-Based Key Derivation Function 2)**
-Derives a cryptographic key from a password + salt. Configurable iterations (100,000 in this project) to slow brute-force attacks. Output: 256-bit key used to encrypt private keys in localStorage.
+Derives a cryptographic key from a password + salt. Configurable iterations (100,000 in this project) to slow brute-force attacks. Output: 256-bit key used to encrypt private keys in IndexedDB (with random salt per encryption).
 
 **bcrypt**
 Password hashing algorithm with built-in salt and adjustable work factor (10 rounds here). Used for hashing user passwords on the backend. Not reversible — login compares hash of input against stored hash.
@@ -195,10 +198,10 @@ Random value added to password before hashing. Prevents rainbow table attacks (p
 ## Nullifiers
 
 **Nullifier**
-Unique per-voter-per-election identifier derived from: `SHA-256(privateKey || "||" || electionId)`. Prevents double-voting. Deterministic: same voter + same election = same nullifier. Different elections produce different nullifiers. Irreversible: cannot recover private key from nullifier.
+Unique per-voter-per-election identifier derived client-side: `SHA-256(privateKey + "||" + electionId)`. Prevents double-voting. Deterministic: same voter + same election = same nullifier. Different elections produce different nullifiers. Irreversible: cannot recover private key from nullifier.
 
 **Double-Vote Prevention**
-Core election integrity mechanism. Backend checks nullifier uniqueness before accepting any vote. If nullifier already exists in `votes_meta`, vote rejected. Nullifiers derived server-side from authenticated user — clients cannot supply arbitrary nullifiers.
+Core election integrity mechanism. Backend checks nullifier uniqueness (via UNIQUE constraint on `nullifier_hash`) before accepting any vote. If nullifier already exists in `votes_meta`, vote rejected with 400. Nullifiers are client-supplied — server never derives them.
 
 ---
 
@@ -266,10 +269,10 @@ Nodes earn trust scores based on: valid block submissions, consistent chain stat
 ## Consensus Mechanisms
 
 **Mining**
-Process of creating a new block from pending transactions. In PoW: find a nonce producing a hash meeting difficulty target. Block signed with node's ECDSA key, broadcast to peers.
+Process of creating a new block from pending transactions. In PoW: find a nonce producing a hash meeting difficulty target. Block signed with node's persistent ECDSA key (stored in LevelDB), broadcast to peers.
 
 **Block Validation**
-Before accepting a block, nodes verify: sequential indices, previousHash links match, block hash integrity, validator signatures against registered public keys.
+Before accepting a block, nodes verify: sequential indices, previousHash links match, block hash integrity, validator signatures against registered public keys. Block signature verified using canonical JSON serialization (keys sorted).
 
 **Chain Synchronization**
 When nodes diverge, they sync using a phased protocol: detect (discover being behind) → recover (request missing blocks) → validate (verify each block) → complete (resume operation).
@@ -295,7 +298,7 @@ Direct node-to-node communication without central coordinator. Used for chain sy
 ## Authentication & Authorization
 
 **JWT (JSON Web Token)**
-Compact, URL-safe token format for transmitting claims. Contains user ID, role, expiration. Signed with ECDSA (or HMAC-SHA256 for backward compat). Set as httpOnly cookie. Includes JTI (JWT ID) for revocation support.
+Compact, URL-safe token format for transmitting claims. Contains user ID, role, expiration. Signed with HMAC-SHA256 only (HS256 algorithm explicitly restricted to prevent algorithm confusion attacks). Set as httpOnly cookie only — never exposed to client-side JS. Includes JTI (JWT ID) for revocation support.
 
 **JTI (JWT ID)**
 Unique identifier per JWT token. Used for token revocation — invalidated tokens are added to a blacklist by their JTI. Logout and password change invalidate the current token's JTI.
@@ -304,10 +307,10 @@ Unique identifier per JWT token. Used for token revocation — invalidated token
 Cookie inaccessible to JavaScript — prevents XSS theft of JWT. Set by backend on login, sent automatically by browser on subsequent requests.
 
 **CSRF (Cross-Site Request Forgery)**
-Attack where malicious site tricks user's browser into making requests to your site. Mitigated by double-submit cookie pattern: server sets `csrf-token` cookie, client sends it back as `x-csrf-token` header on state-changing requests.
+Attack where malicious site tricks user's browser into making requests to your site. Mitigated by double-submit cookie pattern: server sets `csrf-token` cookie (readable by JS for the pattern to work), client sends it back as `x-csrf-token` header on state-changing requests. Cookie has `SameSite=Strict` + `secure` (production) for additional protection.
 
 **Double-Submit Cookie Pattern**
-CSRF protection: server sets a random token in a cookie. Client reads the cookie and sends the value as a header. Server verifies both match. No server-side session storage needed.
+CSRF protection: server sets a random token in a cookie (NOT httpOnly — client must read it). Client reads the cookie and sends the value as a header. Server verifies both match. No server-side session storage needed. Mitigated by `SameSite=Strict` which prevents cross-origin cookie transmission.
 
 **RBAC (Role-Based Access Control)**
 Access control based on user roles. Three roles: `voter` (vote, view), `admin` (create elections, manage), `board_member` (full lifecycle). Enforced via middleware before route handlers.
@@ -351,6 +354,7 @@ Cap on requests per time window per IP. Prevents brute force, vote stuffing, API
 | ------------ | ------ | --- |
 | Registration | 15 min | 5   |
 | Login        | 15 min | 10  |
+| OTP          | 15 min | 5   |
 | Vote         | 1 hour | 10  |
 | General      | 15 min | 100 |
 
@@ -415,13 +419,13 @@ Data structure speeding up queries. Critical indexes: `nullifier_hash` (UNIQUE) 
 ## Storage
 
 **LevelDB**
-Fast key-value store optimized for read-heavy workloads. Used by blockchain nodes for chain persistence at `./data/{nodeId}`. WAL-backed for crash recovery.
+Fast key-value store optimized for read-heavy workloads. Used by blockchain nodes for chain persistence at `./data/{nodeId}`. WAL-backed for crash recovery. Also stores persistent validator keypairs under key `node_key`.
 
 **localStorage**
-Browser storage API. Used to store encrypted private keys under `voting_keys_{userId}`. Persists across sessions but cleared on logout.
+Browser storage API. **No longer used for key storage** (security improvement). Still used for theme preference and non-sensitive session state.
 
 **IndexedDB**
-Browser storage API for larger structured data. Recommended for production key storage (replaces localStorage).
+Browser storage API for larger structured data. Now the primary storage for encrypted private keys under `voting_keys_{userId}` store. Recommended for production key storage.
 
 ---
 

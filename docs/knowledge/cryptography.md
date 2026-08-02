@@ -267,7 +267,7 @@ services/backend/utils/tallyEncryption.js
 │  ┌──────────────┐     ┌──────────────┐                  │
 │  │ Private key  │     │ Private key  │                  │
 │  │ (stored in   │     │ (stored in   │                  │
-│  │  localStorage│     │  localStorage│                  │
+│  │  IndexedDB)  │     │  IndexedDB)  │                  │
 │  │  encrypted)  │     │  encrypted)  │                  │
 │  └──────┬───────┘     └──────┬───────┘                  │
 │         │ sign               │ decrypt                   │
@@ -296,7 +296,7 @@ services/backend/utils/tallyEncryption.js
 └─────────────────────────────────────────────────────────┘
 ```
 
-- **Private keys**: Secret, stored encrypted in the browser's `localStorage`, never sent to the server
+- **Private keys**: Secret, stored encrypted in the browser's **IndexedDB** (under `voting_keys_{userId}` store), never sent to the server. Previously localStorage — migrated for security (random salt per encryption).
 - **Public keys**: Shared with the backend during registration, used for verification and encryption
 
 ---

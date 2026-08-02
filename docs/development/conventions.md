@@ -21,7 +21,7 @@ Format: `type(scope): description`
 | `scope`       | Optional            | `backend`, `frontend`, `blockchain`, `docker`, `voting` |
 | `description` | Required, ≤72 chars | `handle null election ID`, `add ballot encryption`      |
 
-Enforced by pre-commit hook (`.githooks/pre-commit`).
+Enforced by pre-push (`scripts/run-all-checks.sh`) and CI.
 
 ## Pull Requests
 

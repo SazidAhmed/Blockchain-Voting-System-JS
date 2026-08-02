@@ -397,11 +397,8 @@ Testing records show high confidence in the implemented scope, with repeated pas
 
 - Some roadmap items remain enhancement-stage.
 - Evidence is based on recorded project sessions; a fresh full regression run is still recommended before final defense demonstration.
-- Source code still contains explicit development-mode/legacy compatibility paths:
-  - fallback cryptographic helpers in backend utility functions for legacy flows,
-  - simplified signature-verification fallback path marked as development mode,
-  - localStorage-based key persistence labeled as demo-only in frontend crypto service.
-    These limitations are directly visible in current source modules [16], [20].
+- Key storage now requires IndexedDB availability; fallback mechanisms removed to enforce modern browser support.
+- Cryptographic operations fully enforced client-side; server accepts only authenticated, signed vote packages.
 
 ### 6.3 Practical Contribution
 

@@ -113,16 +113,16 @@ The `.glass` class adds `backdrop-filter: blur()` with semi-transparent backgrou
 1. `RegisterView` calls `keyManager.initializeUserKeys(userId, password)`
 2. Generates ECDSA P-256 signing keypair + RSA-OAEP 2048-bit encryption keypair
 3. Public keys sent to backend for storage
-4. Full keypairs stored in `localStorage` (encrypted with password in production)
+4. Full keypairs stored in **IndexedDB** (encrypted with password + random salt, AES-256-GCM)
 5. Keys kept in memory for current session
 
 ### Key Loading (Login)
 
 1. Store login action calls `keyManager.loadUserKeys(userId, password)`
-2. Retrieves keypairs from `localStorage` by userId
+2. Retrieves keypairs from **IndexedDB** by userId
 3. Re-imports raw key data into `CryptoKey` objects
 4. Keys kept in memory for current session
-5. On page refresh, `restoreKeys` action auto-reloads from `localStorage`
+5. On page refresh, `restoreKeys` action auto-reloads from **IndexedDB**
 
 ### Voting Flow
 
@@ -153,7 +153,7 @@ Vuex store with single module:
 
 User data persists to `localStorage` under `voter_user` for session recovery on refresh.
 
-**Actions:** `login` sends `loginType: "voter"` (role-filtered). `restoreKeys` auto-loads cryptographic keys from localStorage on app init (called from `App.vue`). `logout` calls `keyManager.clearKeys()` to wipe in-memory keys.
+**Actions:** `login` sends `loginType: "voter"` (role-filtered). `restoreKeys` auto-loads cryptographic keys from **IndexedDB** on app init (called from `App.vue`). `logout` calls `keyManager.clearKeys()` to wipe in-memory keys.
 
 ## Routing
 
@@ -181,7 +181,7 @@ Sticky navigation with:
 
 ### VoteReceipt
 
-Cryptographic receipt displayed after voting. Shows transaction hash, nullifier, timestamp, and digital signature. Supports copy-to-clipboard, download as JSON, and print.
+Cryptographic receipt displayed after voting. Shows transaction hash, timestamp, and opaque receipt ID. Supports copy-to-clipboard, download as JSON, and print. Nullifier is never exposed to protect voter privacy.
 
 ## Mobile Responsive
 

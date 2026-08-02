@@ -145,14 +145,15 @@ Confirm Password: DemoVote123!
 1. **ECDSA P-256 Keypair** - For digital signatures
 2. **RSA-OAEP 2048-bit Keypair** - For vote encryption
 
-These keys are generated in the browser using the Web Crypto API. The private keys NEVER leave the user's device—they're stored securely in localStorage."
+These keys are generated in the browser using the Web Crypto API. The private keys NEVER leave the user's device—they're stored securely in IndexedDB encrypted with AES-256-GCM."
 
-**Show in Console:**
+**Show in Browser DevTools:**
 
 ```javascript
-// Type in console to demonstrate:
-localStorage.getItem("votingPrivateKey");
-localStorage.getItem("encryptionPrivateKey");
+// Open IndexedDB inspector in DevTools (Application tab):
+// Database: voting_db
+// Store: voting_keys_{userId}
+// Encrypted keys stored with random salt per encryption
 ```
 
 ### Step 4: Show Database Storage

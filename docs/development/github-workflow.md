@@ -54,14 +54,16 @@ git checkout -b fix/docker-compose-command
 
 Branch naming:
 
-| Prefix      | When                  |
-| ----------- | --------------------- |
-| `fix/`      | Bug fix               |
-| `feat/`     | New feature           |
-| `docs/`     | Documentation         |
-| `refactor/` | Code restructuring    |
-| `ci/`       | CI/CD changes         |
-| `chore/`    | Dependencies, tooling |
+| Prefix      | When                                          |
+| ----------- | --------------------------------------------- |
+| `fix/`      | Bug fix                                       |
+| `feat/`     | New feature                                   |
+| `docs/`     | Documentation                                 |
+| `refactor/` | Code restructuring                            |
+| `ci/`       | CI/CD changes                                 |
+| `chore/`    | Dependencies, tooling                         |
+| `hotfix/`   | Emergency production bug fix                  |
+| `release/`  | Release preparation (version bump, changelog) |
 
 ### Step 2: Make Changes
 

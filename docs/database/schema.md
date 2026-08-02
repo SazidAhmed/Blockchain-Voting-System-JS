@@ -20,26 +20,26 @@ MySQL 8.0 database backing the voting system. Stores off-chain metadata, user pr
 
 Registered voters and administrators.
 
-| Column                   | Type         | Constraints                 | Description                                                        |
-| ------------------------ | ------------ | --------------------------- | ------------------------------------------------------------------ |
-| `id`                     | INT          | PK, AUTO_INCREMENT          |                                                                    |
-| `institution_id`         | VARCHAR(50)  | UNIQUE, NOT NULL            | University student/employee ID                                     |
-| `username`               | VARCHAR(100) | NOT NULL                    | Login username                                                     |
-| `password`               | VARCHAR(60)  | NOT NULL                    | Bcrypt hash                                                        |
-| `role`                   | ENUM         | NOT NULL                    | student, teacher, staff, board_member, admin                       |
-| `email`                  | VARCHAR(100) | UNIQUE, NOT NULL            |                                                                    |
-| `public_key`             | TEXT         |                             | ECDSA P-256 public key for signing votes                           |
-| `pseudonym_id`           | VARCHAR(64)  | UNIQUE, NOT NULL            | SHA-256 hash for on-chain identity                                 |
-| `encrypted_profile_blob` | TEXT         |                             | AES-256-GCM encrypted PII                                          |
-| `encryption_public_key`  | TEXT         | NULL                        | RSA-OAEP public key for ballot encryption (added in migration 002) |
-| `registration_status`    | ENUM         | DEFAULT 'pending'           | pending, verified, active, suspended                               |
-| `mfa_enabled`            | BOOLEAN      | DEFAULT FALSE               |                                                                    |
-| `mfa_secret`             | VARCHAR(64)  |                             | Encrypted TOTP secret                                              |
-| `created_at`             | TIMESTAMP    | DEFAULT CURRENT_TIMESTAMP   |                                                                    |
-| `updated_at`             | TIMESTAMP    | ON UPDATE CURRENT_TIMESTAMP |                                                                    |
-| `last_login`             | TIMESTAMP    | NULL                        |                                                                    |
+| Column                   | Type         | Constraints                 | Description                                  |
+| ------------------------ | ------------ | --------------------------- | -------------------------------------------- |
+| `id`                     | INT          | PK, AUTO_INCREMENT          |                                              |
+| `institution_id`         | VARCHAR(50)  | UNIQUE, NOT NULL            | University student/employee ID               |
+| `username`               | VARCHAR(100) | NOT NULL                    | Login username                               |
+| `password`               | VARCHAR(60)  | NOT NULL                    | Bcrypt hash                                  |
+| `role`                   | ENUM         | NOT NULL                    | student, teacher, staff, board_member, admin |
+| `email`                  | VARCHAR(100) | UNIQUE, NOT NULL            |                                              |
+| `public_key`             | TEXT         |                             | ECDSA P-256 public key for signing votes     |
+| `pseudonym_id`           | VARCHAR(64)  | UNIQUE, NOT NULL            | SHA-256 hash for on-chain identity           |
+| `encrypted_profile_blob` | TEXT         |                             | AES-256-GCM encrypted PII                    |
+| `encryption_public_key`  | TEXT         | NULL                        | RSA-OAEP public key for ballot encryption    |
+| `registration_status`    | ENUM         | DEFAULT 'pending'           | pending, verified, active, suspended         |
+| `mfa_enabled`            | BOOLEAN      | DEFAULT FALSE               |                                              |
+| `mfa_secret`             | VARCHAR(64)  |                             | Encrypted TOTP secret                        |
+| `created_at`             | TIMESTAMP    | DEFAULT CURRENT_TIMESTAMP   |                                              |
+| `updated_at`             | TIMESTAMP    | ON UPDATE CURRENT_TIMESTAMP |                                              |
+| `last_login`             | TIMESTAMP    | NULL                        |                                              |
 
-**Indexes:** (none redundant — UNIQUE indexes cover `institution_id`, `email`, `pseudonym_id`; standalone `idx_role` and `idx_registration_status` removed in migration 005 as low-cardinality)
+**Indexes:** (none redundant — UNIQUE indexes cover `institution_id`, `email`, `pseudonym_id`; standalone `idx_role` and `idx_registration_status` removed as low-cardinality)
 
 ### `elections`
 
@@ -68,7 +68,7 @@ Election configurations and threshold encryption parameters.
 | `results_released`    | BOOLEAN      | DEFAULT FALSE               | Whether plaintext results are publicly visible     |
 | `results_released_at` | TIMESTAMP    | NULL                        | When results were released                         |
 
-**Indexes:** `status`, `(start_date, end_date)`, `created_by`
+**Indexes:** `status`, `(start_date, end_date)`, `created_by`, `idx_auto_release (status, results_released, end_date)`
 
 **Constraints:** CHECK `(end_date > start_date)`, FK `(locked_by)` → users(id) ON DELETE SET NULL
 
@@ -134,20 +134,20 @@ Tracks which users are registered for which elections.
 
 On-chain vote metadata and nullifiers. No ballot content stored here.
 
-| Column             | Type            | Constraints                            | Description                                                    |
-| ------------------ | --------------- | -------------------------------------- | -------------------------------------------------------------- |
-| `id`               | BIGINT UNSIGNED | PK, AUTO_INCREMENT                     |                                                                |
-| `tx_hash`          | VARCHAR(64)     | UNIQUE, NOT NULL                       | Blockchain transaction hash                                    |
-| `block_index`      | INT             | NOT NULL                               | Block number                                                   |
-| `election_id`      | INT             | FK → elections.id (RESTRICT), NOT NULL |                                                                |
-| `nullifier_hash`   | VARCHAR(64)     | UNIQUE, NOT NULL                       | SHA-256 of nullifier (double-vote prevention)                  |
-| `cipher_ref`       | TEXT            |                                        | Reference to encrypted ballot                                  |
-| `encrypted_ballot` | TEXT            |                                        | Threshold-encrypted ballot data                                |
-| `signature`        | TEXT            | NULL                                   | ECDSA signature of vote package (added in migration 002)       |
-| `voter_public_key` | TEXT            | NULL                                   | Public key for signature verification (added in migration 002) |
-| `merkle_root`      | VARCHAR(64)     |                                        | Merkle root of block                                           |
-| `merkle_proof`     | JSON            |                                        | Merkle inclusion proof                                         |
-| `timestamp`        | TIMESTAMP       | DEFAULT CURRENT_TIMESTAMP              |                                                                |
+| Column             | Type            | Constraints                            | Description                                   |
+| ------------------ | --------------- | -------------------------------------- | --------------------------------------------- |
+| `id`               | BIGINT UNSIGNED | PK, AUTO_INCREMENT                     |                                               |
+| `tx_hash`          | VARCHAR(64)     | UNIQUE, NOT NULL                       | Blockchain transaction hash                   |
+| `block_index`      | INT             | NOT NULL                               | Block number                                  |
+| `election_id`      | INT             | FK → elections.id (RESTRICT), NOT NULL |                                               |
+| `nullifier_hash`   | VARCHAR(64)     | UNIQUE, NOT NULL                       | SHA-256 of nullifier (double-vote prevention) |
+| `cipher_ref`       | TEXT            |                                        | Reference to encrypted ballot                 |
+| `encrypted_ballot` | TEXT            |                                        | Threshold-encrypted ballot data               |
+| `signature`        | TEXT            | NULL                                   | ECDSA signature of vote package               |
+| `voter_public_key` | TEXT            | NULL                                   | Public key for signature verification         |
+| `merkle_root`      | VARCHAR(64)     |                                        | Merkle root of block                          |
+| `merkle_proof`     | JSON            |                                        | Merkle inclusion proof                        |
+| `timestamp`        | TIMESTAMP       | DEFAULT CURRENT_TIMESTAMP              |                                               |
 
 **Indexes:** `tx_hash`, `election_id`, `nullifier_hash`, `block_index`, `timestamp`, `(election_id, block_index)`
 
@@ -196,6 +196,37 @@ Validator and observer nodes in the permissioned blockchain network.
 | `updated_at`             | TIMESTAMP    | ON UPDATE CURRENT_TIMESTAMP |                                        |
 
 **Indexes:** `node_id`, `status`, `node_type`, `last_seen`, `idx_added_by`
+
+### `otp_codes`
+
+One-time password codes for voter registration.
+
+| Column           | Type            | Constraints        | Description                              |
+| ---------------- | --------------- | ------------------ | ---------------------------------------- |
+| `id`             | BIGINT UNSIGNED | PK, AUTO_INCREMENT | Surrogate key (avoids string clustering) |
+| `institution_id` | VARCHAR(20)     | UNIQUE, NOT NULL   | University ID (lookup index)             |
+| `code`           | VARCHAR(10)     | NOT NULL           | 6-digit OTP                              |
+| `email`          | VARCHAR(255)    | NOT NULL           | Email for OTP delivery                   |
+| `expires_at`     | BIGINT          | NOT NULL           | Unix timestamp in milliseconds           |
+| `created_at`     | BIGINT          | NOT NULL           | Unix timestamp in milliseconds           |
+| `attempts`       | INT             | DEFAULT 0          | Verification attempts                    |
+| `verified`       | BOOLEAN         | DEFAULT FALSE      | Whether OTP was verified                 |
+| `verified_at`    | BIGINT          | NULL               | Unix timestamp when verified             |
+
+**Indexes:** `institution_id` (UNIQUE)
+
+### `token_blacklist`
+
+Revoked JWT tokens.
+
+| Column       | Type         | Constraints       | Description                 |
+| ------------ | ------------ | ----------------- | --------------------------- |
+| `jti`        | VARCHAR(255) | PK                | JWT ID claim                |
+| `expires_at` | BIGINT       | NOT NULL, INDEXED | Unix timestamp (cleanup at) |
+
+**Indexes:** `expires_at`
+
+**Cleanup:** Backend runs periodic DELETE for expired tokens every hour.
 
 ### `audit_logs`
 
@@ -377,28 +408,24 @@ votes_meta ──< tally_partial_decryptions (vote_meta_id, CASCADE)
 | `votes_meta`                | `nullifier_hash` (UNIQUE)                      | Double-vote prevention                        |
 | `votes_meta`                | `tx_hash` (UNIQUE)                             | Receipt verification                          |
 | `votes_meta`                | `election_id`                                  | Tally queries                                 |
-| `votes_meta`                | `(election_id, block_index)`                   | Tally ordering per election (migration 005)   |
+| `votes_meta`                | `(election_id, block_index)`                   | Tally ordering per election                   |
 | `audit_logs`                | `timestamp`                                    | Audit queries                                 |
-| `audit_logs`                | `(event_type, timestamp)`                      | Time-range-per-type queries (migration 005)   |
+| `audit_logs`                | `(event_type, timestamp)`                      | Time-range-per-type queries                   |
 | `nodes`                     | `last_seen`                                    | Health monitoring                             |
-| `nodes`                     | `idx_added_by`                                 | FK index on added_by (migration 005)          |
-| `candidates`                | `(election_id, name)`                          | ORDER BY name in results (migration 005)      |
+| `nodes`                     | `idx_added_by`                                 | FK index on added_by                          |
+| `candidates`                | `(election_id, name)`                          | ORDER BY name in results                      |
 | `voter_registrations`       | `(user_id, election_id)` (UNIQUE)              | Registration integrity                        |
-| `voter_registrations`       | `(election_id, status)`                        | COUNT aggregates (migration 005)              |
-| `blind_tokens`              | `(pseudonym_id, election_id)`                  | Token validity lookups (migration 005)        |
-| `admin_audit_logs`          | `(admin_id, timestamp)`                        | Paginated admin audit (migration 005)         |
+| `voter_registrations`       | `(election_id, status)`                        | COUNT aggregates                              |
+| `blind_tokens`              | `(pseudonym_id, election_id)`                  | Token validity lookups                        |
+| `admin_audit_logs`          | `(admin_id, timestamp)`                        | Paginated admin audit                         |
 | `threshold_key_shares`      | `(election_id, node_id, share_index)` (UNIQUE) | Key share uniqueness                          |
 | `tally_partial_decryptions` | `(vote_meta_id, node_id)` (UNIQUE)             | One partial decryption per validator per vote |
 
 ## Migrations
 
-| Migration | File                                                       | Changes                                                                                                                                                             |
-| --------- | ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 001       | `services/backend/migrations/001_initial_schema.sql`       | All 13 tables, 3 views, default config, schema_migrations tracking                                                                                                  |
-| 002       | `services/backend/migrations/002_add_crypto_fields.sql`    | Adds `encryption_public_key` to users, `signature` and `voter_public_key` to votes_meta, index on signature                                                         |
-| 003       | `services/backend/migrations/003_add_tally_encryption.sql` | Adds `tally_key`, `results_released`, `results_released_at` to elections for encrypted result tallying                                                              |
-| 004       | `services/backend/migrations/004_fix_tally_key_column.sql` | Fixes `tally_key` from VARCHAR(64) to TEXT (RSA keys need ~1700 chars)                                                                                              |
-| 005       | `services/backend/migrations/005_fix_schema_issues.sql`    | Adds missing FK constraints and indexes, composite indexes, BIGINT PKs on high-growth tables, VARCHAR sizing, UNIQUE on vote_receipts, collation, view GROUP BY fix |
+| Migration | File                                                 | Changes                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| --------- | ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 001       | `services/backend/migrations/001_initial_schema.sql` | **Consolidated initial schema** — All 15 tables (users, elections, candidates, blind_tokens, voter_registrations, votes_meta, vote_receipts, nodes, audit_logs, admin_audit_logs, admin_security_logs, threshold_key_shares, tally_partial_decryptions, system_config, otp_codes, token_blacklist, schema_migrations), 3 views, default config. Includes all features: crypto fields, tally encryption, BIGINT PKs, composite indexes, FK constraints. |
 
 ## See Also
 

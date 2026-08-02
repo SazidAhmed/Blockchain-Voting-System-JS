@@ -10,7 +10,7 @@ http://localhost:3000
 
 ## Auth
 
-JWT-based with HS256 default; RS256 also accepted for backward compat. Token returned in response body **and** set as httpOnly cookie. Two middleware layers:
+JWT-based with HS256 only (algorithm restricted to prevent algorithm confusion attacks). Token set as httpOnly cookie only — never returned in response body. Two middleware layers:
 
 - `auth` — any authenticated user (middleware/auth.js:5)
 - `adminAuth` — admin or board_member role only (middleware/auth.js:35)
@@ -40,7 +40,6 @@ Tokens include a `jti` (JWT ID) claim. Revoked tokens are added to an in-memory 
 | `otpLimiter`      | 15m    | 5   | POST /api/users/send-otp, /verify-otp |
 | `voteLimiter`     | 1h     | 10  | POST /api/elections/:id/vote          |
 | `generalLimiter`  | 15m    | 100 | All other endpoints                   |
-| `adminLimiter`    | 15m    | 30  | All admin endpoints                   |
 
 All return `429 Too Many Requests` with `RateLimit-*` headers.
 
@@ -197,11 +196,10 @@ Authenticate. JWT set as httpOnly cookie.
 | 400    | `loginType: "voter"` but user is admin/board_member     |
 | 400    | `loginType: "admin"` but user is not admin/board_member |
 
-**Response 200:** Sets `token` httpOnly cookie. Body includes both `token` and `user`:
+**Response 200:** Sets `token` httpOnly cookie. Body includes `user` only (token never exposed to client-side JS):
 
 ```json
 {
-  "token": "<jwt-token-string>",
   "user": {
     "id": 1,
     "institutionId": "STU00001",
@@ -425,15 +423,13 @@ Remove a candidate. Fails if election is locked or active.
 
 ### `POST /api/elections/:id/vote`
 
-Cast a vote. Client encrypts ballot and provides nullifier — all crypto is client-side. Nullifiers are derived server-side from the authenticated user's ID and election ID to prevent manipulation.
+Cast a vote. Client encrypts ballot, derives nullifier, signs the vote, and provides the ECDSA public key — all cryptography is handled client-side to protect user privacy.
 
 **Auth:** required
 
 **Rate limit:** voteLimiter (10/h)
 
-Two flows supported:
-
-**New client-side crypto flow** (preferred):
+**Request payload:**
 
 ```json
 {
@@ -446,26 +442,16 @@ Two flows supported:
 }
 ```
 
-**Legacy server-side flow** (deprecated):
-
-```json
-{
-  "candidateId": 1,
-  "privateKey": "server-side-key-hex"
-}
-```
-
 **Response 200:**
 
 ```json
 {
   "message": "Vote cast successfully",
   "receipt": {
+    "receiptId": "opaque-receipt-id-hex",
     "transactionHash": "sha256-tx-hash",
     "blockIndex": 0,
-    "timestamp": "2026-07-15T12:00:00.000Z",
-    "nullifier": "sha256-nullifier",
-    "signature": "ecdsa-signature"
+    "timestamp": "2026-07-15T12:00:00.000Z"
   }
 }
 ```

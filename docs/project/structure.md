@@ -84,7 +84,6 @@
             ├── voting-system-alerts.yml
         └── 📁docker
             └── 📁nginx
-                └── 📁logs
                 ├── nginx.conf
             ├── docker-compose.monitoring.yml
             ├── docker-compose.multi-node.yml
@@ -187,10 +186,6 @@
                 ├── validation.js
             └── 📁migrations
                 ├── 001_initial_schema.sql
-                ├── 002_add_crypto_fields.sql
-                ├── 003_add_tally_encryption.sql
-                ├── 004_fix_tally_key_column.sql
-                ├── 005_fix_schema_issues.sql
             └── 📁routes
                 └── 📁elections
                     ├── candidates.js
@@ -236,12 +231,12 @@
                 ├── password.js
                 ├── signing.js
                 ├── tallyEncryption.js
-                ├── token.js
                 ├── tokenBlacklist.js
             ├── .dockerignore
             ├── .env.example
             ├── .gitignore
             ├── Dockerfile
+            ├── Dockerfile.prod
             ├── index.js
             ├── package.json
         └── 📁blockchain-node
@@ -255,6 +250,7 @@
                     ├── block.js
                     ├── blockchain.js
                     ├── merkleTree.js
+                    ├── signature.js
                 └── 📁monitoring
                     ├── nodeMonitor.js
                     ├── prometheusMetrics.js
@@ -274,6 +270,7 @@
             ├── .dockerignore
             ├── .gitignore
             ├── Dockerfile
+            ├── Dockerfile.prod
             ├── index.js
             ├── package.json
             ├── start.sh
@@ -333,7 +330,9 @@
                     ├── voter-picker.js
                 ├── app.js
                 ├── server.js
+            ├── .dockerignore
             ├── Dockerfile
+            ├── Dockerfile.prod
             ├── index.js
             ├── package.json
     └── 📁tests
@@ -350,10 +349,13 @@
         └── 📁deprecated
             ├── quick-test.sh
             ├── run-comprehensive-tests.sh
+        └── 📁helpers
+            ├── vote-package.js
         ├── run-tests.sh
         ├── test-config.sh
     ├── .env.example
     ├── .gitignore
+    ├── .nvmrc
     ├── .shell_aliases
     ├── AGENTS.md
     ├── LICENSE

@@ -11,7 +11,7 @@ admin-panel
 (5174)
 ```
 
-5 Docker services on `voting-network` bridge:
+5 Docker services on `backend-net` bridge:
 
 | Service                | Port      | Stack                | Role               |
 | ---------------------- | --------- | -------------------- | ------------------ |
@@ -31,13 +31,13 @@ Blockchain nodes discover each other via `PEERS` env var (comma-separated HTTP U
 
 ## Health Check Flow
 
-| Service         | Probe                  | Interval | Notes                                               |
-| --------------- | ---------------------- | -------- | --------------------------------------------------- |
-| mysql           | `mysqladmin ping`      | 10s      |                                                     |
-| backend         | `wget /health`         | 15s      |                                                     |
-| blockchain-node | `wget /node`           | 15s      | Dockerfile default is 30s, compose overrides to 15s |
-| institution-api | `wget /api/health`     | 15s      |                                                     |
-| frontend        | none (Vite dev server) | —        |                                                     |
+| Service         | Probe                  | Interval | Notes                                             |
+| --------------- | ---------------------- | -------- | ------------------------------------------------- |
+| mysql           | `mysqladmin ping`      | 10s      |                                                   |
+| backend         | `wget /health`         | 15s      |                                                   |
+| blockchain-node | `wget /health`         | 15s      | Public endpoint (was /node which required apiKey) |
+| institution-api | `wget /api/health`     | 15s      |                                                   |
+| frontend        | none (Vite dev server) | —        |                                                   |
 
 ## CORS
 
@@ -57,7 +57,7 @@ Requests with no `Origin` header (Postman, curl, server-to-server) are permitted
 - `VITE_INSTITUTION_API_URL` — Institution API URL (`http://localhost:4000`)
 - `BLOCKCHAIN_NODE_URL` — Backend uses this to submit votes to blockchain
 - `JWT_SECRET` — JWT signing secret
-- `NULLIFIER_SECRET` — Separate secret for server-side nullifier derivation (required, backend exits if missing)
+- `NULLIFIER_SECRET` — Secret used for client-supplied nullifier validation (required, backend exits if missing)
 - `CORS_ALLOWED_ORIGINS` — Comma-separated CORS origins (fallback to dev defaults)
 
 ## Authentication Flow

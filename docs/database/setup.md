@@ -85,7 +85,6 @@ Migration files live in `services/backend/migrations/` with sequential numbering
 
 ```text
 001_initial_schema.sql
-002_add_crypto_fields.sql
 ```
 
 New migrations run automatically on Docker boot. The `schema_migrations` table tracks which have been applied with checksums for integrity.
@@ -103,9 +102,9 @@ New migrations run automatically on Docker boot. The `schema_migrations` table t
 
 **Test credentials:**
 
-| Role    | Institution ID | Password    |
-| ------- | -------------- | ----------- |
-| Admin   | ADMIN001       | admin123    |
+| Role  | Institution ID | Password |
+| ----- | -------------- | -------- |
+| Admin | ADMIN001       | admin123 |
 
 ## Scripts
 

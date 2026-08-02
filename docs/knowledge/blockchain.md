@@ -75,6 +75,8 @@ Each blockchain node stores its chain in **LevelDB** — a fast key-value store 
 - Reliable crash recovery (WAL-backed persistence)
 - Simple key-value access patterns matching blockchain lookups
 
+**Validator keypairs are also persisted** — each node generates an ECDSA P-256 keypair on first boot and stores it in LevelDB under key `node_key`. On restart, the same key is loaded, ensuring stable validator identity across restarts.
+
 ---
 
 ## Peer Network
@@ -105,6 +107,8 @@ This phased approach prevents accepting corrupted or partially-reconstructed cha
 - **Heartbeat**: Regular ping/pong to confirm liveness
 - **Health scoring**: Behavioral tracking over time
 - **Quarantine**: Nodes exhibiting suspicious behavior (invalid blocks, hash manipulation) are isolated before they can corrupt the chain
+
+**Peer authentication (H-29):** Socket.IO connections require token authentication. Peers must present the correct `BLOCKCHAIN_API_KEY` during the handshake. Unauthorized connections are rejected at the transport level, preventing rogue nodes from broadcasting messages.
 
 ---
 
@@ -164,6 +168,18 @@ Each leaf is a hash of a transaction. Each internal node is the hash of its two 
 2. Verifier requests the Merkle proof (sibling hashes along the path)
 3. Verifier recomputes the root from the leaf up
 4. If computed root matches the block's `merkleRoot`, the vote is confirmed as recorded and untampered
+
+---
+
+## Canonical JSON Serialization
+
+All data signed or verified (votes, blocks) uses **canonical JSON** — object keys sorted alphabetically before stringification. This ensures:
+
+- **Deterministic serialization**: Same data → same string, regardless of key order
+- **Cross-platform compatibility**: Client and server produce identical JSON strings
+- **Signature reliability**: Signatures verified on one platform work on another
+
+Without canonicalization, `{"a": 1, "b": 2}` and `{"b": 2, "a": 1}` would produce different hashes and signatures, even though they represent the same data. The `canonicalJson()` function in `signature.js` recursively sorts keys before serialization.
 
 ---
 

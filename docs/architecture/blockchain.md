@@ -38,7 +38,11 @@ Each vote is stored as a pending transaction. When a block is mined, pending tra
 
 ## Double-Vote Prevention
 
-Nullifiers enforce single-vote-per-election. `Blockchain.isNullifierUsed()` in `src/core/blockchain.js:174` scans all blocks and pending transactions. A matching nullifier rejects the vote. Nullifiers are derived server-side from the authenticated user's ID and election ID — clients do not supply nullifiers directly, preventing manipulation.
+Nullifiers enforce single-vote-per-election. `Blockchain.isNullifierUsed()` in `src/core/blockchain.js:174` scans all blocks and pending transactions. A matching nullifier rejects the vote.
+
+**Client-supplied nullifiers (C-05):** Nullifiers are generated client-side only using `SHA-256(privateKey + "||" + electionId)`. The server never derives nullifiers from user credentials, preventing nullifier collision attacks from ambiguous string concatenation.
+
+**TOCTOU protection (H-06):** A UNIQUE constraint on `votes_meta.nullifier_hash` plus transaction isolation with `ER_DUP_ENTRY` handling prevents race conditions during concurrent vote submissions.
 
 ## Block Structure
 
@@ -66,10 +70,11 @@ Genesis block is created at index 0 with message "Genesis Block" and empty trans
 
 1. `POST /mine` or `MINE` message: create block from pending transactions
 2. `mineBlock(difficulty)`: increment nonce until hash starts with `difficulty` zeros
-3. `signBlock(privateKey)`: ECDSA P-256 signature using node's keypair
-4. `addBlock()`: validate index, previousHash, hash, validator
-5. `commitBlock()`: remove mined transactions from pending
-6. Broadcast to peers via Socket.IO `BLOCK_BROADCAST`
+3. `signBlock(privateKey)`: ECDSA P-256 signature using node's persistent keypair (from LevelDB)
+4. `addBlock()`: validate index, previousHash, hash, validator, and verify block signature against registered validator key (H-18)
+5. `await saveChain()`: persist chain to LevelDB before returning (C-04)
+6. `commitBlock()`: remove mined transactions from pending, rebuild vote index
+7. Broadcast to peers via Socket.IO `BLOCK_BROADCAST`
 
 ## Chain Synchronization
 
@@ -78,9 +83,11 @@ On receiving a longer chain (`CHAIN_RESPONSE` message), the node validates:
 - Sequential indices (0, 1, 2, ...)
 - `previousHash` links match between consecutive blocks
 - Block hash integrity via `Block.calculateHash()`
-- Block signatures against registered validator keys
+- Block signatures against registered validator keys (canonical JSON serialization — H-03)
 
 Uses longest-chain rule for conflict resolution.
+
+**Canonical JSON (H-03):** All signature operations use `canonicalJson()` from `signature.js` — object keys sorted alphabetically before stringification. Ensures deterministic serialization across client and server, preventing signature verification failures from key-order differences.
 
 ## Merkle Tree Integration
 
@@ -96,6 +103,22 @@ API endpoints serve Merkle roots per block/election, generate proofs per vote, a
 ## Persistence
 
 LevelDB stores the full chain at `./data/{nodeId}`. `Blockchain.saveChain()` serializes all blocks, `loadChain()` reconstructs them with `Block` constructors on startup. No chain history is pruned — the full ledger persists.
+
+**Genesis block guard (C-03):** `init()` checks `this.chain.length` before creating genesis block — prevents duplicate genesis blocks on restart when chain is loaded from DB.
+
+**Async persistence (C-04):** `addBlock()` awaits `saveChain()` to ensure blocks are persisted before returning. Chain is never lost on process exit.
+
+**Election vote index (M-12):** `rebuildVoteIndex()` builds an in-memory `electionId → [votes]` map on startup, avoiding O(n) chain scans per query.
+
+## Validator Keypairs
+
+Each node generates an ECDSA P-256 keypair on first boot and **persists it to LevelDB** (key: `node_key`) via `Blockchain.getOrCreateNodeKey()`. On subsequent restarts, the same key is loaded. This ensures:
+
+- **Stable validator identity** — node ID remains consistent across restarts (C-02)
+- **Block signature continuity** — blocks signed by a node can always be attributed to the same validator
+- **Peer authentication** — nodes identify each other via persistent public keys (H-29)
+
+If the LevelDB volume is destroyed, a new identity is created. Keypairs are never regenerated during normal operation.
 
 ## Network Recovery & Byzantine Tolerance
 

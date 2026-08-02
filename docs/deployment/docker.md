@@ -35,7 +35,10 @@ All files in `infra/docker/`:
 
 ### Networks
 
-- `voting-network` — bridge, all services connected
+- `frontend-net` — Frontend, admin-panel, nginx only (isolated from backend services)
+- `backend-net` — Backend, blockchain-node, institution-api, MySQL (bridged to frontend-net via backend)
+
+Network segmentation: Frontend containers cannot directly reach MySQL or blockchain nodes.
 
 ### Volumes
 
@@ -44,12 +47,17 @@ All files in `infra/docker/`:
 
 ### Health Checks
 
-| Service         | Endpoint             | Interval | Retries |
-| --------------- | -------------------- | -------- | ------- |
-| mysql           | `mysqladmin ping`    | 10s      | 10      |
-| blockchain-node | `GET /node`          | 15s      | 5       |
-| backend         | `GET /health`        | 15s      | 5       |
-| institution-api | `GET /api/health`    | 15s      | 5       |
+| Service         | Endpoint            | Interval | Retries | Notes                                  |
+| --------------- | ------------------- | -------- | ------- | -------------------------------------- |
+| mysql           | `mysqladmin ping`   | 10s      | 10      |                                        |
+| blockchain-node | `GET /health`       | 15s      | 5       | Public endpoint, no auth required      |
+| backend         | `GET /health`       | 15s      | 5       | Public endpoint                        |
+| institution-api | `GET /api/health`   | 15s      | 5       | Public endpoint                        |
+| frontend        | `wget 127.0.0.1:80` | 15s      | 5       | Alpine images: use IP not localhost    |
+| admin-panel     | `wget 127.0.0.1:80` | 15s      | 5       | Alpine images: use IP not localhost    |
+| phpmyadmin      | `curl localhost:80` | 15s      | 5       | Uses curl (wget not in phpmyadmin img) |
+
+**Note:** Blockchain nodes 2-4 use the same `/health` endpoint. The `/node` endpoint requires `apiKeyAuth` and cannot be used for healthchecks.
 
 ### Startup Order
 
@@ -112,7 +120,7 @@ Extends main stack. Includes:
 docker compose -f infra/docker/docker-compose.yml -f infra/docker/docker-compose.monitoring.yml --env-file .env up -d
 ```
 
-Networks: `monitoring` (new bridge) + `voting-network` (external). Volumes: `prometheus_data`, `grafana_data`, `loki_data`.
+Networks: `monitoring` (new bridge) + `backend-net` (external). Volumes: `prometheus_data`, `grafana_data`, `loki_data`.
 
 ---
 
