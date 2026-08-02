@@ -354,6 +354,10 @@ import {
 const BLOCKCHAIN_URL =
   import.meta.env.VITE_BLOCKCHAIN_URL || "http://localhost:3001";
 
+const blockchainHeaders = import.meta.env.VITE_BLOCKCHAIN_API_KEY
+  ? { "x-api-key": import.meta.env.VITE_BLOCKCHAIN_API_KEY }
+  : {};
+
 export default {
   name: "BlockchainExplorer",
 
@@ -465,9 +469,13 @@ export default {
       this.error = null;
       try {
         const [chainRes, statusRes, networkRes] = await Promise.all([
-          axios.get(`${BLOCKCHAIN_URL}/chain`),
-          axios.get(`${BLOCKCHAIN_URL}/node/status`),
-          axios.get(`${BLOCKCHAIN_URL}/network/status`),
+          axios.get(`${BLOCKCHAIN_URL}/chain`, { headers: blockchainHeaders }),
+          axios.get(`${BLOCKCHAIN_URL}/node/status`, {
+            headers: blockchainHeaders,
+          }),
+          axios.get(`${BLOCKCHAIN_URL}/network/status`, {
+            headers: blockchainHeaders,
+          }),
         ]);
         this.chain = chainRes.data.chain || [];
         this.nodeStatus = statusRes.data || {};

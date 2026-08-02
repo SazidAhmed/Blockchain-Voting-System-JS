@@ -153,8 +153,8 @@ export default createStore({
       keyManager.clearKeys();
     },
 
-    // Reload cryptographic keys from localStorage on app init
-    restoreKeys({ commit, state }) {
+    // Reload cryptographic keys from IndexedDB on app init
+    async restoreKeys({ commit, state }) {
       if (!state.user) {
         const savedUser = localStorage.getItem("voter_user");
         if (savedUser) {
@@ -174,8 +174,19 @@ export default createStore({
 
       if (keyManager.getCurrentKeys()) return;
 
-      if (keyManager.hasStoredKeys(userId)) {
-        keyManager.loadUserKeys(userId, "").catch(() => {});
+      try {
+        if (await keyManager.hasStoredKeys(userId)) {
+          keyManager.loadUserKeys(userId, "").catch((e) => {
+            console.warn("Key load failed:", e);
+            commit(
+              "SET_KEY_LOAD_ERROR",
+              "Could not load your voting keys. You may need to re-register.",
+            );
+          });
+        }
+      } catch (e) {
+        console.warn("Key storage check failed:", e);
+        commit("SET_KEY_LOAD_ERROR", "Could not access key storage.");
       }
     },
 

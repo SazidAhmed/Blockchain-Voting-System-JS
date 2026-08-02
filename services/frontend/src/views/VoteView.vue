@@ -150,7 +150,7 @@
 
 <script>
 import { mapGetters } from "vuex";
-import api from "@/services/api";
+import api, { getErrorMessage } from "@/services/api";
 import keyManager from "@/services/keyManager";
 import VoteReceipt from "@/components/VoteReceipt.vue";
 import AppModal from "@/components/AppModal.vue";
@@ -259,13 +259,19 @@ export default {
         });
 
         this.voteSubmitted = true;
-        this.voteReceipt = response.receipt;
+        // Merge backend receipt with client-side nullifier, signature, and election info
+        this.voteReceipt = {
+          ...response.receipt,
+          nullifier: votePackage.nullifier,
+          signature: votePackage.signature,
+          electionName: this.election.title,
+          electionDescription: this.election.description,
+        };
       } catch (error) {
-        this.localError =
-          error.displayMessage ||
-          error.message ||
-          error.response?.data?.message ||
-          "Failed to submit vote. Please try again.";
+        this.localError = getErrorMessage(
+          error,
+          "Failed to submit vote. Please try again.",
+        );
         console.error("Vote submission error:", error);
       } finally {
         this.submitting = false;
@@ -293,7 +299,7 @@ export default {
     if (!keyManager.getCurrentKeys() && this.currentUser) {
       try {
         if (
-          keyManager.hasStoredKeys(
+          await keyManager.hasStoredKeys(
             this.currentUser.studentId || this.currentUser.id,
           )
         ) {

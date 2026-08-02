@@ -64,4 +64,16 @@ api.interceptors.response.use(
   },
 );
 
+export function getErrorMessage(
+  error,
+  fallback = "Something went wrong. Please try again.",
+) {
+  return (
+    error?.displayMessage ||
+    error?.message ||
+    error?.response?.data?.message ||
+    fallback
+  );
+}
+
 export default api;
