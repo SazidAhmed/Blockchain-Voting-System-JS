@@ -50,7 +50,12 @@ echo ""
 
 # Check container status
 echo -e "${BLUE}Checking container status...${NC}"
-containers=$(docker compose -f $COMPOSE_FILE --env-file $ENV_FILE ps --format json 2>/dev/null | jq -r '. | "\(.Service)|\(.State)|\(.Health)"' 2>/dev/null || echo "")
+if command -v jq &>/dev/null; then
+    containers=$(docker compose -f $COMPOSE_FILE --env-file $ENV_FILE ps --format json 2>/dev/null | jq -r '. | "\(.Service)|\(.State)|\(.Health)"' 2>/dev/null || echo "")
+else
+    # Fallback: no jq on host — parse the JSON lines with awk (portable)
+    containers=$(docker compose -f $COMPOSE_FILE --env-file $ENV_FILE ps --format json 2>/dev/null | awk -F'"' '{svc="";st="";hl="";for(i=1;i<=NF;i++){if($i=="Service")svc=$(i+2);if($i=="State")st=$(i+2);if($i=="Health")hl=$(i+2)}if(svc!="")print svc"|"st"|"hl}' 2>/dev/null || echo "")
+fi
 
 if [ -z "$containers" ]; then
     echo -e "${RED}✗ No containers are running!${NC}"

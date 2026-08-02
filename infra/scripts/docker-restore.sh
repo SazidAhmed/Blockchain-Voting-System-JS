@@ -62,7 +62,6 @@ tar xzf "${BACKUP_FILE}" -C "${TEMP_DIR}"
 BACKUP_NAME=$(basename "${BACKUP_FILE}" .tar.gz)
 MYSQL_BACKUP="${TEMP_DIR}/${BACKUP_NAME}_mysql.sql"
 BLOCKCHAIN_BACKUP="${TEMP_DIR}/${BACKUP_NAME}_blockchain.tar.gz"
-ENV_BACKUP="${TEMP_DIR}/${BACKUP_NAME}_env.txt"
 
 # Check if containers are running
 echo -e "${YELLOW}Checking if containers are running...${NC}"
@@ -85,18 +84,6 @@ docker compose -f $COMPOSE_FILE --env-file $ENV_FILE exec -T blockchain-node rm 
 cat "${BLOCKCHAIN_BACKUP}" | docker compose -f $COMPOSE_FILE --env-file $ENV_FILE exec -T blockchain-node tar xzf - -C /
 docker compose -f $COMPOSE_FILE --env-file $ENV_FILE start blockchain-node
 echo -e "${GREEN}✓ Blockchain data restored successfully${NC}"
-
-# Show environment differences (optional)
-if [ -f "${ENV_BACKUP}" ] && [ -f ".env" ]; then
-    echo -e "${BLUE}Checking environment differences...${NC}"
-    if diff -q .env "${ENV_BACKUP}" > /dev/null; then
-        echo -e "${GREEN}✓ Environment configuration unchanged${NC}"
-    else
-        echo -e "${YELLOW}! Environment configuration differs from backup${NC}"
-        echo -e "${YELLOW}  Backup saved at: ${ENV_BACKUP}${NC}"
-        echo -e "${YELLOW}  You may need to review changes manually${NC}"
-    fi
-fi
 
 # Cleanup
 rm -rf "${TEMP_DIR}"

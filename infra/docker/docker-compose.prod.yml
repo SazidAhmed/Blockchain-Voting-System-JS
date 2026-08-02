@@ -1,6 +1,6 @@
 # Usage: docker compose -f infra/docker/docker-compose.prod.yml --env-file .env up -d
 # Production stack: MySQL, blockchain (4 nodes), backend, frontend (nginx), admin-panel (nginx),
-#   institution-api, phpMyAdmin, nginx reverse proxy
+#   institution-api, nginx reverse proxy
 
 services:
   # ── Data Layer ───────────────────────────────────────────────────────────────
@@ -8,6 +8,11 @@ services:
     image: mysql:8.0.36
     container_name: voting-mysql-prod
     restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 1g
+          cpus: "2.0"
     command: >
       --innodb_buffer_pool_size=2G
       --innodb_redo_log_capacity=1G
@@ -24,7 +29,7 @@ services:
       - mysql_data:/var/lib/mysql
       - ../../services/backend/migrations:/docker-entrypoint-initdb.d:ro
     networks:
-      - voting-network
+      - backend-net
     healthcheck:
       test:
         [
@@ -50,9 +55,14 @@ services:
   institution-api:
     build:
       context: ../../services/institution-api
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.prod
     container_name: voting-institution-api-prod
     restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+          cpus: "1.0"
     environment:
       NODE_ENV: production
       PORT: ${INSTITUTION_PORT:?INSTITUTION_PORT is required}
@@ -61,6 +71,7 @@ services:
       DB_USER: ${MYSQL_USER:?MYSQL_USER is required}
       DB_PASSWORD: ${MYSQL_PASSWORD:?MYSQL_PASSWORD is required}
       DB_NAME: ${INSTITUTION_DB_NAME:?INSTITUTION_DB_NAME is required}
+      DB_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?MYSQL_ROOT_PASSWORD is required}
       INSTITUTION_API_KEY: ${INSTITUTION_API_KEY:?INSTITUTION_API_KEY is required}
       FRONTEND_URL: ${FRONTEND_URL:?FRONTEND_URL is required}
       ADMIN_PANEL_URL: ${ADMIN_PANEL_URL:?ADMIN_PANEL_URL is required}
@@ -71,7 +82,7 @@ services:
       mysql:
         condition: service_healthy
     networks:
-      - voting-network
+      - backend-net
     healthcheck:
       test:
         [
@@ -91,14 +102,23 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
 
   # Blockchain Node 1 (primary)
   blockchain-node:
     build:
       context: ../../services/blockchain-node
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.prod
     container_name: voting-blockchain-prod
     restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+          cpus: "1.0"
     environment:
       NODE_ID: node1
       PORT: ${BLOCKCHAIN_NODE1_PORT:?BLOCKCHAIN_NODE1_PORT is required}
@@ -111,7 +131,7 @@ services:
     volumes:
       - blockchain_data:/app/data
     networks:
-      - voting-network
+      - backend-net
     healthcheck:
       test:
         [
@@ -120,7 +140,7 @@ services:
           "--quiet",
           "--tries=1",
           "--spider",
-          "http://localhost:${BLOCKCHAIN_NODE1_PORT}/node",
+          "http://localhost:${BLOCKCHAIN_NODE1_PORT}/health",
         ]
       timeout: 10s
       retries: 5
@@ -131,14 +151,23 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
 
   # Blockchain Node 2
   blockchain-node-2:
     build:
       context: ../../services/blockchain-node
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.prod
     container_name: voting-blockchain-prod-2
     restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+          cpus: "1.0"
     environment:
       NODE_ID: blockchain-node-2
       PORT: ${BLOCKCHAIN_NODE2_PORT:?BLOCKCHAIN_NODE2_PORT is required}
@@ -149,7 +178,7 @@ services:
     volumes:
       - blockchain_data_2:/app/data
     networks:
-      - voting-network
+      - backend-net
     depends_on:
       blockchain-node:
         condition: service_healthy
@@ -161,7 +190,7 @@ services:
           "--quiet",
           "--tries=1",
           "--spider",
-          "http://localhost:${BLOCKCHAIN_NODE2_PORT}/node",
+          "http://localhost:${BLOCKCHAIN_NODE2_PORT}/health",
         ]
       timeout: 10s
       retries: 5
@@ -172,14 +201,23 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
 
   # Blockchain Node 3
   blockchain-node-3:
     build:
       context: ../../services/blockchain-node
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.prod
     container_name: voting-blockchain-prod-3
     restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+          cpus: "1.0"
     environment:
       NODE_ID: blockchain-node-3
       PORT: ${BLOCKCHAIN_NODE3_PORT:?BLOCKCHAIN_NODE3_PORT is required}
@@ -190,7 +228,7 @@ services:
     volumes:
       - blockchain_data_3:/app/data
     networks:
-      - voting-network
+      - backend-net
     depends_on:
       blockchain-node:
         condition: service_healthy
@@ -202,7 +240,7 @@ services:
           "--quiet",
           "--tries=1",
           "--spider",
-          "http://localhost:${BLOCKCHAIN_NODE3_PORT}/node",
+          "http://localhost:${BLOCKCHAIN_NODE3_PORT}/health",
         ]
       timeout: 10s
       retries: 5
@@ -213,14 +251,23 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
 
   # Blockchain Node 4
   blockchain-node-4:
     build:
       context: ../../services/blockchain-node
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.prod
     container_name: voting-blockchain-prod-4
     restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+          cpus: "1.0"
     environment:
       NODE_ID: blockchain-node-4
       PORT: ${BLOCKCHAIN_NODE4_PORT:?BLOCKCHAIN_NODE4_PORT is required}
@@ -231,7 +278,7 @@ services:
     volumes:
       - blockchain_data_4:/app/data
     networks:
-      - voting-network
+      - backend-net
     depends_on:
       blockchain-node:
         condition: service_healthy
@@ -243,7 +290,7 @@ services:
           "--quiet",
           "--tries=1",
           "--spider",
-          "http://localhost:${BLOCKCHAIN_NODE4_PORT}/node",
+          "http://localhost:${BLOCKCHAIN_NODE4_PORT}/health",
         ]
       timeout: 10s
       retries: 5
@@ -254,14 +301,23 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
 
   # Backend API
   backend:
     build:
       context: ../../services/backend
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.prod
     container_name: voting-backend-prod
     restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+          cpus: "1.0"
     environment:
       NODE_ENV: production
       PORT: ${BACKEND_PORT:?BACKEND_PORT is required}
@@ -271,6 +327,7 @@ services:
       DB_PASSWORD: ${MYSQL_PASSWORD:?MYSQL_PASSWORD is required}
       DB_NAME: ${MYSQL_DATABASE:?MYSQL_DATABASE is required}
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
+      NULLIFIER_SECRET: ${NULLIFIER_SECRET:?NULLIFIER_SECRET is required}
       BLOCKCHAIN_NODE_URL: ${BLOCKCHAIN_NODE_URL:?BLOCKCHAIN_NODE_URL is required}
       BLOCKCHAIN_API_KEY: ${BLOCKCHAIN_API_KEY:?BLOCKCHAIN_API_KEY is required}
       INSTITUTION_API_KEY: ${INSTITUTION_API_KEY:?INSTITUTION_API_KEY is required}
@@ -290,7 +347,8 @@ services:
       institution-api:
         condition: service_healthy
     networks:
-      - voting-network
+      - backend-net
+      - frontend-net
     healthcheck:
       test:
         [
@@ -310,6 +368,10 @@ services:
       options:
         max-size: "10m"
         max-file: "5"
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
 
   # ── Frontend Services ────────────────────────────────────────────────────────
   frontend:
@@ -319,24 +381,23 @@ services:
       args:
         VITE_API_BASE_URL: ${VITE_API_BASE_URL:?VITE_API_BASE_URL is required}
         VITE_BLOCKCHAIN_URL: ${VITE_BLOCKCHAIN_URL:?VITE_BLOCKCHAIN_URL is required}
+        VITE_BLOCKCHAIN_API_KEY: ${VITE_BLOCKCHAIN_API_KEY:?VITE_BLOCKCHAIN_API_KEY is required}
         VITE_INSTITUTION_API_URL: ${VITE_INSTITUTION_API_URL:?VITE_INSTITUTION_API_URL is required}
     container_name: voting-frontend-prod
     restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+          cpus: "1.0"
     depends_on:
       backend:
         condition: service_healthy
     networks:
-      - voting-network
+      - frontend-net
     healthcheck:
       test:
-        [
-          "CMD",
-          "wget",
-          "--quiet",
-          "--tries=1",
-          "--spider",
-          "http://localhost/",
-        ]
+        ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://127.0.0.1/"]
       timeout: 10s
       retries: 3
       interval: 30s
@@ -345,6 +406,10 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
 
   # Admin Panel (Separate Vue App)
   admin-panel:
@@ -354,24 +419,24 @@ services:
       args:
         VITE_API_BASE_URL: ${VITE_API_BASE_URL:?VITE_API_BASE_URL is required}
         VITE_BLOCKCHAIN_URL: ${VITE_BLOCKCHAIN_URL:?VITE_BLOCKCHAIN_URL is required}
+        VITE_BLOCKCHAIN_API_KEY: ${VITE_BLOCKCHAIN_API_KEY:?VITE_BLOCKCHAIN_API_KEY is required}
         VITE_INSTITUTION_API_URL: ${VITE_INSTITUTION_API_URL:?VITE_INSTITUTION_API_URL is required}
+        VITE_INSTITUTION_API_KEY: ${VITE_INSTITUTION_API_KEY:?VITE_INSTITUTION_API_KEY is required}
     container_name: voting-admin-panel-prod
     restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+          cpus: "1.0"
     depends_on:
       backend:
         condition: service_healthy
     networks:
-      - voting-network
+      - frontend-net
     healthcheck:
       test:
-        [
-          "CMD",
-          "wget",
-          "--quiet",
-          "--tries=1",
-          "--spider",
-          "http://localhost/",
-        ]
+        ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://127.0.0.1/"]
       timeout: 10s
       retries: 3
       interval: 30s
@@ -380,31 +445,21 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
-
-  # ── Auxiliary ────────────────────────────────────────────────────────────────
-  phpmyadmin:
-    image: phpmyadmin:5.2
-    container_name: voting-phpmyadmin-prod
-    restart: unless-stopped
-    environment:
-      PMA_HOST: ${DB_HOST:?DB_HOST is required}
-      PMA_PORT: ${DB_PORT:?DB_PORT is required}
-      PMA_USER: ${MYSQL_USER}
-      PMA_PASSWORD: ${MYSQL_PASSWORD}
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-    depends_on:
-      mysql:
-        condition: service_healthy
-    networks:
-      - voting-network
-    ports:
-      - "127.0.0.1:${PMA_HOST_PORT:?PMA_HOST_PORT is required}:80"
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
 
   # ── Reverse Proxy ────────────────────────────────────────────────────────────
   nginx:
     image: nginx:1.25-alpine
     container_name: voting-nginx
     restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+          cpus: "1.0"
     depends_on:
       frontend:
         condition: service_healthy
@@ -413,7 +468,7 @@ services:
       backend:
         condition: service_healthy
     networks:
-      - voting-network
+      - backend-net
     ports:
       - "80:80"
       - "443:443"
@@ -429,7 +484,8 @@ services:
           "--quiet",
           "--tries=1",
           "--spider",
-          "http://localhost/health",
+          "--no-check-certificate",
+          "https://127.0.0.1/health",
         ]
       timeout: 5s
       retries: 3
@@ -439,9 +495,15 @@ services:
       options:
         max-size: "10m"
         max-file: "5"
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
 
 networks:
-  voting-network:
+  backend-net:
+    driver: bridge
+  frontend-net:
     driver: bridge
 
 volumes:

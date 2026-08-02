@@ -48,17 +48,15 @@ echo -e "${BLUE}Backing up blockchain data...${NC}"
 docker compose -f $COMPOSE_FILE --env-file $ENV_FILE exec -T blockchain-node tar czf - /app/data > "${BACKUP_DIR}/${BACKUP_NAME}_blockchain.tar.gz"
 echo -e "${GREEN}✓ Blockchain backup saved to: ${BACKUP_DIR}/${BACKUP_NAME}_blockchain.tar.gz${NC}"
 
-# Backup environment file
-echo -e "${BLUE}Backing up environment configuration...${NC}"
-cp .env "${BACKUP_DIR}/${BACKUP_NAME}_env.txt"
-echo -e "${GREEN}✓ Environment backup saved to: ${BACKUP_DIR}/${BACKUP_NAME}_env.txt${NC}"
+# Environment file is intentionally EXCLUDED from backups (H-25) — it contains
+# secrets (DB passwords, API keys, JWT secret). Back up it separately via a
+# secret manager. Do not copy .env into backup archives.
 
 # Create backup metadata
 cat > "${BACKUP_DIR}/${BACKUP_NAME}_metadata.txt" << EOF
 Backup Created: $(date)
 MySQL Backup: ${BACKUP_NAME}_mysql.sql
 Blockchain Backup: ${BACKUP_NAME}_blockchain.tar.gz
-Environment Backup: ${BACKUP_NAME}_env.txt
 
 Docker Compose Version: $(docker compose -f $COMPOSE_FILE --env-file $ENV_FILE version --short)
 Docker Version: $(docker version --format '{{.Server.Version}}')
@@ -75,13 +73,11 @@ cd "${BACKUP_DIR}"
 tar czf "${BACKUP_NAME}.tar.gz" \
     "${BACKUP_NAME}_mysql.sql" \
     "${BACKUP_NAME}_blockchain.tar.gz" \
-    "${BACKUP_NAME}_env.txt" \
     "${BACKUP_NAME}_metadata.txt"
 
 # Remove individual files
 rm -f "${BACKUP_NAME}_mysql.sql" \
       "${BACKUP_NAME}_blockchain.tar.gz" \
-      "${BACKUP_NAME}_env.txt" \
       "${BACKUP_NAME}_metadata.txt"
 
 cd ..

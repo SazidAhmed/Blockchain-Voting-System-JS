@@ -28,6 +28,12 @@ OBSERVER_PORTS=("$N4" "$N5")
 FAILED=0
 PASSED=0
 
+API_KEY=$(get_env BLOCKCHAIN_API_KEY "")
+API_HEADERS=()
+if [ -n "$API_KEY" ]; then
+  API_HEADERS=(-H "x-api-key: $API_KEY")
+fi
+
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -35,7 +41,7 @@ NC='\033[0m'
 
 _http_get() {
   if command -v curl &>/dev/null; then
-    curl -s "$1"
+    curl -s "${API_HEADERS[@]}" "$1"
   elif command -v wget &>/dev/null; then
     wget -q -O - "$1" 2>/dev/null
   fi

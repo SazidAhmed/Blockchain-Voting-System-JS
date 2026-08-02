@@ -58,12 +58,18 @@ sleep 10
 echo ""
 echo "Checking node status..."
 
+API_KEY=$(get_env BLOCKCHAIN_API_KEY "")
+API_ARGS=()
+if [ -n "$API_KEY" ]; then
+  API_ARGS=(-H "x-api-key: $API_KEY")
+fi
+
 HEALTHY=0
 for port in "${NODES[@]}"; do
-    if command -v curl &>/dev/null && curl -s "http://localhost:$port/node/status" > /dev/null 2>&1; then
+    if command -v curl &>/dev/null && curl -s "${API_ARGS[@]}" "http://localhost:$port/health" > /dev/null 2>&1; then
         echo "✓ Node on port $port is responding"
         ((HEALTHY++))
-    elif command -v wget &>/dev/null && wget -q --spider "http://localhost:$port/node/status" 2>/dev/null; then
+    elif command -v wget &>/dev/null && wget -q --spider "http://localhost:$port/health" 2>/dev/null; then
         echo "✓ Node on port $port is responding"
         ((HEALTHY++))
     else
@@ -81,7 +87,7 @@ echo "╚═══════════════════════�
 
 echo ""
 echo "To check node status:"
-echo "  curl http://localhost:$N1/node/status"
+echo "  curl -H \"x-api-key: $API_KEY\" http://localhost:$N1/health"
 echo ""
 echo "To check network status:"
 echo "  curl http://localhost:$N1/network/status"

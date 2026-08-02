@@ -5,8 +5,8 @@ global:
   scrape_interval: 15s # Set the scrape interval to every 15 seconds
   evaluation_interval: 15s # Evaluate rules every 15 seconds
   external_labels:
-    monitor: 'voting-system'
-    environment: 'development'
+    monitor: "voting-system"
+    environment: "development"
 
 # Alertmanager configuration
 alerting:
@@ -22,59 +22,58 @@ rule_files:
 # A scrape configuration
 scrape_configs:
   # Prometheus itself
-  - job_name: 'prometheus'
+  - job_name: "prometheus"
     static_configs:
-      - targets: ['localhost:9090']
+      - targets: ["localhost:9090"]
 
   # Node Exporter - System metrics
-  - job_name: 'node-exporter'
+  - job_name: "node-exporter"
     static_configs:
-      - targets: ['node-exporter:9100']
+      - targets: ["node-exporter:9100"]
     relabel_configs:
       - source_labels: [__address__]
         target_label: instance
-        replacement: 'voting-system-host'
+        replacement: "voting-system-host"
 
   # cAdvisor - Container metrics
-  - job_name: 'cadvisor'
+  - job_name: "cadvisor"
     static_configs:
-      - targets: ['cadvisor:8080']
+      - targets: ["cadvisor:8080"]
     metric_relabel_configs:
       # Keep only voting system containers
       - source_labels: [container_label_com_docker_compose_project]
-        regex: 'voting'
+        regex: "voting"
         action: keep
 
   # MySQL Exporter
-  - job_name: 'mysql'
+  - job_name: "mysql"
     static_configs:
-      - targets: ['mysql-exporter:9104']
+      - targets: ["mysql-exporter:9104"]
     relabel_configs:
       - source_labels: [__address__]
         target_label: instance
-        replacement: 'voting-mysql'
+        replacement: "voting-mysql"
 
   # Backend API metrics (if implemented)
-  - job_name: 'backend-api'
+  - job_name: "backend-api"
     static_configs:
-      - targets: ['backend:3000']
-    metrics_path: '/metrics'
+      - targets: ["backend:3000"]
+    metrics_path: "/metrics"
     scrape_interval: 30s
 
-  # Blockchain Node metrics (if implemented)
-  - job_name: 'blockchain-node'
+  # Blockchain Node metrics
+  - job_name: "blockchain-node"
     static_configs:
-      - targets: 
-          - 'voting-blockchain-node-1:3001'
-          - 'voting-blockchain-node-2:3002'
-          - 'voting-blockchain-node-3:3003'
-          - 'voting-blockchain-node-4:3004'
-          - 'voting-blockchain-node-5:3005'
-    metrics_path: '/metrics'
+      - targets:
+          - "voting-blockchain:3001"
+          - "voting-blockchain-node-2:3002"
+          - "voting-blockchain-node-3:3003"
+          - "voting-blockchain-node-4:3004"
+    metrics_path: "/metrics"
     scrape_interval: 15s
 
   # Docker daemon metrics (if Docker metrics are enabled)
-  - job_name: 'docker'
+  - job_name: "docker"
     static_configs:
-      - targets: ['host.docker.internal:9323']
+      - targets: ["host.docker.internal:9323"]
     scrape_interval: 30s

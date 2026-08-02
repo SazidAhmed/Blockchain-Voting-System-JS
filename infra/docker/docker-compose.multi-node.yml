@@ -4,9 +4,14 @@
 services:
   # ── Data Layer ───────────────────────────────────────────────────────────────
   mysql:
-    image: mysql:8.0
+    image: mysql:8.0.36
     container_name: voting-mysql-multinode
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 1g
+          cpus: "2.0"
     command: >
       --innodb_buffer_pool_size=1G
       --innodb_redo_log_capacity=512M
@@ -23,7 +28,7 @@ services:
       - mysql_data_multinode:/var/lib/mysql
       - ../../services/backend/migrations:/docker-entrypoint-initdb.d
     networks:
-      - voting-blockchain-network
+      - backend-net
     healthcheck:
       test:
         [
@@ -47,19 +52,24 @@ services:
       dockerfile: Dockerfile
     container_name: voting-blockchain-node-1
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+          cpus: "1.0"
     environment:
       NODE_ID: node1
       NODE_TYPE: validator
       PORT: ${BLOCKCHAIN_NODE1_PORT:?BLOCKCHAIN_NODE1_PORT is required}
-      PEERS: http://blockchain-node-2:${BLOCKCHAIN_NODE2_PORT},http://blockchain-node-3:${BLOCKCHAIN_NODE3_PORT},http://blockchain-node-4:${BLOCKCHAIN_NODE4_PORT},http://blockchain-node-5:${BLOCKCHAIN_NODE5_PORT}
+      PEERS: http://blockchain-node-2:${BLOCKCHAIN_NODE2_PORT:?BLOCKCHAIN_NODE2_PORT is required},http://blockchain-node-3:${BLOCKCHAIN_NODE3_PORT:?BLOCKCHAIN_NODE3_PORT is required},http://blockchain-node-4:${BLOCKCHAIN_NODE4_PORT:?BLOCKCHAIN_NODE4_PORT is required},http://blockchain-node-5:${BLOCKCHAIN_NODE5_PORT:?BLOCKCHAIN_NODE5_PORT is required}
       NODE_ENV: ${NODE_ENV:?NODE_ENV is required}
       BLOCKCHAIN_API_KEY: ${BLOCKCHAIN_API_KEY:?BLOCKCHAIN_API_KEY is required}
     ports:
-      - "127.0.0.1:${BLOCKCHAIN_NODE1_PORT}:${BLOCKCHAIN_NODE1_PORT}"
+      - "127.0.0.1:${BLOCKCHAIN_NODE1_PORT:?BLOCKCHAIN_NODE1_PORT is required}:${BLOCKCHAIN_NODE1_PORT}"
     volumes:
       - blockchain_data_node1:/app/data
     networks:
-      - voting-blockchain-network
+      - backend-net
     depends_on:
       mysql:
         condition: service_healthy
@@ -71,12 +81,16 @@ services:
           "--quiet",
           "--tries=1",
           "--spider",
-          "http://localhost:${BLOCKCHAIN_NODE1_PORT}/node",
+          "http://localhost:${BLOCKCHAIN_NODE1_PORT}/health",
         ]
       timeout: 10s
       retries: 5
       interval: 15s
     command: npm start
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
 
   blockchain-node-2:
     build:
@@ -84,17 +98,24 @@ services:
       dockerfile: Dockerfile
     container_name: voting-blockchain-node-2
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+          cpus: "1.0"
     environment:
       NODE_ID: node2
       NODE_TYPE: validator
       PORT: ${BLOCKCHAIN_NODE2_PORT:?BLOCKCHAIN_NODE2_PORT is required}
-      PEERS: http://blockchain-node-1:${BLOCKCHAIN_NODE1_PORT},http://blockchain-node-3:${BLOCKCHAIN_NODE3_PORT},http://blockchain-node-4:${BLOCKCHAIN_NODE4_PORT},http://blockchain-node-5:${BLOCKCHAIN_NODE5_PORT}
+      PEERS: http://blockchain-node-1:${BLOCKCHAIN_NODE1_PORT:?BLOCKCHAIN_NODE1_PORT is required},http://blockchain-node-3:${BLOCKCHAIN_NODE3_PORT:?BLOCKCHAIN_NODE3_PORT is required},http://blockchain-node-4:${BLOCKCHAIN_NODE4_PORT:?BLOCKCHAIN_NODE4_PORT is required},http://blockchain-node-5:${BLOCKCHAIN_NODE5_PORT:?BLOCKCHAIN_NODE5_PORT is required}
       NODE_ENV: ${NODE_ENV:?NODE_ENV is required}
       BLOCKCHAIN_API_KEY: ${BLOCKCHAIN_API_KEY:?BLOCKCHAIN_API_KEY is required}
     volumes:
       - blockchain_data_node2:/app/data
+    ports:
+      - "127.0.0.1:${BLOCKCHAIN_NODE2_PORT:?BLOCKCHAIN_NODE2_PORT is required}:${BLOCKCHAIN_NODE2_PORT}"
     networks:
-      - voting-blockchain-network
+      - backend-net
     depends_on:
       blockchain-node-1:
         condition: service_healthy
@@ -106,12 +127,16 @@ services:
           "--quiet",
           "--tries=1",
           "--spider",
-          "http://localhost:${BLOCKCHAIN_NODE2_PORT}/node",
+          "http://localhost:${BLOCKCHAIN_NODE2_PORT}/health",
         ]
       timeout: 10s
       retries: 5
       interval: 15s
     command: npm start
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
 
   blockchain-node-3:
     build:
@@ -119,17 +144,24 @@ services:
       dockerfile: Dockerfile
     container_name: voting-blockchain-node-3
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+          cpus: "1.0"
     environment:
       NODE_ID: node3
       NODE_TYPE: validator
       PORT: ${BLOCKCHAIN_NODE3_PORT:?BLOCKCHAIN_NODE3_PORT is required}
-      PEERS: http://blockchain-node-1:${BLOCKCHAIN_NODE1_PORT},http://blockchain-node-2:${BLOCKCHAIN_NODE2_PORT},http://blockchain-node-4:${BLOCKCHAIN_NODE4_PORT},http://blockchain-node-5:${BLOCKCHAIN_NODE5_PORT}
+      PEERS: http://blockchain-node-1:${BLOCKCHAIN_NODE1_PORT:?BLOCKCHAIN_NODE1_PORT is required},http://blockchain-node-2:${BLOCKCHAIN_NODE2_PORT:?BLOCKCHAIN_NODE2_PORT is required},http://blockchain-node-4:${BLOCKCHAIN_NODE4_PORT:?BLOCKCHAIN_NODE4_PORT is required},http://blockchain-node-5:${BLOCKCHAIN_NODE5_PORT:?BLOCKCHAIN_NODE5_PORT is required}
       NODE_ENV: ${NODE_ENV:?NODE_ENV is required}
       BLOCKCHAIN_API_KEY: ${BLOCKCHAIN_API_KEY:?BLOCKCHAIN_API_KEY is required}
     volumes:
       - blockchain_data_node3:/app/data
+    ports:
+      - "127.0.0.1:${BLOCKCHAIN_NODE3_PORT:?BLOCKCHAIN_NODE3_PORT is required}:${BLOCKCHAIN_NODE3_PORT}"
     networks:
-      - voting-blockchain-network
+      - backend-net
     depends_on:
       blockchain-node-1:
         condition: service_healthy
@@ -141,12 +173,16 @@ services:
           "--quiet",
           "--tries=1",
           "--spider",
-          "http://localhost:${BLOCKCHAIN_NODE3_PORT}/node",
+          "http://localhost:${BLOCKCHAIN_NODE3_PORT}/health",
         ]
       timeout: 10s
       retries: 5
       interval: 15s
     command: npm start
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
 
   # ── Observer Nodes ───────────────────────────────────────────────────────────
   blockchain-node-4:
@@ -155,17 +191,24 @@ services:
       dockerfile: Dockerfile
     container_name: voting-blockchain-node-4
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+          cpus: "1.0"
     environment:
       NODE_ID: node4
       NODE_TYPE: observer
       PORT: ${BLOCKCHAIN_NODE4_PORT:?BLOCKCHAIN_NODE4_PORT is required}
-      PEERS: http://blockchain-node-1:${BLOCKCHAIN_NODE1_PORT},http://blockchain-node-2:${BLOCKCHAIN_NODE2_PORT},http://blockchain-node-3:${BLOCKCHAIN_NODE3_PORT},http://blockchain-node-5:${BLOCKCHAIN_NODE5_PORT}
+      PEERS: http://blockchain-node-1:${BLOCKCHAIN_NODE1_PORT:?BLOCKCHAIN_NODE1_PORT is required},http://blockchain-node-2:${BLOCKCHAIN_NODE2_PORT:?BLOCKCHAIN_NODE2_PORT is required},http://blockchain-node-3:${BLOCKCHAIN_NODE3_PORT:?BLOCKCHAIN_NODE3_PORT is required},http://blockchain-node-5:${BLOCKCHAIN_NODE5_PORT:?BLOCKCHAIN_NODE5_PORT is required}
       NODE_ENV: ${NODE_ENV:?NODE_ENV is required}
       BLOCKCHAIN_API_KEY: ${BLOCKCHAIN_API_KEY:?BLOCKCHAIN_API_KEY is required}
     volumes:
       - blockchain_data_node4:/app/data
+    ports:
+      - "127.0.0.1:${BLOCKCHAIN_NODE4_PORT:?BLOCKCHAIN_NODE4_PORT is required}:${BLOCKCHAIN_NODE4_PORT}"
     networks:
-      - voting-blockchain-network
+      - backend-net
     depends_on:
       blockchain-node-1:
         condition: service_healthy
@@ -177,12 +220,16 @@ services:
           "--quiet",
           "--tries=1",
           "--spider",
-          "http://localhost:${BLOCKCHAIN_NODE4_PORT}/node",
+          "http://localhost:${BLOCKCHAIN_NODE4_PORT}/health",
         ]
       timeout: 10s
       retries: 5
       interval: 15s
     command: npm start
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
 
   blockchain-node-5:
     build:
@@ -190,17 +237,24 @@ services:
       dockerfile: Dockerfile
     container_name: voting-blockchain-node-5
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+          cpus: "1.0"
     environment:
       NODE_ID: node5
       NODE_TYPE: observer
       PORT: ${BLOCKCHAIN_NODE5_PORT:?BLOCKCHAIN_NODE5_PORT is required}
-      PEERS: http://blockchain-node-1:${BLOCKCHAIN_NODE1_PORT},http://blockchain-node-2:${BLOCKCHAIN_NODE2_PORT},http://blockchain-node-3:${BLOCKCHAIN_NODE3_PORT},http://blockchain-node-4:${BLOCKCHAIN_NODE4_PORT}
+      PEERS: http://blockchain-node-1:${BLOCKCHAIN_NODE1_PORT:?BLOCKCHAIN_NODE1_PORT is required},http://blockchain-node-2:${BLOCKCHAIN_NODE2_PORT:?BLOCKCHAIN_NODE2_PORT is required},http://blockchain-node-3:${BLOCKCHAIN_NODE3_PORT:?BLOCKCHAIN_NODE3_PORT is required},http://blockchain-node-4:${BLOCKCHAIN_NODE4_PORT:?BLOCKCHAIN_NODE4_PORT is required}
       NODE_ENV: ${NODE_ENV:?NODE_ENV is required}
       BLOCKCHAIN_API_KEY: ${BLOCKCHAIN_API_KEY:?BLOCKCHAIN_API_KEY is required}
     volumes:
       - blockchain_data_node5:/app/data
+    ports:
+      - "127.0.0.1:${BLOCKCHAIN_NODE5_PORT:?BLOCKCHAIN_NODE5_PORT is required}:${BLOCKCHAIN_NODE5_PORT}"
     networks:
-      - voting-blockchain-network
+      - backend-net
     depends_on:
       blockchain-node-1:
         condition: service_healthy
@@ -212,15 +266,19 @@ services:
           "--quiet",
           "--tries=1",
           "--spider",
-          "http://localhost:${BLOCKCHAIN_NODE5_PORT}/node",
+          "http://localhost:${BLOCKCHAIN_NODE5_PORT}/health",
         ]
       timeout: 10s
       retries: 5
       interval: 15s
     command: npm start
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
 
 networks:
-  voting-blockchain-network:
+  backend-net:
     driver: bridge
 
 volumes:
