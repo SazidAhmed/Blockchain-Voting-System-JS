@@ -1,9 +1,10 @@
 @echo off
 REM Docker Start Script for Voting System (Windows)
 REM This script helps you start the entire voting system with Docker
+REM Assumes .env file in project root with all required env vars.
 
-REM Docker Compose file location (relative to project root)
 set COMPOSE_FILE=infra\docker\docker-compose.yml
+set ENV_FILE=.env
 
 echo ==========================================
 echo University Blockchain Voting System
@@ -21,10 +22,9 @@ if errorlevel 1 (
 )
 
 REM Check if Docker Compose is installed
-docker-compose --version >nul 2>&1
+docker compose --version >nul 2>&1
 if errorlevel 1 (
     echo [ERROR] Docker Compose is not installed!
-    echo Please install Docker Compose
     pause
     exit /b 1
 )
@@ -42,12 +42,12 @@ echo [OK] Docker is installed and running
 echo.
 
 REM Check if .env file exists
-if not exist .env (
-    echo [WARNING] .env file not found. Creating from .env.example...
+if not exist %ENV_FILE% (
+    echo [WARNING] %ENV_FILE% not found. Creating from .env.example...
     if exist .env.example (
-        copy .env.example .env
-        echo [OK] .env file created
-        echo [WARNING] Please edit .env and update the JWT_SECRET and passwords!
+        copy .env.example %ENV_FILE%
+        echo [OK] %ENV_FILE% created
+        echo [WARNING] Edit %ENV_FILE% and update JWT_SECRET and passwords!
         echo.
     ) else (
         echo [ERROR] .env.example not found!
@@ -58,7 +58,7 @@ if not exist .env (
 
 REM Show menu
 echo What would you like to do?
-echo 1) Start all services (first time)
+echo 1) Start all services (first time / rebuild)
 echo 2) Start all services (already built)
 echo 3) Stop all services
 echo 4) View logs
@@ -80,34 +80,34 @@ echo.
 echo [INFO] Building and starting all services...
 echo This may take 5-10 minutes on first run...
 echo.
-docker-compose -f %COMPOSE_FILE% up --build -d
+docker compose -f %COMPOSE_FILE% --env-file %ENV_FILE% up --build -d
 echo.
 echo [OK] All services started!
 echo.
-echo Services are now running:
+echo Services are now running (default ports unless customized in .env):
 echo   - Frontend:     http://localhost:5173
 echo   - Admin Panel:  http://localhost:5174
 echo   - Backend API:  http://localhost:3000
 echo   - Blockchain:   http://localhost:3001
 echo   - phpMyAdmin:   http://localhost:8080
 echo.
-echo [INFO] Seeding database with test data...
-timeout /t 10 /nobreak >nul
-docker-compose -f %COMPOSE_FILE% exec backend npm run db:seed
+echo [INFO] Bootstrapping database with admin/validator data...
+timeout /t 5 /nobreak >nul
+docker compose -f %COMPOSE_FILE% --env-file %ENV_FILE% exec -T backend node scripts/seed.js
 echo.
-echo [OK] Database seeded!
+echo [OK] Database bootstrapped!
 echo.
-echo View logs with: docker-compose -f %COMPOSE_FILE% logs -f
+echo Run health check: docker compose -f %COMPOSE_FILE% --env-file %ENV_FILE% ps
 goto end
 
 :start
 echo.
 echo [INFO] Starting all services...
-docker-compose -f %COMPOSE_FILE% up -d
+docker compose -f %COMPOSE_FILE% --env-file %ENV_FILE% up -d
 echo.
 echo [OK] All services started!
 echo.
-echo Services are now running:
+echo Services are now running (default ports):
 echo   - Frontend:     http://localhost:5173
 echo   - Admin Panel:  http://localhost:5174
 echo   - Backend API:  http://localhost:3000
@@ -118,7 +118,7 @@ goto end
 :stop
 echo.
 echo [INFO] Stopping all services...
-docker-compose -f %COMPOSE_FILE% down
+docker compose -f %COMPOSE_FILE% --env-file %ENV_FILE% down
 echo [OK] All services stopped!
 goto end
 
@@ -126,13 +126,13 @@ goto end
 echo.
 echo [INFO] Viewing logs (Ctrl+C to exit)...
 echo.
-docker-compose -f %COMPOSE_FILE% logs -f
+docker compose -f %COMPOSE_FILE% --env-file %ENV_FILE% logs -f
 goto end
 
 :restart
 echo.
 echo [INFO] Restarting all services...
-docker-compose -f %COMPOSE_FILE% restart
+docker compose -f %COMPOSE_FILE% --env-file %ENV_FILE% restart
 echo [OK] All services restarted!
 goto end
 
@@ -143,7 +143,7 @@ set /p confirm="Are you sure? (yes/no): "
 if "%confirm%"=="yes" (
     echo.
     echo [INFO] Cleaning up...
-    docker-compose -f %COMPOSE_FILE% down -v
+    docker compose -f %COMPOSE_FILE% --env-file %ENV_FILE% down -v
     echo [OK] Cleanup complete!
 ) else (
     echo Cancelled.

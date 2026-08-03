@@ -10,13 +10,27 @@ Mock directory service for voter registration. Provides the institutional member
 http://localhost:4000
 ```
 
+## Authentication
+
+**All endpoints require an API key via `x-api-key` header** (set via `INSTITUTION_API_KEY` env var). Except `/api/health` and `/voter-picker` which are public.
+
+**As of audit resolution C-09:** All data-returning endpoints (`/api/lookup/:institutionId`, `/api/members`, `/api/search`) require authentication to prevent PII disclosure.
+
+## CORS
+
+Restricted to the backend service URL only (set via `BACKEND_URL` env var). No browser origins permitted.
+
+## Rate Limiting
+
+General rate limit: 100 requests per 15 minutes per IP. Stricter limits on lookup/search endpoints.
+
 ## Error Response Shape
 
 ```json
 { "message": "error description" }
 ```
 
-Unhandled errors return 500 via `middleware/errorHandler.js`.
+Generic errors prevent information disclosure. Detailed errors logged server-side only.
 
 ---
 
@@ -40,7 +54,7 @@ Unhandled errors return 500 via `middleware/errorHandler.js`.
 
 List members with pagination and optional filtering.
 
-**Auth:** none
+**Auth:** API key required (`x-api-key` header)
 
 **Query Parameters:**
 
@@ -76,7 +90,7 @@ List members with pagination and optional filtering.
 
 Create a new member record.
 
-**Auth:** none
+**Auth:** API key required (`x-api-key` header)
 
 **Body:**
 
@@ -99,7 +113,7 @@ Create a new member record.
 
 Update a member's details. Same body as POST.
 
-**Auth:** none
+**Auth:** API key required (`x-api-key` header)
 
 **Response 200:** Updated member record.
 
@@ -107,7 +121,7 @@ Update a member's details. Same body as POST.
 
 Mark or unmark a member as a registered voter. Called by backend during registration.
 
-**Auth:** none
+**Auth:** API key required (`x-api-key` header)
 
 **Body:** `{ "is_voter": true }`
 
@@ -117,7 +131,7 @@ Mark or unmark a member as a registered voter. Called by backend during registra
 
 Delete a member. Fails with 409 if the member is already marked as a voter.
 
-**Auth:** none
+**Auth:** API key required (`x-api-key` header)
 
 ---
 
@@ -127,7 +141,7 @@ Delete a member. Fails with 409 if the member is already marked as a voter.
 
 Look up a single member by institution ID. Used by backend during OTP and registration flows.
 
-**Auth:** none
+**Auth:** API key required (`x-api-key` header)
 
 **Response 200:**
 
@@ -147,7 +161,7 @@ Look up a single member by institution ID. Used by backend during OTP and regist
 
 Search members by institution ID or full name.
 
-**Auth:** none
+**Auth:** API key required (`x-api-key` header)
 
 **Query:** `?q=John` (minimum 2 characters)
 

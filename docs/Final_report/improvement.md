@@ -1,4 +1,4 @@
-Priority Improvements - Task Breakdown
+# Priority Improvements - Task Breakdown
 
 P0 - Critical (Must complete before production use)
 
@@ -13,7 +13,7 @@ P0 - Critical (Must complete before production use)
 - Stop generating private keys on server for users.
 - Never return private keys in API responses or logs.
 - Refactor key flow so private key stays client-side only.
-- Files: `services/backend/routes/users.js:42`, `services/backend/routes/users.js:108`, `services/backend/utils/crypto.js:22`
+- Files: `services/backend/routes/users.js:42`, `services/backend/routes/users.js:108`, `services/backend/utils/signing.js:22`
 
 1. Replace fake election keys and disable plaintext ballot fallback
 
@@ -78,7 +78,7 @@ P1 - High (Next sprint after P0)
 
 - Align request payloads, endpoints, and response mapping between admin UI and backend.
 - Add integration tests for admin election/candidate operations.
-- Files: `services/frontend AdminDashboard:394`, `services/frontend AdminDashboard:482`, `services/backend/routes/elections.js:623`, `services/backend/routes/elections.js:1006`
+- Files: `services/admin-panel/src/views/AdminDashboard.vue:394`, `services/admin-panel/src/views/AdminDashboard.vue:482`, `services/backend/routes/elections.js:623`, `services/backend/routes/elections.js:1006`
 
 1. Remove hardcoded login defaults
 

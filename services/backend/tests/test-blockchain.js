@@ -47,8 +47,8 @@ async function testBlockchainNode() {
         console.log('✓ Nullifier status:', nullifierResponse.data);
         
         // Test 5: Mine a block
-        console.log('\nTest 5: GET /mine');
-        const mineResponse = await axios.get(`${BLOCKCHAIN_URL}/mine`, {
+        console.log('\nTest 5: POST /mine');
+        const mineResponse = await axios.post(`${BLOCKCHAIN_URL}/mine`, {}, {
             timeout: 10000
         });
         console.log('✓ Block mined:', mineResponse.data.message);

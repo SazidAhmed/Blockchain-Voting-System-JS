@@ -20,7 +20,7 @@ ECDSA uses P-256 (secp256r1) curve. RSA-OAEP uses SHA-256 as hash function with 
 1. Generate ECDSA P-256 signing keypair (via `CryptoService.generateSigningKeypair()`)
 2. Generate RSA-OAEP encryption keypair (via `CryptoService.generateEncryptionKeypair()`)
 3. Export public keys as SPKI base64 → send to backend
-4. Export private keys as PKCS8 base64 → encrypt and store in `localStorage` (key: `voting_keys_{userId}`)
+4. Export private keys as PKCS8 base64 → encrypt with AES-256-GCM using random salt and store in **IndexedDB** (key: `voting_keys_{userId}`)
 
 ### Voting
 
@@ -35,26 +35,41 @@ ECDSA uses P-256 (secp256r1) curve. RSA-OAEP uses SHA-256 as hash function with 
 
 ### Backend Verification
 
-`services/backend/utils/crypto.js:73` — `verifyECDSASignature()`:
+`services/backend/utils/signing.js` — `verifyECDSASignature()` and `services/blockchain-node/src/core/signature.js`:
 
-1. Parse SPKI public key DER → extract P-256 x,y coordinates
-2. Hash signed data with SHA-256
-3. Decode signature from IEEE P1363 format (r||s, 32 bytes each)
-4. Verify using `elliptic` library (`ec.keyFromPublic().verify()`)
+1. **Canonical JSON serialization** — Sort object keys before signing/verifying to prevent key-order mismatches (H-03)
+2. Parse SPKI public key via native `crypto.createPublicKey()`
+3. Verify signature using `crypto.verify()` with SPKI format and SHA-256 digest
+
+**Canonical JSON** (`signature.js:canonicalJson`): Recursively sorts all object keys alphabetically before stringification. Ensures identical serialization across client and server.
+
+## Blockchain Node Keys
+
+**Persistent ECDSA keypairs** (`blockchain-node/src/core/blockchain.js:getOrCreateNodeKey`):
+
+Each blockchain node generates an ECDSA P-256 keypair on first boot and **persists it to LevelDB** (key: `node_key`). On subsequent restarts, the same key is loaded. This ensures:
+
+- **Stable validator identity** — node ID remains consistent across restarts (C-02)
+- **Block signature continuity** — blocks signed by a node can always be attributed to the same validator
+- **Peer authentication** — nodes identify each other via their persistent public keys (H-29)
+
+Keypairs are never regenerated. If the LevelDB volume is destroyed, a new identity is created.
 
 ## Nullifiers
 
 Nullifiers prevent double-voting without revealing voter identity.
 
-**Generation** (`crypto.js:307-330`):
+**Generation** (`crypto.js:364-387`):
+
+Client-side nullifier derivation using SHA-256:
 
 ```javascript
-SHA - 256(privateKey + "||" + electionId);
+SHA-256(privateKey + "||" + electionId)
 ```
 
 Deterministic per voter+election — same voter always produces the same nullifier for a given election. Different elections produce different nullifiers. The hash is one-way: given a nullifier, no one can determine the voter.
 
-Server rejects duplicate nullifiers at both chain level (`Blockchain.isNullifierUsed()`) and vote submission.
+Server rejects duplicate nullifiers at both chain level (`Blockchain.isNullifierUsed()`) and vote submission via database unique constraint on `nullifier_hash`.
 
 ## Blind-Signed Eligibility Tokens
 
@@ -79,26 +94,26 @@ The system supports blind signatures for privacy-preserving voter authentication
 
 `KeyManager` (`services/frontend/src/services/keyManager.js`) manages the full key lifecycle:
 
-| Method                                                  | Purpose                                                                                                        |
-| ------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| `initializeUserKeys(userId, password)`                  | Generate ECDSA + RSA keypairs, export public keys for server, encrypt and store private keys in `localStorage` |
-| `loadUserKeys(userId, password)`                        | Retrieve and re-import stored keypairs into memory                                                             |
-| `getCurrentKeys()`                                      | Return in-memory keys (null if not loaded)                                                                     |
-| `clearKeys()`                                           | Wipe keys from memory (on logout)                                                                              |
-| `exportPrivateKeysForBackup(password)`                  | Export both keypairs as base64 with security warning                                                           |
-| `importKeysFromBackup(exportedKeys, userId, password)`  | Re-import keys from backup, store, and load into memory                                                        |
-| `hasStoredKeys(userId)`                                 | Check if `localStorage` has keys for user                                                                      |
-| `validateKeys()`                                        | Sign-then-verify test data to confirm key integrity                                                            |
-| `generateVote(voteData, electionId, electionPublicKey)` | Create encrypted, signed vote package via `CryptoService`                                                      |
-| `generateNullifierForElection(electionId)`              | Derive nullifier from signing private key + election ID                                                        |
+| Method                                                  | Purpose                                                                                                       |
+| ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `initializeUserKeys(userId, password)`                  | Generate ECDSA + RSA keypairs, export public keys for server, encrypt and store private keys in **IndexedDB** |
+| `loadUserKeys(userId, password)`                        | Retrieve and re-import stored keypairs from IndexedDB into memory                                             |
+| `getCurrentKeys()`                                      | Return in-memory keys (null if not loaded)                                                                    |
+| `clearKeys()`                                           | Wipe keys from memory (on logout)                                                                             |
+| `exportPrivateKeysForBackup(password)`                  | Export both keypairs as base64 with security warning                                                          |
+| `importKeysFromBackup(exportedKeys, userId, password)`  | Re-import keys from backup, store in IndexedDB, and load into memory                                          |
+| `hasStoredKeys(userId)`                                 | Check if IndexedDB has keys for user                                                                          |
+| `validateKeys()`                                        | Sign-then-verify test data to confirm key integrity                                                           |
+| `generateVote(voteData, electionId, electionPublicKey)` | Create encrypted, signed vote package via `CryptoService`                                                     |
+| `generateNullifierForElection(electionId)`              | Derive nullifier from client-side secret + election ID                                                        |
 
 Keys are held in memory as `CryptoKey` objects for the session lifetime. `clearKeys()` must be called on logout to prevent stale key access.
 
 ## Key Storage
 
-**Current (development):** localStorage, JSON-serialized, no encryption. See `crypto.js:364-390`.
+**Current:** IndexedDB with random salt per encryption + PBKDF2-derived key from password → AES-256-GCM encrypt private keys. See `crypto.js:373-427`. localStorage no longer used for key storage (security improvement).
 
-**Production recommendation:** PBKDF2-derived key from password → AES-256-GCM encrypt private keys → store in IndexedDB. Hardware Security Module (HSM) or WebAuthn for key access.
+**Production recommendation:** Hardware Security Module (HSM) or WebAuthn for key access.
 
 ## Transaction Hash
 
@@ -117,19 +132,15 @@ Hash is returned as receipt. Voter can later prove their vote was included (via 
 ```json
 {
   "receipt": {
+    "receiptId": "<opaque-short-id>",
     "transactionHash": "<SHA-256 hex>",
-    "nullifier": "<SHA-256 hex>",
     "timestamp": 1763026068827,
     "blockIndex": 4
   }
 }
 ```
 
-Receipt proves participation, not choice — coercion resistant.
-
-## Legacy Server-Side Crypto
-
-`services/backend/utils/crypto.js` contains fallback functions (`generateKeypair`, `signData`, `verifySignature`) using HMAC-SHA256 simulation. These exist for backward compatibility; all new usage goes through client-side Web Crypto API.
+The nullifier is **never exposed** to the client — only an opaque receipt ID is returned. This prevents anyone with the receipt from querying the blockchain to confirm voter participation. Receipt proves participation, not choice — coercion resistant.
 
 ## Further Reading
 

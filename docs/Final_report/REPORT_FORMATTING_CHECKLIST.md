@@ -3,6 +3,7 @@
 Use this checklist to convert `PROJECT_REPORT_FINAL_IEEE.md` into your university submission format.
 
 ## 1) Front Matter
+
 - [ ] Title page includes project title, your name, student ID, department, program, supervisor, and submission date.
 - [ ] Approval/signature page follows university template.
 - [ ] Declaration page is signed and dated.
@@ -13,6 +14,7 @@ Use this checklist to convert `PROJECT_REPORT_FINAL_IEEE.md` into your universit
 - [ ] Abbreviations/acronyms list is included.
 
 ## 2) Page Setup
+
 - [ ] Paper size is A4.
 - [ ] Margins follow guideline (commonly Left 1.5 in, others 1.0 in).
 - [ ] Page numbers are placed correctly (Roman for front matter, Arabic for chapters if required).
@@ -21,6 +23,7 @@ Use this checklist to convert `PROJECT_REPORT_FINAL_IEEE.md` into your universit
 - [ ] Heading styles are consistent and numbered.
 
 ## 3) Chapter Structure
+
 - [ ] Chapter 1: Introduction.
 - [ ] Chapter 2: Literature Review.
 - [ ] Chapter 3: Requirements and System Design.
@@ -31,6 +34,7 @@ Use this checklist to convert `PROJECT_REPORT_FINAL_IEEE.md` into your universit
 - [ ] Each chapter ends with a short summary subsection.
 
 ## 4) Figures and Tables
+
 - [ ] Every figure has a number and caption below the figure.
 - [ ] Every table has a number and caption above the table.
 - [ ] All figures/tables are referenced in text before they appear.
@@ -38,6 +42,7 @@ Use this checklist to convert `PROJECT_REPORT_FINAL_IEEE.md` into your universit
 - [ ] Screenshot redactions applied (no sensitive credentials/tokens).
 
 ## 5) Citations and References (IEEE)
+
 - [ ] In-text citations use bracket format: `[1]`, `[2]`.
 - [ ] Citation order matches first appearance in text.
 - [ ] Reference list is numbered and consistent IEEE style.
@@ -45,18 +50,21 @@ Use this checklist to convert `PROJECT_REPORT_FINAL_IEEE.md` into your universit
 - [ ] No uncited references remain in bibliography.
 
 ## 6) Language and Quality
+
 - [ ] Grammar and spelling check completed.
 - [ ] Terminology is consistent (e.g., nullifier, audit log, permissioned blockchain).
 - [ ] Claims are backed by evidence (tests, source files, status records).
 - [ ] Limitations and future work are clearly separated.
 
 ## 7) Appendices
+
 - [ ] Deployment commands included.
 - [ ] Figure insertion checklist included.
 - [ ] Viva questions and model answers included.
 - [ ] Implementation evidence file list included.
 
 ## 8) Final Submission Pack
+
 - [ ] Final report exported to PDF (print layout verified).
 - [ ] Source file (`.docx` or `.tex`) saved.
 - [ ] Slide deck aligned with report chapters.

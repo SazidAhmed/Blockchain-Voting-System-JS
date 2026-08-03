@@ -2,6 +2,7 @@
 
 ```text
 └── 📁Blockchain-Voting-System-JS
+    └── 📁.agents
     └── 📁.githooks
         ├── pre-commit
         ├── pre-push
@@ -18,8 +19,6 @@
             ├── docker-build.yml
             ├── pr-automation.yml
         ├── labeler.yml
-    └── 📁.opencode
-    └── 📁.vscode
     └── 📁docs
         └── 📁api
             ├── backend.md
@@ -43,6 +42,7 @@
         └── 📁development
             ├── conventions.md
             ├── crypto-implementation.md
+            ├── ethereal-email-guide.md
             ├── getting-started.md
             ├── github-workflow.md
         └── 📁Final_report
@@ -57,6 +57,8 @@
             ├── REPORT_FORMATTING_CHECKLIST.md
             ├── SOURCE_OF_TRUTH.md
             ├── WORD_EXPORT_STEPS.md
+        └── 📁frontend
+            ├── README.md
         └── 📁knowledge
             ├── blockchain.md
             ├── cryptography.md
@@ -75,13 +77,13 @@
             ├── ci.md
             ├── overview.md
             ├── running-tests.md
+        ├── appendix.md
         ├── README.md
     └── 📁infra
         └── 📁alerts
             ├── voting-system-alerts.yml
         └── 📁docker
             └── 📁nginx
-                └── 📁logs
                 ├── nginx.conf
             ├── docker-compose.monitoring.yml
             ├── docker-compose.multi-node.yml
@@ -107,15 +109,16 @@
                 ├── promtail-config.yml
         └── 📁scripts
             ├── docker-backup.sh
+            ├── docker-bootstrap.sh
             ├── docker-cleanup.sh
             ├── docker-health-check.bat
             ├── docker-health-check.sh
             ├── docker-logs.sh
             ├── docker-monitoring-start.sh
             ├── docker-restore.sh
-            ├── docker-seed.sh
             ├── docker-start.bat
             ├── docker-start.sh
+            ├── generate-secrets.sh
             ├── seed-test-attack.sh
             ├── seed-test-data.sh
             ├── seed-test-detection.sh
@@ -139,48 +142,56 @@
     └── 📁services
         └── 📁admin-panel
             └── 📁src
+                └── 📁assets
+                    ├── tokens.css
                 └── 📁components
                     ├── AdminAuditLogs.vue
+                    ├── AdminBlockchainExplorer.vue
                     ├── AdminInstituteMembersTab.vue
+                    ├── AdminNavBar.vue
                 └── 📁router
                     ├── index.js
+                └── 📁services
+                    ├── api.js
                 └── 📁store
                     ├── audit.js
                     ├── auth.js
                     ├── elections.js
-                    ├── index.js
                 └── 📁views
                     ├── AdminDashboard.vue
                     ├── LoginView.vue
+                    ├── NotFoundView.vue
                 ├── App.vue
+                ├── config.js
                 ├── main.js
             ├── .dockerignore
             ├── .gitignore
             ├── Dockerfile
+            ├── Dockerfile.prod
             ├── index.html
+            ├── nginx.conf
             ├── package.json
             ├── vite.config.js
         └── 📁backend
             └── 📁config
                 ├── db.js
-                ├── fileStorage.js
             └── 📁data
                 ├── .gitkeep
             └── 📁keys
             └── 📁middleware
+                ├── auditMiddleware.js
                 ├── auth.js
+                ├── csrf.js
                 ├── rateLimiter.js
                 ├── validation.js
             └── 📁migrations
                 ├── 001_initial_schema.sql
-                ├── 002_add_crypto_fields.sql
-            └── 📁models
-                ├── candidate.js
-                ├── election.js
-                ├── index.js
-                ├── user.js
-                ├── voterRegistration.js
             └── 📁routes
+                └── 📁elections
+                    ├── candidates.js
+                    ├── crud.js
+                    ├── results.js
+                    ├── voting.js
                 ├── elections.js
                 ├── users.js
             └── 📁scripts
@@ -212,33 +223,46 @@
                 ├── test-rate-limiting.js
                 ├── test-receipt-ui.js
                 ├── test-security.js
+                ├── test-smtp.js
                 ├── test.js
             └── 📁utils
                 ├── adminAuditLogger.js
                 ├── auditLogger.js
-                ├── crypto.js
+                ├── password.js
+                ├── signing.js
+                ├── tallyEncryption.js
+                ├── tokenBlacklist.js
             ├── .dockerignore
             ├── .env.example
             ├── .gitignore
             ├── Dockerfile
+            ├── Dockerfile.prod
             ├── index.js
             ├── package.json
         └── 📁blockchain-node
             └── 📁data
                 ├── .gitkeep
+            └── 📁middleware
+                ├── auth.js
+                ├── rateLimiter.js
             └── 📁src
                 └── 📁core
                     ├── block.js
                     ├── blockchain.js
                     ├── merkleTree.js
+                    ├── signature.js
                 └── 📁monitoring
                     ├── nodeMonitor.js
                     ├── prometheusMetrics.js
                 └── 📁network
                     ├── peerManager.js
+                └── 📁routes
+                    ├── chain.js
+                    ├── merkle.js
+                    ├── metrics.js
+                    ├── security.js
+                    ├── votes.js
                 └── 📁security
-                    ├── byzantineValidator.js
-                    ├── recoveryManager.js
                     ├── securityMonitor.js
             └── 📁tests
                 ├── test-merkle.js
@@ -246,6 +270,7 @@
             ├── .dockerignore
             ├── .gitignore
             ├── Dockerfile
+            ├── Dockerfile.prod
             ├── index.js
             ├── package.json
             ├── start.sh
@@ -254,33 +279,30 @@
                 ├── favicon.ico
                 ├── test-script.js
             └── 📁src
-                └── 📁__tests__
-                    ├── crypto.test.js
                 └── 📁assets
-                    ├── base.css
-                    ├── logo.svg
-                    ├── main.css
+                    ├── tokens.css
                 └── 📁components
-                    ├── AdminAuditLogs.vue
+                    ├── AppFooter.vue
+                    ├── AppModal.vue
+                    ├── NavBar.vue
                     ├── VoteReceipt.vue
                 └── 📁router
                     ├── index.js
                 └── 📁services
+                    ├── api.js
                     ├── crypto.js
                     ├── keyManager.js
                 └── 📁store
                     ├── index.js
                 └── 📁views
-                    ├── AdminDashboard.vue
                     ├── BlockchainExplorer.vue
-                    ├── BlockchainMonitor.vue
                     ├── ElectionDetailView.vue
                     ├── ElectionsView.vue
                     ├── HomeView.vue
                     ├── LoginView.vue
+                    ├── NotFoundView.vue
                     ├── RegisterView.vue
                     ├── ResultsView.vue
-                    ├── VoterPickerView.vue
                     ├── VoteView.vue
                 ├── App.vue
                 ├── main.js
@@ -299,6 +321,7 @@
                     ├── database.js
                     ├── seed.js
                 └── 📁middleware
+                    ├── auth.js
                     ├── errorHandler.js
                 └── 📁routes
                     ├── health.js
@@ -307,7 +330,9 @@
                     ├── voter-picker.js
                 ├── app.js
                 ├── server.js
+            ├── .dockerignore
             ├── Dockerfile
+            ├── Dockerfile.prod
             ├── index.js
             ├── package.json
     └── 📁tests
@@ -324,11 +349,13 @@
         └── 📁deprecated
             ├── quick-test.sh
             ├── run-comprehensive-tests.sh
-        └── 📁results
+        └── 📁helpers
+            ├── vote-package.js
         ├── run-tests.sh
         ├── test-config.sh
     ├── .env.example
     ├── .gitignore
+    ├── .nvmrc
     ├── .shell_aliases
     ├── AGENTS.md
     ├── LICENSE

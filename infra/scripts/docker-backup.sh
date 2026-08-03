@@ -9,6 +9,7 @@ set -e
 
 # Docker Compose file location (relative to project root)
 COMPOSE_FILE="infra/docker/docker-compose.yml"
+ENV_FILE=".env"
 
 BACKUP_DIR="./backups"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
@@ -31,39 +32,37 @@ mkdir -p "${BACKUP_DIR}"
 
 # Check if containers are running
 echo -e "${YELLOW}Checking if containers are running...${NC}"
-if ! docker-compose -f $COMPOSE_FILE ps | grep -q "voting-mysql.*Up"; then
+if ! docker compose -f $COMPOSE_FILE --env-file $ENV_FILE ps | grep -q "voting-mysql.*Up"; then
     echo -e "${RED}Error: MySQL container is not running!${NC}"
-    echo "Please start the services first: docker-compose -f $COMPOSE_FILE up -d"
+    echo "Please start the services first: docker compose -f $COMPOSE_FILE --env-file $ENV_FILE up -d"
     exit 1
 fi
 
 # Backup MySQL database
 echo -e "${BLUE}Backing up MySQL database...${NC}"
-docker-compose -f $COMPOSE_FILE exec -T mysql mysqldump -u voting_user -pvoting_pass voting_db > "${BACKUP_DIR}/${BACKUP_NAME}_mysql.sql"
+docker compose -f $COMPOSE_FILE --env-file $ENV_FILE exec -T mysql mysqldump -u "${MYSQL_USER}" -p"${MYSQL_PASSWORD}" voting_db > "${BACKUP_DIR}/${BACKUP_NAME}_mysql.sql"
 echo -e "${GREEN}✓ MySQL backup saved to: ${BACKUP_DIR}/${BACKUP_NAME}_mysql.sql${NC}"
 
 # Backup blockchain data
 echo -e "${BLUE}Backing up blockchain data...${NC}"
-docker-compose -f $COMPOSE_FILE exec -T blockchain-node tar czf - /app/data > "${BACKUP_DIR}/${BACKUP_NAME}_blockchain.tar.gz"
+docker compose -f $COMPOSE_FILE --env-file $ENV_FILE exec -T blockchain-node tar czf - /app/data > "${BACKUP_DIR}/${BACKUP_NAME}_blockchain.tar.gz"
 echo -e "${GREEN}✓ Blockchain backup saved to: ${BACKUP_DIR}/${BACKUP_NAME}_blockchain.tar.gz${NC}"
 
-# Backup environment file
-echo -e "${BLUE}Backing up environment configuration...${NC}"
-cp .env "${BACKUP_DIR}/${BACKUP_NAME}_env.txt"
-echo -e "${GREEN}✓ Environment backup saved to: ${BACKUP_DIR}/${BACKUP_NAME}_env.txt${NC}"
+# Environment file is intentionally EXCLUDED from backups (H-25) — it contains
+# secrets (DB passwords, API keys, JWT secret). Back up it separately via a
+# secret manager. Do not copy .env into backup archives.
 
 # Create backup metadata
 cat > "${BACKUP_DIR}/${BACKUP_NAME}_metadata.txt" << EOF
 Backup Created: $(date)
 MySQL Backup: ${BACKUP_NAME}_mysql.sql
 Blockchain Backup: ${BACKUP_NAME}_blockchain.tar.gz
-Environment Backup: ${BACKUP_NAME}_env.txt
 
-Docker Compose Version: $(docker-compose -f $COMPOSE_FILE version --short)
+Docker Compose Version: $(docker compose -f $COMPOSE_FILE --env-file $ENV_FILE version --short)
 Docker Version: $(docker version --format '{{.Server.Version}}')
 
 Service Versions:
-$(docker-compose -f $COMPOSE_FILE ps --format json | jq -r '.[] | "  \(.Service): \(.State)"')
+$(docker compose -f $COMPOSE_FILE --env-file $ENV_FILE ps --format json | jq -r '.[] | "  \(.Service): \(.State)"')
 EOF
 
 echo -e "${GREEN}✓ Metadata saved to: ${BACKUP_DIR}/${BACKUP_NAME}_metadata.txt${NC}"
@@ -74,13 +73,11 @@ cd "${BACKUP_DIR}"
 tar czf "${BACKUP_NAME}.tar.gz" \
     "${BACKUP_NAME}_mysql.sql" \
     "${BACKUP_NAME}_blockchain.tar.gz" \
-    "${BACKUP_NAME}_env.txt" \
     "${BACKUP_NAME}_metadata.txt"
 
 # Remove individual files
 rm -f "${BACKUP_NAME}_mysql.sql" \
       "${BACKUP_NAME}_blockchain.tar.gz" \
-      "${BACKUP_NAME}_env.txt" \
       "${BACKUP_NAME}_metadata.txt"
 
 cd ..

@@ -4,9 +4,7 @@ import LoginView from '../views/LoginView.vue'
 import RegisterView from '../views/RegisterView.vue'
 import ElectionsView from '../views/ElectionsView.vue'
 import VoteView from '../views/VoteView.vue'
-import AdminDashboard from '../views/AdminDashboard.vue'
 import ResultsView from '../views/ResultsView.vue'
-import VoterPickerView from '../views/VoterPickerView.vue'
 import BlockchainExplorer from '../views/BlockchainExplorer.vue'
 import ElectionDetailView from '../views/ElectionDetailView.vue'
 
@@ -28,16 +26,7 @@ const router = createRouter({
       name: 'register',
       component: RegisterView
     },
-    {
-      path: '/admin/dashboard',
-      name: 'admin-dashboard',
-      component: AdminDashboard,
-      meta: { requiresAuth: true, requiresAdmin: true }
-    },
-    {
-      path: '/admin',
-      redirect: '/admin/dashboard'
-    },
+
     {
       path: '/elections',
       name: 'elections',
@@ -63,33 +52,26 @@ const router = createRouter({
       meta: { requiresAuth: true }
     },
     {
-      path: '/voter-picker',
-      name: 'voter-picker',
-      component: VoterPickerView
-    },
-    {
       path: '/explorer',
       name: 'explorer',
       component: BlockchainExplorer
+    },
+    {
+      path: '/:pathMatch(.*)*',
+      name: 'not-found',
+      component: () => import('../views/NotFoundView.vue')
     }
   ]
 })
 
 // Navigation guard
 router.beforeEach((to, from, next) => {
-  const token = localStorage.getItem('token')
-  const user = JSON.parse(localStorage.getItem('user') || '{}')
-  const isAuthenticated = !!token
+  const user = JSON.parse(localStorage.getItem('voter_user') || 'null')
+  const isAuthenticated = !!user
 
   if (to.matched.some(record => record.meta.requiresAuth)) {
     if (!isAuthenticated) {
       next({ name: 'login', query: { redirect: to.fullPath } })
-    } else if (to.matched.some(record => record.meta.requiresAdmin)) {
-      if (user.role === 'admin') {
-        next()
-      } else {
-        next({ name: 'home' })
-      }
     } else {
       next()
     }

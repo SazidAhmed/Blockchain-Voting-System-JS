@@ -20,7 +20,7 @@ if [ -z "$BRANCH" ]; then
 fi
 
 # Allow main, dev, and feature branches
-PATTERN='^(main|dev|fix/[a-z0-9._-]+|feat/[a-z0-9._-]+|docs/[a-z0-9._-]+|refactor/[a-z0-9._-]+|ci/[a-z0-9._-]+|chore/[a-z0-9._-]+|test/[a-z0-9._-]+)$'
+PATTERN='^(main|dev|fix/[a-z0-9._-]+|feat/[a-z0-9._-]+|docs/[a-z0-9._-]+|refactor/[a-z0-9._-]+|ci/[a-z0-9._-]+|chore/[a-z0-9._-]+|test/[a-z0-9._-]+|hotfix/[a-z0-9._-]+|release/[a-z0-9._-]+)$'
 
 if [[ "$BRANCH" =~ $PATTERN ]]; then
   echo -e "${GREEN}✓ Branch name is valid: $BRANCH${NC}"
@@ -35,5 +35,7 @@ else
   echo "  refactor/<description>"
   echo "  ci/<description>"
   echo "  chore/<description>"
+  echo "  hotfix/<description>"
+  echo "  release/<description>"
   exit 1
 fi

@@ -1,214 +1,239 @@
 <template>
-  <div class="login-container">
-    <div class="login-card">
+  <div class="page-centered">
+    <div class="login-card glass">
       <div class="login-header">
-        <h1>🔐 Admin Panel Login</h1>
-        <p>Enter your admin credentials</p>
+        <PhShieldCheck :size="36" weight="fill" color="var(--accent)" />
+        <h1>Admin Panel</h1>
+        <p class="login-subtitle">Sign in with your admin credentials</p>
       </div>
 
-      <div v-if="error" class="alert alert-danger">{{ error }}</div>
+      <div v-if="error" class="alert alert-danger">
+        <PhWarning :size="16" weight="fill" />
+        <span>{{ error }}</span>
+      </div>
 
       <form @submit.prevent="handleLogin">
         <div class="form-group">
-          <label for="username">Username</label>
-          <input
-            v-model="username"
-            type="text"
-            id="username"
-            class="form-control"
-            placeholder="e.g., ADMIN001"
-            required
-          >
+          <label class="form-label" for="username">Username</label>
+          <div class="input-with-icon">
+            <PhUser :size="18" class="input-icon" />
+            <input
+              v-model="username"
+              type="text"
+              id="username"
+              class="form-input"
+              placeholder="admin"
+              required
+            />
+          </div>
         </div>
 
         <div class="form-group">
-          <label for="password">Password</label>
-          <input
-            v-model="password"
-            type="password"
-            id="password"
-            class="form-control"
-            placeholder="••••••••"
-            required
-          >
+          <label class="form-label" for="password">Password</label>
+          <div class="input-with-icon">
+            <PhLock :size="18" class="input-icon" />
+            <input
+              v-model="password"
+              type="password"
+              id="password"
+              class="form-input"
+              placeholder="&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;"
+              required
+            />
+          </div>
         </div>
 
-        <button type="submit" class="btn btn-primary" :disabled="loading">
-          {{ loading ? 'Logging in...' : 'Login' }}
+        <button type="submit" class="btn btn-primary btn-block" :disabled="loading">
+          <PhSpinner v-if="loading" :size="18" class="spinning" />
+          <PhSignIn v-else :size="18" />
+          {{ loading ? "Signing in..." : "Sign In" }}
         </button>
       </form>
 
-      <div class="demo-credentials">
-        <p><strong>Demo Credentials:</strong></p>
-        <small>Username: ADMIN001</small><br>
-        <small>Password: admin123</small>
+      <div class="login-theme-toggle">
+        <button
+          class="theme-btn"
+          @click="toggleTheme"
+          :title="isDark ? 'Switch to light mode' : 'Switch to dark mode'"
+        >
+          <PhSun v-if="isDark" :size="18" />
+          <PhMoon v-else :size="18" />
+        </button>
       </div>
     </div>
   </div>
 </template>
 
 <script>
-import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
-import { useAuthStore } from '../store/auth'
+import { ref, computed, onMounted } from "vue";
+import { useRouter } from "vue-router";
+import { useAuthStore } from "../store/auth";
+import {
+  PhShieldCheck,
+  PhUser,
+  PhLock,
+  PhSignIn,
+  PhSpinner,
+  PhWarning,
+  PhSun,
+  PhMoon,
+} from "@phosphor-icons/vue";
 
 export default {
-  name: 'LoginView',
+  name: "LoginView",
+  components: {
+    PhShieldCheck,
+    PhUser,
+    PhLock,
+    PhSignIn,
+    PhSpinner,
+    PhWarning,
+    PhSun,
+    PhMoon,
+  },
   setup() {
-    const router = useRouter()
-    const authStore = useAuthStore()
-    
-    const username = ref('ADMIN001')
-    const password = ref('admin123')
-    
-    const error = computed(() => authStore.error)
-    const loading = computed(() => authStore.loading)
+    const router = useRouter();
+    const authStore = useAuthStore();
+
+    const username = ref("");
+    const password = ref("");
+    const isDark = ref(false);
+
+    const error = computed(() => authStore.error);
+    const loading = computed(() => authStore.loading);
 
     const handleLogin = async () => {
       try {
         await authStore.login({
           institutionId: username.value,
-          password: password.value
-        })
-        await router.push('/dashboard')
+          password: password.value,
+        });
+        await router.push("/dashboard");
       } catch (err) {
-        console.error('Login error:', err)
+        console.error("Login error:", err);
       }
-    }
+    };
+
+    const toggleTheme = () => {
+      isDark.value = !isDark.value;
+      document.documentElement.setAttribute(
+        "data-theme",
+        isDark.value ? "dark" : "light",
+      );
+      localStorage.setItem("theme", isDark.value ? "dark" : "light");
+    };
 
     onMounted(() => {
-      authStore.clearError()
-    })
+      authStore.clearError();
+      isDark.value =
+        document.documentElement.getAttribute("data-theme") === "dark";
+    });
 
     return {
       username,
       password,
       error,
       loading,
-      handleLogin
-    }
-  }
-}
+      isDark,
+      handleLogin,
+      toggleTheme,
+    };
+  },
+};
 </script>
 
 <style scoped>
-.login-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  padding: 20px;
-}
-
 .login-card {
   width: 100%;
-  max-width: 450px;
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
-  padding: 40px;
+  max-width: 400px;
+  padding: 40px 32px 32px;
+  border-radius: var(--radius-xl);
 }
 
 .login-header {
   text-align: center;
-  margin-bottom: 30px;
+  margin-bottom: 32px;
 }
 
 .login-header h1 {
-  margin: 0 0 10px 0;
-  color: #2c3e50;
-  font-size: 1.8rem;
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-top: 12px;
+  background: var(--accent-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
-.login-header p {
-  margin: 0;
-  color: #7f8c8d;
-  font-size: 0.95rem;
+.login-subtitle {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  margin-top: 4px;
 }
 
-.form-group {
-  margin-bottom: 20px;
+.input-with-icon {
+  position: relative;
 }
 
-.form-group label {
-  display: block;
-  margin-bottom: 8px;
-  font-weight: 600;
-  color: #2c3e50;
+.input-with-icon .input-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+  pointer-events: none;
 }
 
-.form-control {
+.input-with-icon .form-input {
+  padding-left: 40px;
+}
+
+.btn-block {
   width: 100%;
-  padding: 12px;
-  border: 2px solid #ddd;
-  border-radius: 6px;
-  font-size: 1rem;
-  font-family: inherit;
-  transition: border-color 0.3s ease;
+  margin-top: 8px;
 }
 
-.form-control:focus {
-  outline: none;
-  border-color: #667eea;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-}
-
-.btn {
-  display: block;
-  width: 100%;
-  padding: 12px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  border: none;
-  border-radius: 6px;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  margin-top: 25px;
-}
-
-.btn:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
-}
-
-.btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
+.spinning {
+  animation: spin 0.7s linear infinite;
 }
 
 .alert {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   padding: 12px;
   margin-bottom: 20px;
-  border-radius: 6px;
-  border-left: 4px solid;
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
 }
 
 .alert-danger {
-  background-color: #f8d7da;
-  color: #721c24;
-  border-left-color: #dc3545;
+  background: color-mix(in srgb, var(--error) 10%, transparent);
+  color: var(--error);
+  border-color: color-mix(in srgb, var(--error) 25%, transparent);
 }
 
-.demo-credentials {
-  margin-top: 30px;
-  padding-top: 20px;
-  border-top: 1px solid #e0e0e0;
-  text-align: center;
-  color: #7f8c8d;
-  font-size: 0.9rem;
+.login-theme-toggle {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
 }
 
-.demo-credentials p {
-  margin: 0 0 8px 0;
-  font-weight: 600;
-  color: #2c3e50;
+.theme-btn {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.4rem;
+  cursor: pointer;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
 }
 
-.demo-credentials small {
-  display: block;
-  margin: 4px 0;
+.theme-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
 }
 </style>

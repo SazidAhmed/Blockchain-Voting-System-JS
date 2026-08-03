@@ -1,103 +1,82 @@
-import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
+import { defineStore } from "pinia";
+import { computed, ref } from "vue";
+import api from "../services/api";
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'
-
-export const useAuthStore = defineStore('auth', () => {
+export const useAuthStore = defineStore("auth", () => {
   // State
-  const user = ref(null)
-  const token = ref(localStorage.getItem('token') || null)
-  const loading = ref(false)
-  const error = ref(null)
+  const user = ref(null);
+  const loading = ref(false);
+  const error = ref(null);
 
   // Computed
-  const isAuthenticated = computed(() => !!token.value)
-  const isAdmin = computed(() => user.value && user.value.role === 'admin')
-  const currentUser = computed(() => user.value)
+  const isAuthenticated = computed(() => !!user.value);
+  const isAdmin = computed(() => user.value && user.value.role === "admin");
+  const currentUser = computed(() => user.value);
 
   // Actions
   async function login(credentials) {
-    loading.value = true
-    error.value = null
+    loading.value = true;
+    error.value = null;
     try {
-      const response = await fetch(`${API_BASE}/api/users/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(credentials)
-      })
+      const { data } = await api.post("/users/login", {
+        ...credentials,
+        loginType: "admin",
+      });
 
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.message || 'Login failed')
-      }
+      user.value = data.user;
+      localStorage.setItem("admin_user", JSON.stringify(data.user));
 
-      const data = await response.json()
-      user.value = data.user
-      token.value = data.token
-      
-      // Persist to localStorage
-      localStorage.setItem('token', data.token)
-      localStorage.setItem('user', JSON.stringify(data.user))
-
-      return data
+      return data;
     } catch (err) {
-      error.value = err.message
-      throw err
+      error.value =
+        err.displayMessage ||
+        err.response?.data?.message ||
+        err.response?.data?.error ||
+        "Login failed. Please try again.";
+      throw err;
     } finally {
-      loading.value = false
+      loading.value = false;
     }
   }
 
   async function fetchCurrentUser() {
-    if (!token.value) return
+    if (!user.value) return;
 
-    loading.value = true
+    loading.value = true;
     try {
-      const response = await fetch(`${API_BASE}/api/users/me`, {
-        headers: {
-          'Authorization': `Bearer ${token.value}`
-        }
-      })
-
-      if (!response.ok) throw new Error('Failed to fetch user')
-      user.value = await response.json()
-      return user.value
+      const { data } = await api.get("/users/me");
+      user.value = data;
+      return user.value;
     } catch (err) {
-      error.value = err.message
-      logout()
+      error.value =
+        err.displayMessage ||
+        err.response?.data?.message ||
+        "Failed to fetch user.";
+      logout();
     } finally {
-      loading.value = false
+      loading.value = false;
     }
   }
 
   function logout() {
-    user.value = null
-    token.value = null
-    localStorage.removeItem('token')
-    localStorage.removeItem('user')
-    error.value = null
+    user.value = null;
+    localStorage.removeItem("admin_user");
+    error.value = null;
   }
 
   function clearError() {
-    error.value = null
+    error.value = null;
   }
 
   // Initialize from localStorage
   function initializeAuth() {
-    const storedUser = localStorage.getItem('user')
-    const storedToken = localStorage.getItem('token')
-    
-    if (storedToken) {
-      token.value = storedToken
-    }
-    
+    const storedUser = localStorage.getItem("admin_user");
+
     if (storedUser) {
       try {
-        user.value = JSON.parse(storedUser)
+        user.value = JSON.parse(storedUser);
       } catch (e) {
-        console.error('Failed to parse stored user', e)
+        console.error("Failed to parse stored user", e);
       }
     }
   }
@@ -105,7 +84,6 @@ export const useAuthStore = defineStore('auth', () => {
   return {
     // State
     user,
-    token,
     loading,
     error,
     // Computed
@@ -117,6 +95,6 @@ export const useAuthStore = defineStore('auth', () => {
     logout,
     fetchCurrentUser,
     clearError,
-    initializeAuth
-  }
-})
+    initializeAuth,
+  };
+});

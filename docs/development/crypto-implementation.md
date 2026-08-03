@@ -1,6 +1,6 @@
 # Cryptography Implementation
 
-Two layers: client-side (Web Crypto API) for key operations, server-side (Node `crypto` + `elliptic`) for verification.
+Two layers: client-side (Web Crypto API) for key operations, server-side (Node native `crypto`) for verification.
 
 ## Client-Side — `services/frontend/src/services/crypto.js`
 
@@ -27,57 +27,48 @@ Keys generated during user registration via `generateUserKeypairs()`.
 
 ### Nullifier Generation
 
-SHA-256 of `privateKeyData + '||' + electionId`. Deterministic per voter+election pair. Prevents double-voting without revealing voter identity.
+Client-side SHA-256: `SHA-256(privateKey + "||" + electionId)`. Deterministic per voter+election pair. Prevents double-voting without revealing voter identity. Server never derives nullifiers; they are client-supplied and verified for uniqueness.
 
 ### Key Storage
 
-Stored in `localStorage` under key `voting_keys_{userId}` (JSON, unencrypted — demo only).
+Stored in **IndexedDB** under store `voting_keys_{userId}`, encrypted with AES-256-GCM using a random salt (per encryption) + PBKDF2-derived key (100k iterations) from user password. localStorage no longer used for key storage (security improvement).
 
 ### Key Manager — `services/frontend/src/services/keyManager.js`
 
 Lifecycle wrapper around `crypto.js`:
 
-- `initializeUserKeys(userId, password)` — generate + store
-- `loadUserKeys(userId, password)` — retrieve from localStorage
+- `initializeUserKeys(userId, password)` — generate + store in IndexedDB
+- `loadUserKeys(userId, password)` — retrieve from IndexedDB
 - `generateVote(voteData, electionId, electionPublicKey)` — creates signed, encrypted vote package
 - `exportPrivateKeysForBackup(password)` — base64 export with warnings
 
-## Server-Side — `services/backend/utils/crypto.js`
+## Server-Side — `services/backend/utils/signing.js`
 
-Uses Node `crypto` module, `elliptic` library (P-256), and `bcryptjs`.
+Uses Node native `crypto` module (no `elliptic` dependency).
 
 ### ECDSA Verification
 
 `verifyECDSASignature(publicKeyBase64, signatureBase64, data)` — full cryptographic verification:
 
 1. Parses SPKI-encoded public key (DER), extracts P-256 x/y coordinates
-2. SHA-256 hashes the data
+2. SHA-256 hashes the data (using canonical JSON: keys sorted)
 3. Decodes IEEE P1363-format signature (r || s, 64 bytes for P-256)
-4. Verifies ECDSA via `elliptic` library
+4. Verifies ECDSA via native `crypto.createVerify()` with SPKI format
 
-### Legacy Functions
-
-| Function            | Method                                    | Status                    |
-| ------------------- | ----------------------------------------- | ------------------------- |
-| `generateKeypair`   | Random hex strings                        | Legacy                    |
-| `signData`          | HMAC-SHA256                               | Legacy                    |
-| `verifySignature`   | HMAC-SHA256 comparison                    | Legacy                    |
-| `encryptBallot`     | SHA-256 hash                              | Legacy                    |
-| `generateNullifier` | SHA-256(userId + electionId + privateKey) | Active (legacy flow only) |
-
-### Backend Hash Utilities
+### Backend Token/Hash Utilities
 
 - `generateToken()` — `crypto.randomBytes(32).toString('hex')`
-- `hashPassword()` / `comparePassword()` — bcryptjs (10 salt rounds)
+- `hashPassword()` / `comparePassword()` — bcryptjs (12 salt rounds)
+- `verifyECDSASignature()` — uses native crypto, canonical JSON
 
 ## Transaction Hash
 
-Backend stores the blockchain node's deterministic transaction hash when available, falling back to a random hash: `receipt.transactionHash || crypto.randomBytes(32).toString('hex')` in `votes_meta.tx_hash`.
+Backend computes deterministic transaction hash: `SHA-256({ electionId, nullifier, encryptedBallot, timestamp })` and returns it as the vote receipt.
 
 Blockchain node computes deterministic hashes:
 
 - **Block hash**: SHA-256 of `index + timestamp + JSON.stringify(data) + previousHash + nonce + merkleRoot`
-- **Vote hash**: SHA-256 of `voterId + electionId + encryptedBallot + nullifier` (note: `verifyVoteSignature()` in `blockchain.js` is a simulation that always returns true)
+- **Vote hash**: SHA-256 of `electionId + nullifier + encryptedBallot + timestamp`
 
 ## Key Flow
 
@@ -86,13 +77,13 @@ Registration
   → generateSigningKeypair()  (ECDSA P-256)
   → generateEncryptionKeypair()  (RSA-OAEP 2048)
   → export public keys → send to backend
-  → store private keys in localStorage
+  → store private keys in IndexedDB
 
 Voting
-  → generateNullifier(privateKey, electionId)  (SHA-256)
+  → generateNullifier(privateKey, electionId)  (SHA-256, client-side)
   → encryptBallot(ballot, electionPublicKey)  (RSA-OAEP)
   → signData(votePackage, privateKey)  (ECDSA P-256)
   → submit { encryptedBallot, nullifier, electionId, timestamp, signature, publicKey }
 ```
 
-Backend verifies signature via `verifyECDSASignature()` using the `elliptic` library, checks nullifier uniqueness, and records vote.
+Backend verifies signature via `verifyECDSASignature()` using native `crypto`, checks nullifier uniqueness (UNIQUE constraint), and records vote.

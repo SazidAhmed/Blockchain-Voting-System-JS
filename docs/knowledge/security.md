@@ -29,19 +29,23 @@ This system applies **layered security** — no single control is trusted to pre
 
 ---
 
-## Authentication: JWT with ECDSA
+## Authentication: JWT with HS256
 
 ### How It Works
 
-| Step | What Happens                                                          |
-| ---- | --------------------------------------------------------------------- |
-| 1    | User logs in with credentials                                         |
-| 2    | Backend verifies credentials, generates JWT                           |
-| 3    | JWT contains user ID, role, expiration                                |
-| 4    | Client sends JWT via `x-auth-token` header or `Authorization: Bearer` |
-| 5    | Backend middleware verifies JWT signature                             |
+| Step | What Happens                                                                  |
+| ---- | ----------------------------------------------------------------------------- |
+| 1    | User logs in with credentials                                                 |
+| 2    | Backend verifies credentials, generates JWT (HS256 only)                      |
+| 3    | JWT contains user ID, role, expiration, JTI for revocation                    |
+| 4    | Client receives JWT as httpOnly cookie (never exposed to JS)                  |
+| 5    | Backend middleware verifies JWT signature with explicit algorithm restriction |
 
-JWTs are signed with ECDSA — the same curve used for vote signatures. This means token forgery requires the server's private signing key, which never leaves the backend.
+**Algorithm confusion prevention (C-01):** JWTs are signed with HMAC-SHA256 (HS256). The `jwt.verify()` call explicitly restricts to `algorithms: ['HS256']` to prevent attackers from switching to RS256 and using the HS256 secret as an RSA public key.
+
+**Token storage (H-01):** Token stored in httpOnly cookie only — never returned in response body. This prevents XSS attacks from stealing the token. Frontend never sees the JWT value; the browser automatically sends it with each request.
+
+**Token revocation:** Includes JTI (JWT ID) claim for revocation via blacklist stored in MySQL (`token_blacklist` table). Blacklisted tokens are rejected even if not yet expired. Expired tokens are periodically cleaned from the blacklist.
 
 ### Middleware Layers
 
@@ -51,6 +55,14 @@ adminAuth middleware → admin or board_member role only
 ```
 
 Routes are protected by applying the appropriate middleware. Protected endpoints without middleware are a **critical vulnerability** — the system tests for this explicitly.
+
+### API Key Authentication
+
+Blockchain node and institution API endpoints use API key authentication via `x-api-key` header:
+
+**Blockchain node (C-06, C-07):** All chain data endpoints (`/chain`, `/node`, `/node/status`, `/network/status`) and Merkle verification (`/merkle/verify`) require `BLOCKCHAIN_API_KEY`. Only `/health` is public (used by Docker healthchecks and monitoring).
+
+**Institution API (C-09):** All data-returning endpoints (`/api/lookup/:institutionId`, `/api/members`, `/api/search`) require `INSTITUTION_API_KEY` to prevent PII disclosure. Only `/api/health` and `/voter-picker` are public.
 
 ---
 
@@ -73,21 +85,23 @@ Role checks happen at the middleware level — before route handler code execute
 Double voting is the most critical threat to election integrity. The nullifier system prevents it:
 
 ```text
-voter registers → private key generated → nullifier = SHA-256(key || election)
-                                      ↓
-                              backend stores nullifier
-                                      ↓
-                         second vote attempt → nullifier exists → REJECT
+voter registers → client generates nullifier → SHA-256(privateKey + "||" + electionId)
+                                       ↓
+                               backend stores nullifier hash
+                                       ↓
+                          second vote attempt → nullifier exists → REJECT
 ```
 
 Properties:
 
+- **Client-supplied (C-05):** Nullifiers are generated client-side only. Server never derives nullifiers from user credentials, preventing nullifier collision attacks.
 - **Deterministic**: Same voter + election always produces same nullifier
-- **Unique**: Different private keys → different nullifiers
+- **Unique**: Different secret keys → different nullifiers
 - **Irreversible**: Cannot extract voter identity from nullifier
 - **One-time**: Each nullifier can only be used once per election
+- **TOCTOU protection (H-06):** UNIQUE constraint on `votes_meta.nullifier_hash` with transaction isolation and `ER_DUP_ENTRY` handling prevents race conditions.
 
-The backend checks nullifier uniqueness in the database before accepting any vote.
+The backend checks nullifier uniqueness at both database level (UNIQUE constraint) and application level before accepting any vote.
 
 ---
 
@@ -141,6 +155,22 @@ SELECT * FROM users WHERE id = ?
 -- Unsafe: string interpolation (NOT used)
 SELECT * FROM users WHERE id = '${userInput}'
 ```
+
+### Canonical JSON Serialization (H-03)
+
+All data signed or verified uses **canonical JSON** — object keys sorted alphabetically before stringification. This prevents signature verification failures from key-order differences across platforms:
+
+```text
+Without canonicalization:
+  Client: JSON.stringify({a: 1, b: 2}) → '{"a":1,"b":2}'
+  Server: JSON.stringify({b: 2, a: 1}) → '{"b":2,"a":1}'
+  → Same data, different strings → signature verification fails
+
+With canonicalization:
+  Both produce: '{"a":1,"b":2}' → signature verified
+```
+
+This is critical for cross-platform signature verification between browser (Web Crypto API) and server (Node.js native crypto).
 
 ### Cross-Site Scripting (XSS)
 

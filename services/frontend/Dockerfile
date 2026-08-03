@@ -1,23 +1,28 @@
-# Frontend Dockerfile
+# Frontend Dockerfile (Development)
+
 FROM node:20-alpine
 
 # Set working directory
 WORKDIR /app
 
-# Install system dependencies
-RUN apk add --no-cache python3 make g++
-
 # Copy package files
 COPY package*.json ./
 
 # Install dependencies
-RUN npm install
+RUN npm ci
 
 # Copy application code
 COPY . .
 
+# Create non-root user
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+RUN chown -R appuser:appgroup /app
+
+USER appuser
+
 # Expose port
-EXPOSE 5173
+ARG PORT=5173
+EXPOSE $PORT
 
 # Start development server
-CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
+CMD npm run dev -- --host 0.0.0.0 --port $PORT

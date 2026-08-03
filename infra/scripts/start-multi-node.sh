@@ -1,58 +1,75 @@
 #!/bin/bash
 
 # Start Multi-Node Blockchain Network
-# This script starts a 5-node blockchain network (3 validators + 2 observers)
+# Reads ports from .env (BLOCKCHAIN_NODE1_PORT–BLOCKCHAIN_NODE5_PORT).
 
 set -e
 
-# Docker Compose file location (relative to project root)
 COMPOSE_FILE_MULTI="infra/docker/docker-compose.multi-node.yml"
+ENV_FILE=".env"
+
+get_env() {
+  local var="$1" fallback="$2"
+  local val
+  val=$(grep "^${var}=" .env 2>/dev/null | head -1 | cut -d= -f2-)
+  echo "${val:-$fallback}"
+}
+
+N1=$(get_env BLOCKCHAIN_NODE1_PORT 3001)
+N2=$(get_env BLOCKCHAIN_NODE2_PORT 3002)
+N3=$(get_env BLOCKCHAIN_NODE3_PORT 3003)
+N4=$(get_env BLOCKCHAIN_NODE4_PORT 3004)
+N5=$(get_env BLOCKCHAIN_NODE5_PORT 3005)
+NODES=("$N1" "$N2" "$N3" "$N4" "$N5")
 
 echo "╔════════════════════════════════════════════╗"
 echo "║  Starting Multi-Node Blockchain Network    ║"
 echo "╚════════════════════════════════════════════╝"
 
-# Check if docker-compose is available
-if ! command -v docker-compose &> /dev/null; then
-    echo "Error: docker-compose is not installed"
+# Check if Docker Compose is available
+if ! docker compose version &> /dev/null 2>&1; then
+    echo "Error: Docker Compose is not available"
     exit 1
 fi
 
 # Check if docker-compose.multi-node.yml exists
 if [ ! -f "$COMPOSE_FILE_MULTI" ]; then
-    echo "Error: $COMPOSE_FILE_MULTI not found in project root"
+    echo "Error: $COMPOSE_FILE_MULTI not found"
     exit 1
 fi
 
 echo ""
 echo "Starting 5 blockchain nodes..."
-echo "  - Node 1 (Validator) - Port 3001"
-echo "  - Node 2 (Validator) - Port 3002"
-echo "  - Node 3 (Validator) - Port 3003"
-echo "  - Node 4 (Observer) - Port 3004"
-echo "  - Node 5 (Observer) - Port 3005"
+echo "  - Node 1 (Validator) - Port $N1"
+echo "  - Node 2 (Validator) - Port $N2"
+echo "  - Node 3 (Validator) - Port $N3"
+echo "  - Node 4 (Observer)  - Port $N4"
+echo "  - Node 5 (Observer)  - Port $N5"
 echo ""
 
-# Start the multi-node network
-docker-compose -f $COMPOSE_FILE_MULTI up -d
+docker compose -f $COMPOSE_FILE_MULTI --env-file $ENV_FILE up -d
 
 echo ""
 echo "✓ Starting nodes..."
 echo ""
 echo "Waiting for nodes to be healthy (this may take 30-60 seconds)..."
-
-# Wait for nodes to start
 sleep 10
 
-# Check node health
 echo ""
 echo "Checking node status..."
 
-NODES=(3001 3002 3003 3004 3005)
-HEALTHY=0
+API_KEY=$(get_env BLOCKCHAIN_API_KEY "")
+API_ARGS=()
+if [ -n "$API_KEY" ]; then
+  API_ARGS=(-H "x-api-key: $API_KEY")
+fi
 
+HEALTHY=0
 for port in "${NODES[@]}"; do
-    if curl -s "http://localhost:$port/node/status" > /dev/null 2>&1; then
+    if command -v curl &>/dev/null && curl -s "${API_ARGS[@]}" "http://localhost:$port/health" > /dev/null 2>&1; then
+        echo "✓ Node on port $port is responding"
+        ((HEALTHY++))
+    elif command -v wget &>/dev/null && wget -q --spider "http://localhost:$port/health" 2>/dev/null; then
         echo "✓ Node on port $port is responding"
         ((HEALTHY++))
     else
@@ -65,19 +82,19 @@ echo "╔═══════════════════════�
 echo "║  Network Status                            ║"
 echo "╠════════════════════════════════════════════╣"
 echo "║  Healthy Nodes: $HEALTHY/5                              ║"
-echo "║  Network URL: http://localhost:3001         ║"
+echo "║  Network URL: http://localhost:$N1          ║"
 echo "╚════════════════════════════════════════════╝"
 
 echo ""
 echo "To check node status:"
-echo "  curl http://localhost:3001/node/status"
+echo "  curl -H \"x-api-key: $API_KEY\" http://localhost:$N1/health"
 echo ""
 echo "To check network status:"
-echo "  curl http://localhost:3001/network/status"
+echo "  curl http://localhost:$N1/network/status"
 echo ""
 echo "To view logs:"
-echo "  docker-compose -f $COMPOSE_FILE_MULTI logs -f"
+echo "  docker compose -f $COMPOSE_FILE_MULTI --env-file $ENV_FILE logs -f"
 echo ""
 echo "To stop the network:"
-echo "  docker-compose -f $COMPOSE_FILE_MULTI down"
+echo "  docker compose -f $COMPOSE_FILE_MULTI --env-file $ENV_FILE down"
 echo ""

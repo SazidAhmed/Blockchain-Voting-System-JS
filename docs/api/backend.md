@@ -10,12 +10,26 @@ http://localhost:3000
 
 ## Auth
 
-JWT-based with ECDSA verification. Two middleware layers:
+JWT-based with HS256 only (algorithm restricted to prevent algorithm confusion attacks). Token set as httpOnly cookie only — never returned in response body. Two middleware layers:
 
 - `auth` — any authenticated user (middleware/auth.js:5)
 - `adminAuth` — admin or board_member role only (middleware/auth.js:35)
 
-Token accepted via `x-auth-token` header or `Authorization: Bearer <token>`.
+### CSRF Protection
+
+Double-submit cookie pattern. Server sets `csrf-token` cookie; client sends it back as `x-csrf-token` header on state-changing requests. Server validates both tokens match. Public auth endpoints (`/login`, `/register`, `/verify-otp`, etc.) are CSRF-exempt.
+
+### Token Revocation
+
+Tokens include a `jti` (JWT ID) claim. Revoked tokens are added to an in-memory blacklist. Logout and password change invalidate the current token.
+
+### Logout
+
+`POST /api/users/auth/logout` — invalidates the current JWT and clears the auth cookie.
+
+### Password Change
+
+`POST /api/users/change-password` — requires current password verification. Invalidates all existing tokens for the user.
 
 ## Rate Limiting
 
@@ -29,15 +43,17 @@ Token accepted via `x-auth-token` header or `Authorization: Bearer <token>`.
 
 All return `429 Too Many Requests` with `RateLimit-*` headers.
 
+**Body parser limit:** 1mb max payload. **Trust proxy:** enabled (1 level) for accurate client IP behind reverse proxy. **404 handler:** returns `{ "error": "Not Found", "message": "<method> <path> does not exist", "status": 404 }` without exposing available routes.
+
 ## CORS
 
-Allowed origins: `localhost:5173`, `localhost:5174`, `127.0.0.1:5173`, `127.0.0.1:5174`, plus `FRONTEND_URL` env var. Credentials enabled.
+Origins from `CORS_ALLOWED_ORIGINS` env var (comma-separated), or fallback to `localhost:5173`, `localhost:5174`, `127.0.0.1:5173`, `127.0.0.1:5174`. Credentials enabled. Requests with no `Origin` header (curl, server-to-server) allowed for dev.
 
 ## Common Headers
 
 ```text
 Content-Type: application/json
-x-auth-token: <jwt_token>
+csrf-token cookie → x-csrf-token header (state-changing requests)
 ```
 
 ## Error Response Shape
@@ -114,7 +130,7 @@ Verify the OTP code. Required before registration.
 
 ### `POST /api/users/register`
 
-Register a new voter. Requires a previously verified OTP. Auto-registers user for all active/pending elections.
+Register a new voter. Requires a previously verified OTP. Client-side key generation required — server does not generate keys. Auto-registers user for all active/pending elections.
 
 **Auth:** none
 
@@ -131,13 +147,10 @@ Register a new voter. Requires a previously verified OTP. Auto-registers user fo
 }
 ```
 
-If keys omitted, server generates them (legacy mode) and returns `privateKey` in response.
-
 **Response 201:**
 
 ```json
 {
-  "token": "jwt-token",
   "user": {
     "id": 1,
     "institutionId": "STU00001",
@@ -153,7 +166,7 @@ If keys omitted, server generates them (legacy mode) and returns `privateKey` in
 
 ### `POST /api/users/login`
 
-Authenticate and receive JWT.
+Authenticate. JWT set as httpOnly cookie.
 
 **Auth:** none
 
@@ -162,14 +175,31 @@ Authenticate and receive JWT.
 **Body:**
 
 ```json
-{ "institutionId": "STU00001", "password": "strongPassword123" }
+{
+  "institutionId": "STU00001",
+  "password": "strongPassword123",
+  "loginType": "voter"
+}
 ```
 
-**Response 200:**
+| Field           | Type   | Required | Description                                                                             |
+| --------------- | ------ | -------- | --------------------------------------------------------------------------------------- |
+| `institutionId` | string | yes      | Institution ID                                                                          |
+| `password`      | string | yes      | Account password                                                                        |
+| `loginType`     | string | no       | `"voter"` or `"admin"` — filters by role. Omit for any-role login (backward compatible) |
+
+**Error responses:**
+
+| Status | Condition                                               |
+| ------ | ------------------------------------------------------- |
+| 400    | Invalid credentials (generic, no distinction)           |
+| 400    | `loginType: "voter"` but user is admin/board_member     |
+| 400    | `loginType: "admin"` but user is not admin/board_member |
+
+**Response 200:** Sets `token` httpOnly cookie. Body includes `user` only (token never exposed to client-side JS):
 
 ```json
 {
-  "token": "jwt-token",
   "user": {
     "id": 1,
     "institutionId": "STU00001",
@@ -207,6 +237,10 @@ Get the current authenticated user's profile.
 
 ## Elections
 
+Election routes are split into four files under `routes/elections/`: `crud.js` (create/update/delete, status transitions), `candidates.js` (candidate management), `voting.js` (vote casting, registration, double-vote prevention), `results.js` (admin audit logs, security logs, result release). All routes are mounted under `/api/elections`.
+
+Election status follows a state machine: `pending → active → completed`. Status transitions are enforced — invalid transitions return 400.
+
 ### `GET /api/elections`
 
 List all elections, ordered by created_at descending.
@@ -217,11 +251,11 @@ List all elections, ordered by created_at descending.
 
 ### `GET /api/elections/:id`
 
-Get a single election with candidates and vote tally.
+Get a single election with candidates and vote tally. Results are encrypted until released.
 
 **Auth:** none
 
-**Response 200:**
+**Response 200 (results not released):**
 
 ```json
 {
@@ -234,9 +268,25 @@ Get a single election with candidates and vote tally.
   "public_key": "...",
   "created_at": "2026-07-15T12:00:00.000Z",
   "candidates": [
+    { "id": 1, "name": "Alice", "description": "...", "votes_count": null }
+  ],
+  "totalVotes": null,
+  "encryptedTally": "base64-aes-256-gcm-ciphertext",
+  "resultsReleased": false
+}
+```
+
+**Response 200 (results released):**
+
+```json
+{
+  "id": 1,
+  "title": "Student Union President",
+  "candidates": [
     { "id": 1, "name": "Alice", "description": "...", "votes_count": 42 }
   ],
-  "totalVotes": 100
+  "totalVotes": 100,
+  "resultsReleased": true
 }
 ```
 
@@ -282,21 +332,13 @@ Update election details. Cannot modify an active or already-started election.
 
 **Body:** `{ "title", "description", "startDate", "endDate", "candidates" }`
 
-### `PUT /api/elections/:id/status`
-
-Update election status.
-
-**Auth:** adminAuth
-
-**Body:** `{ "status": "active"|"completed"|"cancelled" }`
-
 ### `PATCH /api/elections/:id/status`
 
-Alternative status update. Does not allow deactivating an active election.
+Update election status. Valid transitions: `pending → active`, `active → completed`. `completed` has no further transitions.
 
 **Auth:** adminAuth
 
-**Body:** `{ "status": "pending"|"active"|"completed" }`
+**Body:** `{ "status": "active"|"completed" }`
 
 ### `PATCH /api/elections/:id/lock`
 
@@ -317,6 +359,25 @@ Lock an election to prevent further mutations. Sets `is_locked=true` on election
 Delete an election and all related data. Cannot delete an active election that has started.
 
 **Auth:** adminAuth
+
+### `POST /api/elections/:id/release`
+
+Release election results — makes plaintext vote tallies publicly visible. Once released, the `encryptedTally` field is replaced with actual `votes_count` values. Cannot release results that are already released.
+
+**Auth:** adminAuth
+
+**Response 200:**
+
+```json
+{
+  "message": "Results released successfully",
+  "resultsReleased": true
+}
+```
+
+**Response 400:** `{ "message": "Results already released" }`
+
+**Response 404:** `{ "message": "Election not found" }`
 
 ### `POST /api/elections/:id/register`
 
@@ -340,7 +401,7 @@ Check if current user is registered for an election.
 
 **Auth:** required
 
-**Response 200:** `{ "registered": true }`
+**Response 200:** `{ "registered": true, "status": "registered"|"voted"|null }`
 
 ### `POST /api/elections/:id/candidates`
 
@@ -356,45 +417,28 @@ Remove a candidate. Fails if election is locked or active.
 
 **Auth:** adminAuth
 
-### `GET /api/elections/admin/all`
-
-Get all elections with statistics (candidates count, registrations, votes, per-candidate tallies).
-
-**Auth:** adminAuth
-
 ---
 
 ## Voting
 
 ### `POST /api/elections/:id/vote`
 
-Cast a vote. Supports two flows:
-
-- **New crypto flow:** client encrypts ballot and generates nullifier (preferred)
-- **Legacy flow:** server handles encryption using election public key
+Cast a vote. Client encrypts ballot, derives nullifier, signs the vote, and provides the ECDSA public key — all cryptography is handled client-side to protect user privacy.
 
 **Auth:** required
 
 **Rate limit:** voteLimiter (10/h)
 
-**New crypto flow body:**
+**Request payload:**
 
 ```json
 {
   "encryptedBallot": "base64-encrypted-ballot",
-  "nullifier": "sha256-nullifier",
-  "signature": "ecdsa-signature",
-  "publicKey": "ecdsa-public-key",
-  "timestamp": 1720000000000
-}
-```
-
-**Legacy flow body:**
-
-```json
-{
-  "candidateId": 1,
-  "privateKey": "user-private-key"
+  "nullifier": "sha256-hex-nullifier",
+  "signature": "ecdsa-signature-base64",
+  "publicKey": "ecdsa-public-key-base64",
+  "timestamp": 1720000000000,
+  "electionId": "1"
 }
 ```
 
@@ -404,11 +448,10 @@ Cast a vote. Supports two flows:
 {
   "message": "Vote cast successfully",
   "receipt": {
+    "receiptId": "opaque-receipt-id-hex",
     "transactionHash": "sha256-tx-hash",
     "blockIndex": 0,
-    "timestamp": "2026-07-15T12:00:00.000Z",
-    "nullifier": "sha256-nullifier",
-    "signature": "ecdsa-signature"
+    "timestamp": "2026-07-15T12:00:00.000Z"
   }
 }
 ```
@@ -428,6 +471,14 @@ Cast a vote. Supports two flows:
 ---
 
 ## Admin / Audit
+
+All admin endpoints pass through audit logging middleware that records admin actions (who, what, when) for compliance.
+
+### `GET /api/elections/admin/all`
+
+Get all elections with statistics (candidates count, registrations, votes, per-candidate tallies). Results are encrypted per-election based on `results_released` status — each election includes `encryptedTally` (base64 AES-256-GCM) or plaintext `votes_count` accordingly.
+
+**Auth:** adminAuth
 
 ### `GET /api/elections/admin/audit-logs`
 
@@ -456,9 +507,3 @@ Cast a vote. Supports two flows:
 **Auth:** none
 
 **Response 200:** `{ "status": "ok", "message": "Server is running" }`
-
-### `GET /`
-
-**Auth:** none
-
-**Response 200:** Service info with available endpoint groups.

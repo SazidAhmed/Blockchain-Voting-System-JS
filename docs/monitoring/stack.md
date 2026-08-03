@@ -14,10 +14,10 @@ Four services for metrics + log aggregation:
 ## Docker Compose
 
 ```bash
-docker-compose -f infra/docker/docker-compose.monitoring.yml up -d
+docker compose -f infra/docker/docker-compose.monitoring.yml up -d
 ```
 
-Stack defined in `infra/docker/docker-compose.monitoring.yml`. Connects to `voting-network` for service discovery.
+Stack defined in `infra/docker/docker-compose.monitoring.yml`. Connects to `backend-net` for service discovery.
 
 ## Prometheus
 

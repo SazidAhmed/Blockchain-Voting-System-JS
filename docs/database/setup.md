@@ -17,7 +17,7 @@
 
 ```bash
 cp .env.example .env
-docker-compose -f infra/docker/docker-compose.yml up --build -d
+docker compose -f infra/docker/docker-compose.yml up --build -d
 ```
 
 Backend auto-runs migrations on boot. Database is created if it doesn't exist.
@@ -54,16 +54,16 @@ npm run migrate
 
 This creates the database if missing and applies all pending migrations from `services/backend/migrations/`.
 
-### 4. Seed test data (development only)
+### 4. Seed Admin data
 
 ```bash
-bash infra/scripts/docker-seed.sh
+bash infra/scripts/docker-bootstrap.sh
 ```
 
 Or directly inside the container:
 
 ```bash
-docker-compose -f infra/docker/docker-compose.yml exec -T backend node scripts/seed.js
+docker compose -f infra/docker/docker-compose.yml exec -T backend node scripts/seed.js
 ```
 
 ### 5. Verify
@@ -85,14 +85,13 @@ Migration files live in `services/backend/migrations/` with sequential numbering
 
 ```text
 001_initial_schema.sql
-002_add_crypto_fields.sql
 ```
 
 New migrations run automatically on Docker boot. The `schema_migrations` table tracks which have been applied with checksums for integrity.
 
 ## Seed Data
 
-`bash infra/scripts/docker-seed.sh` populates:
+`bash infra/scripts/docker-bootstrap.sh` populates:
 
 - 7 users (admin, students, teacher, staff, board member)
 - 3 elections (active, pending, completed)
@@ -103,12 +102,9 @@ New migrations run automatically on Docker boot. The `schema_migrations` table t
 
 **Test credentials:**
 
-| Role    | Institution ID | Password    |
-| ------- | -------------- | ----------- |
-| Admin   | ADMIN001       | admin123    |
-| Student | STU001         | password123 |
-| Teacher | TEACH001       | password123 |
-| Staff   | STAFF001       | password123 |
+| Role  | Institution ID | Password |
+| ----- | -------------- | -------- |
+| Admin | ADMIN001       | admin123 |
 
 ## Scripts
 

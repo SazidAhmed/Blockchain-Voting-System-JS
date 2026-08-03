@@ -3,36 +3,42 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/../test-config.sh"
 
+ADMIN_COOKIE=$(mktemp)
+VOTER_COOKIE=$(mktemp)
+trap 'rm -f "$ADMIN_COOKIE" "$VOTER_COOKIE"' EXIT
+
 echo -e "${BLUE}=== ATTACK TEST ===${NC}"
 echo ""
 
-# Get tokens FIRST (before any rate limiting)
-ADMIN_TOKEN=$(curl -s -X POST "$BACKEND_URL/users/login" -H "Content-Type: application/json" \
-  -d "{\"institutionId\":\"$SEED_ADMIN_ID\",\"password\":\"$SEED_ADMIN_PASS\"}" | "$JQ_CMD" -r '.token')
+# Get cookies FIRST (before any rate limiting)
+ADMIN_LOGIN=$(curl -s -c "$ADMIN_COOKIE" -X POST "$BACKEND_URL/users/login" -H "Content-Type: application/json" \
+  -d "{\"institutionId\":\"$SEED_ADMIN_ID\",\"password\":\"$SEED_ADMIN_PASS\",\"loginType\":\"admin\"}")
 
-EID=$(curl -s -X GET "$BACKEND_URL/elections" -H "Authorization: Bearer $ADMIN_TOKEN" | \
+EID=$(curl -s -b "$ADMIN_COOKIE" -X GET "$BACKEND_URL/elections" | \
   "$JQ_CMD" -r '.[] | select(.status=="active") | .id' | head -1)
 
-DETAILS=$(curl -s -X GET "$BACKEND_URL/elections/$EID" -H "Authorization: Bearer $ADMIN_TOKEN")
+DETAILS=$(curl -s -b "$ADMIN_COOKIE" -X GET "$BACKEND_URL/elections/$EID")
 CID=$(echo "$DETAILS" | "$JQ_CMD" -r '.candidates[0].id')
+PUBKEY=$(echo "$DETAILS" | "$JQ_CMD" -r '.public_key // empty')
 
-VOTER_TOKEN=$(curl -s -X POST "$BACKEND_URL/users/login" -H "Content-Type: application/json" \
-  -d "{\"institutionId\":\"STU00003\",\"password\":\"$SEED_VOTER_PASS\"}" | "$JQ_CMD" -r '.token')
+VOTER_LOGIN=$(curl -s -c "$VOTER_COOKIE" -X POST "$BACKEND_URL/users/login" -H "Content-Type: application/json" \
+  -d "{\"institutionId\":\"STU00003\",\"password\":\"$SEED_VOTER_PASS\",\"loginType\":\"voter\"}")
 
-# A1: Tampered ballot (bad candidateId)
+VOTER_CSRF=$(csrf_token "$VOTER_COOKIE")
+
+# A1: Tampered ballot (bad signature)
 echo -e "\n${BLUE}[A1] Tampered ballot${NC}"
-A1=$(curl -s -X POST "$BACKEND_URL/elections/$EID/vote" -H "Authorization: Bearer $VOTER_TOKEN" \
-  -H "Content-Type: application/json" -d '{"candidateId":99999,"privateKey":"test-key"}')
+PKG=$(node "$VOTE_PACKAGE_HELPER" "$EID" "$CID" "$PUBKEY")
+BAD_PKG=$(echo "$PKG" | "$JQ_CMD" '.signature = "'"$(printf 'AA%.0s' $(seq 1 48))"'"')
+A1=$(curl -s -b "$VOTER_COOKIE" -X POST "$BACKEND_URL/elections/$EID/vote" -H "Content-Type: application/json" -H "x-csrf-token: $VOTER_CSRF" -d "$BAD_PKG")
 A1_MSG=$(echo "$A1" | "$JQ_CMD" -r '.message // ""' | tr '[:upper:]' '[:lower:]')
-case "$A1_MSG" in *invalid*|*not.found*|*candidate*not*found*|*error*) A1_PASS=1;; *) A1_PASS=0;; esac
-check "a1" "Bad candidate: ${A1_MSG:0:40}" [ "$A1_PASS" = "1" ]
+case "$A1_MSG" in *signature*|*invalid*|*error*) A1_PASS=1;; *) A1_PASS=0;; esac
+check "a1" "Tampered signature blocked: ${A1_MSG:0:40}" [ "$A1_PASS" = "1" ]
 
-# A2: Replay attack (first vote, then second same = replay)
+# A2: Replay attack (same package submitted twice)
 echo -e "\n${BLUE}[A2] Replay attack${NC}"
-curl -s -X POST "$BACKEND_URL/elections/$EID/vote" -H "Authorization: Bearer $VOTER_TOKEN" \
-  -H "Content-Type: application/json" -d "{\"candidateId\":$CID,\"privateKey\":\"replay-key\"}" > /dev/null
-A2=$(curl -s -X POST "$BACKEND_URL/elections/$EID/vote" -H "Authorization: Bearer $VOTER_TOKEN" \
-  -H "Content-Type: application/json" -d "{\"candidateId\":$CID,\"privateKey\":\"replay-key\"}")
+curl -s -b "$VOTER_COOKIE" -X POST "$BACKEND_URL/elections/$EID/vote" -H "Content-Type: application/json" -H "x-csrf-token: $VOTER_CSRF" -d "$PKG" > /dev/null
+A2=$(curl -s -b "$VOTER_COOKIE" -X POST "$BACKEND_URL/elections/$EID/vote" -H "Content-Type: application/json" -H "x-csrf-token: $VOTER_CSRF" -d "$PKG")
 A2_MSG=$(echo "$A2" | "$JQ_CMD" -r '.message // ""' | tr '[:upper:]' '[:lower:]')
 case "$A2_MSG" in *already*|*duplicate*|*voted*) A2_PASS=1;; *) A2_PASS=0;; esac
 check "a2" "Replay blocked: ${A2_MSG:0:40}" [ "$A2_PASS" = "1" ]
@@ -41,8 +47,8 @@ check "a2" "Replay blocked: ${A2_MSG:0:40}" [ "$A2_PASS" = "1" ]
 echo -e "\n${BLUE}[A3] SQL injection${NC}"
 A3=$(curl -s -X POST "$BACKEND_URL/users/login" -H "Content-Type: application/json" \
   -d '{"institutionId":"ADMIN001","password":"'\'' OR 1=1 --"}')
-A3_TOKEN=$(echo "$A3" | "$JQ_CMD" -r '.token // ""')
-check "a3" "SQLi login blocked" [ -z "$A3_TOKEN" ]
+A3_USER=$(echo "$A3" | "$JQ_CMD" -r '.user.id // ""')
+check "a3" "SQLi login blocked" [ -z "$A3_USER" ]
 
 # A4: No-auth access to admin endpoints
 echo -e "\n${BLUE}[A4] No-auth admin${NC}"
@@ -61,19 +67,18 @@ check "a6" "Bad JWT: HTTP $A6" [ "$A6" = "401" -o "$A6" = "403" ]
 
 # A7: Large payload
 echo -e "\n${BLUE}[A7] Large payload${NC}"
-echo "{\"candidateId\":$CID,\"privateKey\":\"$(python3 -c "print('A'*50000)" 2>/dev/null || echo "AAAAA")\"}" > /tmp/large_payload.json
-A7=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$BACKEND_URL/elections/$EID/vote" \
-  -H "Authorization: Bearer $VOTER_TOKEN" -H "Content-Type: application/json" \
-  -d @/tmp/large_payload.json)
+PKG2=$(node "$VOTE_PACKAGE_HELPER" "$EID" "$CID" "$PUBKEY")
+LARGE_PKG=$(echo "$PKG2" | "$JQ_CMD" ".signature = \"$(printf 'A%.0s' $(seq 1 50000))\"")
+A7=$(curl -s -o /dev/null -w "%{http_code}" -b "$VOTER_COOKIE" -X POST "$BACKEND_URL/elections/$EID/vote" \
+  -H "Content-Type: application/json" -H "x-csrf-token: $VOTER_CSRF" -d "$LARGE_PKG")
 check "a7" "Large payload handled: HTTP $A7" [ "$A7" != "500" ]
-rm -f /tmp/large_payload.json
 
 # A8: Invalid election ID
 echo -e "\n${BLUE}[A8] Invalid election ID${NC}"
-A8=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$BACKEND_URL/elections/999999/vote" \
-  -H "Authorization: Bearer $VOTER_TOKEN" -H "Content-Type: application/json" \
-  -d "{\"candidateId\":$CID,\"privateKey\":\"test\"}")
-check "a8" "Bad election ID: HTTP $A8" [ "$A8" = "404" ]
+PKG3=$(node "$VOTE_PACKAGE_HELPER" "999999" "$CID" "$PUBKEY")
+A8=$(curl -s -o /dev/null -w "%{http_code}" -b "$VOTER_COOKIE" -X POST "$BACKEND_URL/elections/999999/vote" \
+  -H "Content-Type: application/json" -H "x-csrf-token: $VOTER_CSRF" -d "$PKG3")
+check "a8" "Bad election ID: HTTP $A8" [ "$A8" = "404" -o "$A8" = "400" ]
 
 # A5: Rate limiting (LAST — poisons the IP for subsequent requests)
 echo -e "\n${BLUE}[A5] Rate limiting${NC}"

@@ -3,8 +3,8 @@
  * Comprehensive logging for all admin activities
  */
 
-const mysql = require('mysql2/promise');
-const crypto = require('crypto');
+const mysql = require("mysql2/promise");
+const crypto = require("crypto");
 
 class AdminAuditLogger {
   constructor(pool) {
@@ -14,21 +14,30 @@ class AdminAuditLogger {
   /**
    * Generate audit log entry with cryptographic signature
    */
-  async logAdminAction(adminId, actionType, resourceType, resourceId, changes, metadata = {}) {
+  async logAdminAction(
+    adminId,
+    actionType,
+    resourceType,
+    resourceId,
+    changes,
+    metadata = {},
+  ) {
     try {
       const timestamp = new Date();
-      const ipAddress = metadata.ipAddress || 'unknown';
-      const userAgent = metadata.userAgent || 'unknown';
-      
+      const ipAddress = metadata.ipAddress || "unknown";
+      const userAgent = metadata.userAgent || "unknown";
+
       // Create change hash for integrity verification
-      const changeHash = crypto.createHash('sha256')
+      const changeHash = crypto
+        .createHash("sha256")
         .update(JSON.stringify(changes))
-        .digest('hex');
-      
+        .digest("hex");
+
       // Create action signature
-      const actionSignature = crypto.createHash('sha256')
+      const actionSignature = crypto
+        .createHash("sha256")
         .update(`${adminId}${actionType}${resourceId}${timestamp.getTime()}`)
-        .digest('hex');
+        .digest("hex");
 
       const query = `
         INSERT INTO admin_audit_logs 
@@ -49,25 +58,34 @@ class AdminAuditLogger {
         userAgent,
         JSON.stringify(metadata),
         timestamp,
-        'success'
+        "success",
       ]);
 
-      console.log(`✓ Admin Action Logged: ${actionType} on ${resourceType} #${resourceId} by admin #${adminId}`);
-      
-      return result.insertId;
+      console.log(
+        `✓ Admin Action Logged: ${actionType} on ${resourceType} #${resourceId} by admin #${adminId}`,
+      );
+
+      return result?.insertId ?? -1;
     } catch (error) {
-      console.error('Error logging admin action:', error);
-      throw error;
+      console.error("Error logging admin action:", error);
+      return -1;
     }
   }
 
   /**
    * Log failed admin action attempts
    */
-  async logFailedAction(adminId, actionType, resourceType, resourceId, reason, metadata = {}) {
+  async logFailedAction(
+    adminId,
+    actionType,
+    resourceType,
+    resourceId,
+    reason,
+    metadata = {},
+  ) {
     try {
       const timestamp = new Date();
-      const ipAddress = metadata.ipAddress || 'unknown';
+      const ipAddress = metadata.ipAddress || "unknown";
 
       const query = `
         INSERT INTO admin_audit_logs 
@@ -85,24 +103,33 @@ class AdminAuditLogger {
         ipAddress,
         JSON.stringify(metadata),
         timestamp,
-        'failed'
+        "failed",
       ]);
 
-      console.warn(`⚠ Failed Admin Action: ${actionType} on ${resourceType} #${resourceId} - Reason: ${reason}`);
-      
-      return result.insertId;
+      console.warn(
+        `⚠ Failed Admin Action: ${actionType} on ${resourceType} #${resourceId} - Reason: ${reason}`,
+      );
+
+      return result?.insertId ?? -1;
     } catch (error) {
-      console.error('Error logging failed action:', error);
+      console.error("Error logging failed action:", error);
+      return -1;
     }
   }
 
   /**
    * Log security-sensitive operations
    */
-  async logSecurityEvent(adminId, eventType, severity, description, metadata = {}) {
+  async logSecurityEvent(
+    adminId,
+    eventType,
+    severity,
+    description,
+    metadata = {},
+  ) {
     try {
       const timestamp = new Date();
-      
+
       const query = `
         INSERT INTO admin_security_logs 
         (admin_id, event_type, severity, description, metadata, timestamp)
@@ -115,12 +142,14 @@ class AdminAuditLogger {
         severity,
         description,
         JSON.stringify(metadata),
-        timestamp
+        timestamp,
       ]);
 
-      console.log(`🔒 Security Event [${severity}]: ${eventType} - ${description}`);
+      console.log(
+        `🔒 Security Event [${severity}]: ${eventType} - ${description}`,
+      );
     } catch (error) {
-      console.error('Error logging security event:', error);
+      console.error("Error logging security event:", error);
     }
   }
 
@@ -129,22 +158,17 @@ class AdminAuditLogger {
    */
   async getAdminLogs(adminId, limit = 100, offset = 0) {
     try {
-      const query = `
-        SELECT * FROM admin_audit_logs 
-        WHERE admin_id = ? 
-        ORDER BY timestamp DESC 
-        LIMIT ? OFFSET ?
-      `;
-      const countQuery = `
-        SELECT COUNT(*) as total FROM admin_audit_logs 
-        WHERE admin_id = ?
-      `;
-
-      const [logs] = await this.pool.query(query, [adminId, limit, offset]);
-      const [countResult] = await this.pool.query(countQuery, [adminId]);
+      const [logs] = await this.pool.query(
+        "SELECT id, admin_id, action_type, resource_type, resource_id, changes, change_hash, action_signature, ip_address, user_agent, metadata, timestamp, status FROM admin_audit_logs WHERE admin_id = ? ORDER BY timestamp DESC, id DESC LIMIT ? OFFSET ?",
+        [adminId, limit, offset],
+      );
+      const [countResult] = await this.pool.query(
+        "SELECT COUNT(*) as total FROM admin_audit_logs WHERE admin_id = ?",
+        [adminId],
+      );
       return { logs, total: countResult[0].total };
     } catch (error) {
-      console.error('Error fetching admin logs:', error);
+      console.error("Error fetching admin logs:", error);
       throw error;
     }
   }
@@ -154,16 +178,13 @@ class AdminAuditLogger {
    */
   async getSecurityLogs(limit = 100, offset = 0) {
     try {
-      const query = `
-        SELECT * FROM admin_security_logs 
-        ORDER BY timestamp DESC 
-        LIMIT ? OFFSET ?
-      `;
-
-      const [logs] = await this.pool.query(query, [limit, offset]);
+      const [logs] = await this.pool.query(
+        "SELECT id, admin_id, event_type, severity, description, metadata, timestamp FROM admin_security_logs ORDER BY timestamp DESC, id DESC LIMIT ? OFFSET ?",
+        [limit, offset],
+      );
       return logs;
     } catch (error) {
-      console.error('Error fetching security logs:', error);
+      console.error("Error fetching security logs:", error);
       throw error;
     }
   }
@@ -178,24 +199,25 @@ class AdminAuditLogger {
       `;
 
       const [logs] = await this.pool.query(query, [logId]);
-      
+
       if (logs.length === 0) {
-        return { valid: false, reason: 'Log not found' };
+        return { valid: false, reason: "Log not found" };
       }
 
       const log = logs[0];
-      const calculatedHash = crypto.createHash('sha256')
+      const calculatedHash = crypto
+        .createHash("sha256")
         .update(log.changes)
-        .digest('hex');
+        .digest("hex");
 
       const isValid = calculatedHash === log.change_hash;
-      
+
       return {
         valid: isValid,
-        reason: isValid ? 'Hash matches' : 'Hash mismatch - possible tampering'
+        reason: isValid ? "Hash matches" : "Hash mismatch - possible tampering",
       };
     } catch (error) {
-      console.error('Error verifying audit log:', error);
+      console.error("Error verifying audit log:", error);
       throw error;
     }
   }
@@ -203,13 +225,19 @@ class AdminAuditLogger {
   /**
    * Track admin role changes
    */
-  async logRoleChange(adminId, previousRole, newRole, changedByAdminId, metadata = {}) {
+  async logRoleChange(
+    adminId,
+    previousRole,
+    newRole,
+    changedByAdminId,
+    metadata = {},
+  ) {
     await this.logSecurityEvent(
       changedByAdminId,
-      'ADMIN_ROLE_CHANGE',
-      'HIGH',
+      "ADMIN_ROLE_CHANGE",
+      "HIGH",
       `Admin #${adminId} role changed from ${previousRole} to ${newRole}`,
-      { affectedAdminId: adminId, previousRole, newRole }
+      { affectedAdminId: adminId, previousRole, newRole },
     );
   }
 
@@ -219,10 +247,10 @@ class AdminAuditLogger {
   async logPermissionChange(adminId, action, resourceType, metadata = {}) {
     await this.logSecurityEvent(
       adminId,
-      'PERMISSION_ATTEMPTED',
-      'MEDIUM',
+      "PERMISSION_ATTEMPTED",
+      "MEDIUM",
       `Attempted ${action} on ${resourceType}`,
-      metadata
+      metadata,
     );
   }
 }

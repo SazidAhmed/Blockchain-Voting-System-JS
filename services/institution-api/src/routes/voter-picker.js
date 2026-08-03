@@ -1,8 +1,9 @@
-const { Router } = require('express');
+const { Router } = require("express");
 
 const router = Router();
 
-router.get('/voter-picker', (_req, res) => {
+router.get("/voter-picker", (_req, res) => {
+  const apiKey = process.env.INSTITUTION_API_KEY || "";
   res.send(`<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -61,8 +62,8 @@ router.get('/voter-picker', (_req, res) => {
 <div class="stats" id="stats"></div>
 
 <div class="register-url">
-  Register at: <a href="http://localhost:5173/register" target="_blank">http://localhost:5173/register</a>
-  &nbsp;|&nbsp; Admin panel: <a href="http://localhost:5174" target="_blank">http://localhost:5174</a>
+  Register at: <a href="${process.env.FRONTEND_URL || "http://localhost:5173"}/register" target="_blank">${process.env.FRONTEND_URL || "http://localhost:5173"}/register</a>
+  &nbsp;|&nbsp; Admin panel: <a href="${process.env.ADMIN_PANEL_URL || "http://localhost:5174"}" target="_blank">${process.env.ADMIN_PANEL_URL || "http://localhost:5174"}</a>
 </div>
 
 <div class="controls">
@@ -97,6 +98,9 @@ router.get('/voter-picker', (_req, res) => {
 <div id="status-msg"></div>
 
 <script>
+function h(s) { return String(s).replace(/[&<>"']/g, function(c) { return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#x27;'}[c]; }); }
+const API_KEY = ${JSON.stringify(apiKey)};
+const AUTH_HEADERS = API_KEY ? { 'x-api-key': API_KEY } : {};
 const LIMIT = 20;
 let state = { page: 1, role: '', voterFilter: null, search: '', lastPage: 1 };
 let debounceTimer;
@@ -112,11 +116,18 @@ async function load() {
 
   let data;
   try {
-    const r = await fetch(url);
+    const r = await fetch(url, { headers: AUTH_HEADERS });
     data = await r.json();
   } catch (err) {
-    document.getElementById('tbody').innerHTML =
-      '<tr><td colspan="7" style="text-align:center;padding:40px;color:#f87171">⚠ Failed to load: ' + err.message + '</td></tr>';
+    const td = document.createElement('td');
+    td.colSpan = 7;
+    td.style.cssText = 'text-align:center;padding:40px;color:#f87171';
+    td.textContent = '⚠ Failed to load: ' + err.message;
+    const tr = document.createElement('tr');
+    tr.appendChild(td);
+    const tbody = document.getElementById('tbody');
+    tbody.textContent = '';
+    tbody.appendChild(tr);
     return;
   }
   const members = state.search && state.search.length >= 2 ? data.results : data.members;
@@ -152,12 +163,12 @@ async function load() {
     return '<tr class="' + (taken ? 'taken' : 'available') + '">' +
       '<td><span class="badge ' + (taken ? 'taken' : 'avail') + '">' +
         (taken ? '&#10005; Registered' : '&#10003; Available') + '</span></td>' +
-      '<td><code>' + m.institution_id + '</code><button class="copy-btn" data-id="' + m.institution_id + '" onclick="copy(this.dataset.id)" title="Copy ID">copy</button></td>' +
-      '<td>' + m.full_name + '</td>' +
-      '<td style="color:#94a3b8">' + m.email + '</td>' +
-      '<td><span class="role-badge ' + m.role + '">' + m.role + '</span></td>' +
-      '<td style="color:#94a3b8">' + (m.department || '') + '</td>' +
-      '<td style="color:#94a3b8">' + (m.year_level || '—') + '</td>' +
+      '<td><code>' + h(m.institution_id) + '</code><button class="copy-btn" data-id="' + h(m.institution_id) + '" onclick="copy(this.dataset.id)" title="Copy ID">copy</button></td>' +
+      '<td>' + h(m.full_name) + '</td>' +
+      '<td style="color:#94a3b8">' + h(m.email) + '</td>' +
+      '<td><span class="role-badge ' + h(m.role) + '">' + h(m.role) + '</span></td>' +
+      '<td style="color:#94a3b8">' + h(m.department || '') + '</td>' +
+      '<td style="color:#94a3b8">' + h(m.year_level || '—') + '</td>' +
       '</tr>';
   }).join('');
 }

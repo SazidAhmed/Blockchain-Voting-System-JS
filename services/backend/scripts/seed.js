@@ -99,32 +99,37 @@ class DatabaseSeeder {
   async seedNodes() {
     console.log('\n→ Seeding validator nodes...');
 
+    const node1Port = process.env.BLOCKCHAIN_NODE1_PORT || '3001';
+    const node2Port = process.env.BLOCKCHAIN_NODE2_PORT || '3002';
+    const node3Port = process.env.BLOCKCHAIN_NODE3_PORT || '3003';
+    const node4Port = process.env.BLOCKCHAIN_NODE4_PORT || '3004';
+
     const nodes = [
       {
         node_id: 'validator-node-1',
-        endpoint: 'http://localhost:3001',
-        p2p_endpoint: 'tcp://localhost:26656',
+        endpoint: `http://localhost:${node1Port}`,
+        p2p_endpoint: `tcp://localhost:26656`,
         node_type: 'validator',
         status: 'active'
       },
       {
         node_id: 'validator-node-2',
-        endpoint: 'http://localhost:3002',
-        p2p_endpoint: 'tcp://localhost:26657',
+        endpoint: `http://localhost:${node2Port}`,
+        p2p_endpoint: `tcp://localhost:26657`,
         node_type: 'validator',
         status: 'active'
       },
       {
         node_id: 'validator-node-3',
-        endpoint: 'http://localhost:3003',
-        p2p_endpoint: 'tcp://localhost:26658',
+        endpoint: `http://localhost:${node3Port}`,
+        p2p_endpoint: `tcp://localhost:26658`,
         node_type: 'validator',
         status: 'active'
       },
       {
         node_id: 'observer-node-1',
-        endpoint: 'http://localhost:3004',
-        p2p_endpoint: 'tcp://localhost:26659',
+        endpoint: `http://localhost:${node4Port}`,
+        p2p_endpoint: `tcp://localhost:26659`,
         node_type: 'observer',
         status: 'active'
       }

@@ -8,7 +8,7 @@
 ## Start Test Stack
 
 ```bash
-docker-compose -f infra/docker/docker-compose.test.yml up -d
+docker compose -f infra/docker/docker-compose.test.yml up -d
 ```
 
 Separate network, volumes, and ports. Backend auto-runs migrations on boot.
@@ -78,3 +78,4 @@ Output saved to `tests/results/` with timestamped log files.
 | `infra/scripts/seed-test-attack.sh`      | Tampered chain data, malicious voter records         |
 | `infra/scripts/seed-test-detection.sh`   | Byzantine configs, suspicious activity logs          |
 | `infra/scripts/seed-test-resilience.sh`  | Multi-node state, partition scenario data            |
+| `infra/scripts/seed-test-security.sh`    | Security test scenarios, rate limit test data        |

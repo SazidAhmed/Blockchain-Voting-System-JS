@@ -9,10 +9,13 @@
 # 1. Introduction
 
 ## 1.1 Purpose
+
 This document defines the software requirements for a secure, permissioned blockchain-based voting system for the university. The system will enable students, teachers, staff, and board members to register and vote remotely, guarantee one-person-one-vote, maintain voter confidentiality, produce real-time trustworthy results, and provide auditable integrity. The system must adopt Zero Trust principles and satisfy confidentiality, integrity, authenticity, and availability (CIAA).
 
 ## 1.2 Scope
+
 The system covers:
+
 - Voter registration and identity verification (institutional ID-based)
 - Secure ballot creation, submission, and tallying
 - Permissioned blockchain network for immutability, auditability and distributed validation
@@ -22,6 +25,7 @@ The system covers:
 - Real-time vote counting and public result dashboard
 
 ## 1.3 Definitions, Acronyms, Abbreviations
+
 - HSM — Hardware Security Module
 - PKI — Public Key Infrastructure
 - ZKP — Zero-Knowledge Proof
@@ -63,59 +67,71 @@ A permissioned blockchain (university validator nodes + optionally cloud-hosted 
 # 6. Functional Requirements
 
 ## 6.1 Identity & Registration
+
 1. FR-REG-01: Voter registration uses institutional ID + multi-factor authentication (MFA). The university IdP (LDAP/SAML/OAuth2/OpenID Connect) will be the primary verification source.
 2. FR-REG-02: During registration, system issues an ephemeral cryptographic voting credential — a keypair for the voter (client-side generated) and a certificate or signed token issued by a registration service.
 3. FR-REG-03: Voter personal profile (name, institutional id, role) is stored encrypted in MySQL; only minimal mapping data (pseudonymous voter identifier) is stored on-chain.
 4. FR-REG-04: The system must prevent registration duplicates by cross-checking institutional ID and requiring IdP validation. Duplicate-account alerts logged and flagged for admins.
 
 ## 6.2 Authentication and Authorization
+
 1. FR-AUTH-01: Use Zero Trust authentication: mutual TLS (mTLS) between services, strong JWT tokens with short TTL for sessions, device attestation where possible.
 2. FR-AUTH-02: MFA required for registration and for casting a vote (e.g., password + TOTP or push in university app).
 3. FR-AUTH-03: Voter client must prove possession of a private key (digital signature) when casting a vote.
 
 ## 6.3 Ballot Creation & Secrecy
+
 1. FR-BAL-01: Ballots must be encrypted client-side using an election public key (threshold-encryption) so that no single node can decrypt votes.
 2. FR-BAL-02: Use threshold homomorphic encryption (e.g., threshold ElGamal / Paillier) or a mix-net + ZKP to enable tallying without revealing individual ballots. Decryption should require threshold of validator keys.
 3. FR-BAL-03: The system must provide a non-linkable token or blind signature to allow a voter to prove eligibility without revealing identity to the tallying process.
 
 ## 6.4 Casting a Vote
+
 1. FR-VOTE-01: Each vote submission must include: encrypted ballot, voter signature, registration proof token (blind-signed token or zero-knowledge proof), and a unique nullifier to prevent double-voting.
 2. FR-VOTE-02: The backend checks eligibility and nullifier uniqueness (using a privacy-preserving approach — see 7.2) and if valid, broadcasts a signed transaction to validator nodes for inclusion in a block.
 3. FR-VOTE-03: Once accepted by consensus, the vote transaction is considered recorded (immutable). A signed receipt (transaction hash + timestamp + validator signatures) is returned to voter.
 
 ## 6.5 Prevent Double Voting & Detect Bypass
+
 1. FR-DUP-01: Use linkable anonymous credentials or nullifier scheme: the client generates a nullifier derived from their secret and the election id; nullifiers are published on-chain but do not reveal voter identity; duplicates are rejected.
 2. FR-DUP-02: Backend and validators check nullifier uniqueness atomically before accepting a vote (consensus ensures global uniqueness).
 3. FR-DUP-03: All failed or suspicious attempts are logged and include IP, device fingerprint, and timestamp; anomalies trigger alerts.
 
 ## 6.6 Tallying and Results
+
 1. FR-TALLY-01: Tallying runs in real-time using encrypted ballots and homomorphic aggregation or threshold decryption once poll closes (or continuously with incremental proofs).
 2. FR-TALLY-02: The system must show live aggregated results (counts) that are provably derived from committed transactions; provide cryptographic proofs for the public to verify the tally.
 3. FR-TALLY-03: Provide audit endpoints allowing auditors to verify inclusion proofs for individual transaction hashes and the integrity of block headers.
 
 ## 6.7 Blockchain Network Management
+
 1. FR-NODES-01: Validator nodes form a permissioned cluster. Node membership is controlled by a governance policy requiring a multi-admin quorum to add/remove nodes.
 2. FR-NODES-02: Validators continuously validate block correctness and broadcast misbehavior evidence if detected.
 3. FR-NODES-03: Misbehaving nodes can be slashed logically (removed from the permissioned set) by meeting a predetermined evidence-and-quorum protocol.
 4. FR-NODES-04: Nodes maintain signed chain heads and use gossip/peer-to-peer sync; any fork is resolved by consensus finality rules.
 
 ## 6.8 Monitoring, Logging, Alerts
+
 1. FR-MON-01: All node events, admin actions, and voter-facing actions are logged with tamper-evident append-only logs (signed and hashed onto the blockchain or into an audit chain).
 2. FR-MON-02: Real-time monitoring dashboard for node health, vote throughput, suspect events, and alerts.
 
 ## 6.9 Admin & Audit Tools
+
 1. FR-ADMIN-01: Admin GUI to create elections, configure candidates, set election window, and designate validators.
 2. FR-AUDIT-01: Auditors can request and verify inclusion proofs, independent tally verification, and export logs for forensic analysis.
 
 # 7. Design Decisions & Cryptographic Architecture
 
 ## 7.1 Permissioned Blockchain & Consensus
+
 - Use a permissioned BFT consensus (Tendermint / HotStuff / PBFT or a PoA with BFT finality). These provide fast finality and high throughput compared to PoW.
 - Configure validator set to N nodes; the consensus tolerates up to f faulty nodes where N >= 3f + 1.
 - Use transaction batching and fast block times (e.g., 100--500ms block cadence with large batches) to reach high TPS. Also enable parallel validation and use efficient serialization.
 
 ## 7.2 Privacy-preserving Single Vote Enforcement
+
 Options:
+
 - **Linkable Anonymous Credentials / Nullifiers**: Each voter obtains a blind-signed eligibility token in registration. When voting, the voter reveals a nullifier (derived deterministically from token + election id) which is published on-chain. Duplicate nullifiers are rejected. Nullifier does not reveal identity but ensures single casting.
 - **Threshold Encryption**: Ballots encrypted under election public key; validators perform threshold decryption only at tally-time with quorum, preventing any single node from seeing plaintext ballots.
 - **Homomorphic Aggregation**: If votes are encoded numerically, homomorphic operations can aggregate ciphertexts so final decrypt yields totals without per-ballot decryption.
@@ -123,41 +139,49 @@ Options:
 Recommendation: combine Blind-Signature token + Nullifier scheme for eligibility & single-vote enforcement and Threshold Homomorphic Encryption for tallying.
 
 ## 7.3 Receipt & Verifiability
+
 - Issue cryptographic receipts to voters: signed transaction hash and Merkle inclusion proof.
 - Public auditors can verify a vote was included (without linking to voter identity) by checking the inclusion proof and that the nullifier was unique.
 
 ## 7.4 Node Misbehavior and Governance
+
 - Validators monitor and record evidence (signed conflicting proposals, equivocation proof). Evidence posted on-chain triggers governance voting among admins to remove node.
 - Automated temporary quarantine (mark node as suspect) on detection; human-in-the-loop final removal.
 
 # 8. Non-Functional Requirements (NFR)
 
 ## 8.1 Security
+
 - NFR-SEC-01: All in-transit communication must use TLS 1.3 with mutual authentication for node-to-node channels.
 - NFR-SEC-02: Private keys for validators stored in HSM or secure enclaves; no plaintext keys persisted in DB.
 - NFR-SEC-03: Server-side services run with least privileges; containers scanned and images signed.
 - NFR-SEC-04: Data-at-rest encryption (AES-256) for MySQL fields containing PII.
 
 ## 8.2 Performance & Scalability
+
 - NFR-PERF-01: System must support peak throughput of 3500 votes/sec sustained for election windows. (Design: BFT consensus + batching + horizontal scaling + optimized serialization.)
 - NFR-PERF-02: End-to-end vote submission latency (client -> inclusion in block) should be in the order of seconds (target < 2s under normal load) — actual depends on block cadence and batching.
 - NFR-PERF-03: System must scale horizontally: stateless API tier, multiple validator nodes, caching (Redis) for ephemeral data.
 
 ## 8.3 Availability & Resilience
+
 - NFR-AV-01: Achieve 99.95% availability during election windows via redundant services and geographically distributed validator nodes.
 - NFR-AV-02: Node sync and snapshotting; support fast catch-up for new or recovering nodes.
 - NFR-AV-03: Provide disaster recovery plans, backups of encrypted ballots and chain state, and periodic restore drills.
 
 ## 8.4 Privacy & Data Retention
+
 - NFR-PRIV-01: Store minimal PII necessary; use pseudonymization and retention policy with secure deletion when required.
 - NFR-PRIV-02: Cryptographic evidence and receipts retained for audit periods; raw PII retention in MySQL limited to policy.
 
 ## 8.5 Maintainability & Extensibility
+
 - NFR-MAINT-01: Modular codebase (blockchain node, backend API, frontend, mobile), well-documented APIs and migration/upgrade paths for validator set changes.
 
 # 9. System Architecture
 
 ## 9.1 Components
+
 - **Client Apps**: Web (Vue.js) and Mobile (Flutter) — handle registration, key generation, ballot UI, and client-side encryption.
 - **API Gateway & Auth Service** (Node.js) — handles IdP integration, MFA, issues short-lived tokens, proxies to backend services.
 - **Registration Service** (Node.js + MySQL) — manages voter record, issues blind-signed tokens or certificates.
@@ -168,6 +192,7 @@ Recommendation: combine Blind-Signature token + Nullifier scheme for eligibility
 - **Monitoring & Logging Stack** — Prometheus/Grafana/ELK or equivalent.
 
 ## 9.2 Data Flows
+
 1. Registration: Client -> Auth Service (IdP) -> Registration Service -> blind-signed token + pseudonym issued.
 2. Voting: Client creates encrypted ballot, computes nullifier, requests blind-signature proof (if applicable), then submits the signed transaction to API Gateway -> validators.
 3. Consensus: Validators validate signature, nullifier uniqueness, and broadcast blocks. Transaction included -> voter receives receipt.
@@ -178,6 +203,7 @@ Recommendation: combine Blind-Signature token + Nullifier scheme for eligibility
 Note: Critical vote content stored encrypted. MySQL used for non-sensitive metadata and indices.
 
 ## Tables (examples)
+
 - `voters` (id, pseudonym_id, institution_id_hash, role, registration_status, public_key_fingerprint, created_at, encrypted_profile_blob)
 - `blind_tokens` (token_id_hash, pseudonym_id, issued_at, revoked)
 - `elections` (election_id, title, starts_at, ends_at, status, public_key_info)
@@ -188,17 +214,21 @@ Note: Critical vote content stored encrypted. MySQL used for non-sensitive metad
 # 11. API Contracts (representative)
 
 ## POST /api/v1/register
+
 Request: {institution_id, id_proof, client_public_key, mfa_proof}  
 Response: {pseudonym_id, blind_token}
 
 ## POST /api/v1/vote
+
 Request: {election_id, encrypted_ballot_blob, nullifier_hash, blind_token_proof, signature}  
 Response: {tx_hash, inclusion_proof: pending | merkle_proof}
 
 ## GET /api/v1/election/:id/results
+
 Response: {live_count, proof_blob}
 
 ## GET /api/v1/tx/:hash
+
 Response: {tx_status, inclusion_proof}
 
 # 12. Consensus & Node Governance Protocol (summary)
@@ -210,6 +240,7 @@ Response: {tx_status, inclusion_proof}
 # 13. Threat Model & Mitigations
 
 ## 13.1 Threats
+
 - Unauthorized voter impersonation
 - Double-voting via token replay
 - Node compromise and trying to alter history
@@ -217,6 +248,7 @@ Response: {tx_status, inclusion_proof}
 - Insider threats or collusion among validators
 
 ## 13.2 Mitigations
+
 - Use IdP verification + MFA, device attestation, client-side key generation to prevent impersonation.
 - Nullifier + blind-signature scheme prevents replay and double-voting while preserving anonymity.
 - Permissioned BFT consensus and signed chain heads + cross-checking prevent undetected history rewriting.
@@ -281,7 +313,9 @@ Response: {tx_status, inclusion_proof}
 Each story includes the goal, acceptance criteria (pass/fail), and example implementation tasks.
 
 ## Sprint 0 — Foundations (infra + repo + infra-as-code)
+
 **US-0001 — Project skeleton & CI/CD**
+
 - AC:
   - Repositories exist for backend, blockchain-node, frontend, mobile, infra.
   - CI/CD pipeline runs tests on PRs and builds containers.
@@ -289,13 +323,16 @@ Each story includes the goal, acceptance criteria (pass/fail), and example imple
 - Tasks: repo scaffolding, CI config, basic Dockerfiles, test K8s manifests.
 
 **US-0002 — PKI & secrets management**
+
 - AC:
   - Key management process documented.
   - A secrets store (Vault/KeyVault) configured; at least one validator key in HSM or simulated secure store.
 - Tasks: integrate HashiCorp Vault or equivalent, scripts to create certs.
 
 ## Sprint 1 — Identity & Registration (IdP integration + blind token issuance)
+
 **US-101 — Institutional IdP login**
+
 - As a voter, I want to register/login with my institutional ID via the university IdP so I can prove eligibility.
 - AC:
   - OAuth2/OpenID Connect / SAML SSO flows implemented against IdP in dev.
@@ -303,6 +340,7 @@ Each story includes the goal, acceptance criteria (pass/fail), and example imple
 - Tasks: implement IdP adapter, map verified attributes.
 
 **US-102 — Client-side key generation + pseudonym creation**
+
 - As a voter, a keypair (Ed25519/ECDSA) is generated on my device and stored securely.
 - AC:
   - Client generates keypair and displays/exports public key fingerprint.
@@ -310,6 +348,7 @@ Each story includes the goal, acceptance criteria (pass/fail), and example imple
 - Tasks: implement client keygen in Vue and Flutter.
 
 **US-103 — Blind-signed eligibility token issuance**
+
 - After IdP verification, registration service issues a blind-signed eligibility token (Chaumian blind signature) bound to election(s).
 - AC:
   - Client receives blind-signed token without the server learning the token contents.
@@ -317,13 +356,16 @@ Each story includes the goal, acceptance criteria (pass/fail), and example imple
 - Tasks: implement blind-signature server endpoint and client flow.
 
 ## Sprint 2 — Vote UI + Local encryption + Nullifier generation
+
 **US-201 — Ballot UI & selection**
+
 - AC:
   - Voter can see ballots for active elections and select options.
   - Validate candidate list from backend.
 - Tasks: ballot UI components.
 
 **US-202 — Client-side encryption & nullifier**
+
 - AC:
   - Client encrypts ballot with election public params.
   - Client produces a nullifier (deterministic, non-revealing) and includes blind-token proof.
@@ -331,68 +373,85 @@ Each story includes the goal, acceptance criteria (pass/fail), and example imple
 - Tasks: implement client encryption, nullifier algorithm, compose transaction payload.
 
 ## Sprint 3 — Backend validation & blockchain tx
+
 **US-301 — Verify eligibility + nullifier uniqueness**
+
 - AC:
   - Backend validates blind-token proof and checks nullifier uniqueness in a privacy-preserving way.
   - If nullifier already exists, vote rejected and logged.
 - Tasks: implement token verification, nullifier DB/indexing (store only hashed nullifiers).
 
 **US-302 — Submit transaction to validator nodes**
+
 - AC:
   - Backend broadcasts signed vote transaction to validator nodes; receives tx hash.
   - Voter receives a signed receipt containing tx hash and timestamp.
 - Tasks: implement tx broadcasting, receipt format.
 
 ## Sprint 4 — Permissioned BFT node + block inclusion
+
 **US-401 — Validator node basic**
+
 - AC:
   - First 3 validator nodes run and come to consensus on simple transactions.
   - Inclusion of vote transaction appears in block and block header is signed.
 - Tasks: configure Tendermint/Hyperledger Fabric/TBD, implement node integration with Node.js runtime.
 
 **US-402 — Inclusion proof endpoint**
+
 - AC:
   - API endpoint returns Merkle inclusion proof for a tx hash once included.
 - Tasks: build proof generation and API.
 
 ## Sprint 5 — Threshold keygen & tallying
+
 **US-501 — Key generation ceremony**
+
 - AC:
   - Validators run a threshold key generation (T-KG) protocol producing distributed shares; no single node holds full private key.
   - Public election key published.
 - Tasks: integrate threshold crypto library, run ceremony simulation.
 
 **US-502 — Homomorphic aggregation or ciphertext store**
+
 - AC:
   - System can aggregate encrypted ballots (homomorphic) or store ciphertexts ready for threshold decryption post close.
 - Tasks: implement aggregator service.
 
 ## Sprint 6 — Live results + auditing
+
 **US-601 — Live result display with proofs**
+
 - AC:
   - Live aggregated counts are displayed.
   - Each displayed count is accompanied by a proof (range proofs or homomorphic sum verification) auditors can verify.
 - Tasks: frontend dashboard, proof verification tools.
 
 **US-602 — Auditor tools**
+
 - AC:
   - Auditors can request inclusion proofs, check nullifier uniqueness logs (without linking to identities).
 - Tasks: build auditor UI and exportable logs (signed).
 
 ## Sprint 7 — Node governance & misbehavior handling
+
 **US-701 — Misbehavior evidence & quarantine**
+
 - AC:
   - Validators detect equivocation (conflicting signed proposals) and publish evidence to chain.
   - Governance UI flags the offending node and starts removal workflow.
 - Tasks: equivocation detector, evidence posting, governance UI.
 
 **US-702 — Auto-synchronization & tamper alerts**
+
 - AC:
   - Nodes compare chain heads and detect mismatch; suspicious node marking and alerting works.
 - Tasks: implement node gossip verification.
 
 ## Sprint 8 — Load testing, security hardening & DR
+
 **US-801 — Performance & security testing**
+
 - AC:
   - System sustained 3500 votes/sec in controlled test.
   - Penetration test finds no critical issues.
@@ -405,6 +464,7 @@ Each story includes the goal, acceptance criteria (pass/fail), and example imple
 **Goal:** produce a minimal end-to-end secure flow that demonstrates the core privacy & single-vote properties.
 
 ## MVP scope
+
 - IdP login (mockable)
 - Client-side keygen & blind token flow
 - Client-side encryption + nullifier derivation
@@ -413,6 +473,7 @@ Each story includes the goal, acceptance criteria (pass/fail), and example imple
 - Offline tally using threshold decryption (can be simulated with 3 nodes each holding share)
 
 ## Build steps (concrete)
+
 1. **Mock IdP**: a simple OAuth/OpenID server to issue verified id_claims in dev.
 2. **Client app (web)**:
    - Keygen (WebCrypto Ed25519 or ECDSA)
@@ -430,6 +491,7 @@ Each story includes the goal, acceptance criteria (pass/fail), and example imple
    - Show live counts, tx inclusion list, and acceptance receipts.
 
 ## Sequence (E2E)
+
 1. Voter authenticates with IdP -> gets signed id_claim.
 2. Client requests blind-signed token (registration service signs blinded token).
 3. Client unblinds and stores token.
@@ -449,6 +511,7 @@ Each story includes the goal, acceptance criteria (pass/fail), and example imple
 **Important:** Use well-known, audited primitives only. Suggested primitives: Ed25519 for signatures, SHA-256 for hashing, Elliptic curve ElGamal (secp256k1/curve25519 variant) for encryption, Chaum blind signatures for blind token issuance, and Shamir/TSS libs for threshold.
 
 ## Notation
+
 - `H()` — cryptographic hash (SHA-256).
 - `Sign(sk, m)` / `Verify(pk, m, sig)` — digital signatures.
 - `EK` / `DK` — election public key and distributed private key shares.
@@ -458,6 +521,7 @@ Each story includes the goal, acceptance criteria (pass/fail), and example imple
 - `B()` — blind-signature function.
 
 ### 1) Blind-signature eligibility flow (Chaum-style)
+
 **Purpose:** Allow the authority to sign a token proving eligibility without learning token content.
 
 1. Client generates `token_secret` (random).
@@ -467,27 +531,33 @@ Each story includes the goal, acceptance criteria (pass/fail), and example imple
 5. Token can contain allowed election IDs or be generic (but limit reuse by binding nullifiers to `election_id`).
 
 Security notes:
+
 - Ensure blinding is secure (use standard Chaumian blind signature libs).
 - Registrar must log issuance events (audit) but not the unblinded token.
 
 ### 2) Nullifier derivation (linkable anonymous credentials)
+
 **Purpose:** prevent double voting while preserving anonymity.
 
 Compute:
+
 ```
 nullifier = H( token_secret || election_id )
 nullifier_hash = H( nullifier || domain_sep )
 ```
+
 - Only `H(nullifier)` or `H(nullifier_hash)` is stored on-chain or in DB.
 - For each vote, client sends a ZKP or a proof of possession of `token_secret` and reveals `nullifier` (or its hash).
 - Validators check `H(nullifier)` not already present. If present -> reject.
 - Because `token_secret` was blind-signed, server cannot map `nullifier` to a registered identity.
 
 Implementation detail:
+
 - Add a salt or domain separator to avoid reuse across elections and to avoid token replays.
 - Use a non-revealing ZKP protocol if you want to avoid sending `nullifier` directly (optional optimization).
 
 ### 3) Ballot confidentiality — Threshold ElGamal (practical)
+
 **Goal:** No single node can decrypt ballots; decryption requires a threshold of validators.
 
 1. **Distributed Key Gen (DKG):**
@@ -506,15 +576,18 @@ Implementation detail:
    - Validators publish signed partial decryptions and proofs of correctness (e.g., non-interactive ZK proofs) so auditors can verify no malformed decryption occurred.
 
 Libraries:
+
 - Use audited libs for DKG and threshold ElGamal (e.g., `libsecp256k1` wrappers, `tss-lib`, or libraries from academic implementations). Avoid rolling your own crypto.
 
 ### 4) Receipt & Inclusion Proofs
+
 - When tx included in block, produce:
   - `receipt = { tx_hash, block_height, block_hash, validator_signatures }`
 - Also generate Merkle inclusion proof showing tx is in block body.
 - Voter can present receipt to third parties; auditors can verify inclusion.
 
 ### 5) Detecting & Handling Double-signing (equivocation)
+
 - Each validator signs proposals/votes. If a validator signs two conflicting proposals for the same consensus height, other nodes collect signed evidence.
 - Evidence posted on-chain triggers governance actions.
 
@@ -539,7 +612,7 @@ Libraries:
 
 # Immediate next actions (actionable steps to start)
 
-1. **Choose consensus stack**: Tendermint (fast, simple), Hyperledger Fabric (feature-rich), or HotStuff (if you need more research-level control). *Recommendation for prototype: Tendermint + Node.js ABCI app.*
+1. **Choose consensus stack**: Tendermint (fast, simple), Hyperledger Fabric (feature-rich), or HotStuff (if you need more research-level control). _Recommendation for prototype: Tendermint + Node.js ABCI app._
 2. **Pick threshold crypto library**: find mature Node.js or cross-language bindings. If none, prototype with existing Python/Go libs and expose via service.
 3. **Implement MVP flows**: follow MVP plan in section 2. Get one election end-to-end with 3 validators and mock IdP.
 4. **Run privacy & load tests** early — expose design flaws quickly.
@@ -586,6 +659,7 @@ sequenceDiagram
 # Example API payloads (JSON)
 
 **Registration request**
+
 ```json
 {
   "institution_id": "S123456",
@@ -596,6 +670,7 @@ sequenceDiagram
 ```
 
 **Vote submission**
+
 ```json
 {
   "election_id": "election-2025-uni",
@@ -628,4 +703,3 @@ sequenceDiagram
 - [ ] Performance & security testing completed
 
 ---
-

@@ -1,18 +1,21 @@
 /**
  * Email Service
  * Handles sending OTP verification emails using nodemailer
- * 
+ *
  * Supports:
  * - SMTP (Gmail, Outlook, custom SMTP)
  * - Ethereal (for development/testing — emails viewable at https://ethereal.email)
  */
 
-const nodemailer = require('nodemailer');
-const path = require('path');
-require('dotenv').config({ path: path.resolve(__dirname, '../../../.env') });
+const nodemailer = require("nodemailer");
+
+// Ensure env vars are available even if the entrypoint didn't load dotenv
+// (safe no-op if already loaded)
+require("dotenv").config();
 
 // Institutional domains that use Ethereal (test) email
-const INSTITUTIONAL_DOMAINS = /@(university\.edu|faculty\.university\.edu|staff\.university\.edu)$/i;
+const INSTITUTIONAL_DOMAINS =
+  /@(university\.edu|faculty\.university\.edu|staff\.university\.edu)$/i;
 
 class EmailService {
   constructor() {
@@ -35,8 +38,12 @@ class EmailService {
   async initializeSMTP() {
     if (this.smtpInitialized) return;
 
-    if (!process.env.SMTP_HOST || !process.env.SMTP_USER || !process.env.SMTP_PASS) {
-      console.log('📧 No SMTP config — real emails will fall back to console');
+    if (
+      !process.env.SMTP_HOST ||
+      !process.env.SMTP_USER ||
+      !process.env.SMTP_PASS
+    ) {
+      console.log("📧 No SMTP config — real emails will fall back to console");
       return;
     }
 
@@ -44,17 +51,17 @@ class EmailService {
       this.smtpTransporter = nodemailer.createTransport({
         host: process.env.SMTP_HOST,
         port: parseInt(process.env.SMTP_PORT) || 587,
-        secure: process.env.SMTP_SECURE === 'true',
+        secure: process.env.SMTP_SECURE === "true",
         auth: {
           user: process.env.SMTP_USER,
-          pass: process.env.SMTP_PASS
-        }
+          pass: process.env.SMTP_PASS,
+        },
       });
       await this.smtpTransporter.verify();
       this.smtpInitialized = true;
       console.log(`📧 SMTP ready: ${process.env.SMTP_HOST}`);
     } catch (error) {
-      console.error('❌ SMTP initialization failed:', error.message);
+      console.error("❌ SMTP initialization failed:", error.message);
     }
   }
 
@@ -64,23 +71,28 @@ class EmailService {
   async initializeEthereal() {
     if (this.etherealInitialized) return;
 
+    // Dynamic Ethereal account creation — credentials are ephemeral, created per server start
     try {
-      console.log('📧 Creating Ethereal test account for institutional email...');
+      console.log(
+        "📧 Creating Ethereal test account for institutional email...",
+      );
       const testAccount = await nodemailer.createTestAccount();
       this.etherealTransporter = nodemailer.createTransport({
-        host: 'smtp.ethereal.email',
+        host: "smtp.ethereal.email",
         port: 587,
         secure: false,
         auth: {
           user: testAccount.user,
-          pass: testAccount.pass
-        }
+          pass: testAccount.pass,
+        },
       });
+
       this.etherealInitialized = true;
-      console.log(`📧 Ethereal ready: ${testAccount.user}`);
+
       console.log(`📧 View emails at: https://ethereal.email/login`);
     } catch (error) {
-      console.error('❌ Ethereal initialization failed:', error.message);
+      console.error("❌ Ethereal initialization failed:", error.message);
+      this.etherealTransporter = null;
     }
   }
 
@@ -109,55 +121,62 @@ class EmailService {
     const transporter = await this.getTransporter(to);
 
     if (!transporter) {
-      console.error('No email transporter available');
-      console.log(`\n${'='.repeat(50)}`);
-      console.log(`📧 EMAIL FALLBACK (no transporter)`);
-      console.log(`To: ${to}`);
-      console.log(`OTP Code: ${otp}`);
-      console.log(`${'='.repeat(50)}\n`);
+      console.error("No email transporter available");
+      if (process.env.NODE_ENV !== "production") {
+        console.log(`\n${"=".repeat(50)}`);
+        console.log(`📧 EMAIL FALLBACK (no transporter)`);
+        console.log(`To: ${to}`);
+        console.log(`OTP Code: ${otp}`);
+        console.log(`${"=".repeat(50)}\n`);
+      }
       return { success: true, fallback: true };
     }
 
-    const fromName = process.env.SMTP_FROM_NAME || 'University Voting System';
-    const fromEmail = process.env.SMTP_FROM_EMAIL || process.env.SMTP_USER || 'noreply@university.edu';
+    const fromName = process.env.SMTP_FROM_NAME || "University Voting System";
+    const fromEmail =
+      process.env.SMTP_FROM_EMAIL ||
+      process.env.SMTP_USER ||
+      "noreply@university.edu";
 
     const mailOptions = {
       from: `"${fromName}" <${fromEmail}>`,
       to: to,
       subject: `🔐 Your Voting Registration Verification Code`,
       text: this.getPlainTextEmail(otp, fullName, institutionId),
-      html: this.getHTMLEmail(otp, fullName, institutionId)
+      html: this.getHTMLEmail(otp, fullName, institutionId),
     };
 
     try {
       const info = await transporter.sendMail(mailOptions);
-      
+
       let previewUrl = null;
       if (isEthereal) {
         previewUrl = nodemailer.getTestMessageUrl(info);
         console.log(`📧 Ethereal preview: ${previewUrl}`);
       }
 
-      console.log(`✅ OTP email sent to ${to} (ID: ${institutionId}) — MessageID: ${info.messageId}`);
+      console.log(
+        `✅ OTP email sent to ${to} (ID: ${institutionId}) — MessageID: ${info.messageId}`,
+      );
 
-      if (process.env.NODE_ENV !== 'production') {
+      if (process.env.DEV_OTP_DEBUG === "true") {
         console.log(`🔑 [DEV] OTP for ${institutionId}: ${otp}`);
       }
 
       return { success: true, messageId: info.messageId, previewUrl };
     } catch (error) {
       console.error(`❌ Failed to send OTP email to ${to}:`, error.message);
-      
-      if (process.env.NODE_ENV !== 'production') {
-        console.log(`\n${'='.repeat(50)}`);
+
+      if (process.env.DEV_OTP_DEBUG === "true") {
+        console.log(`\n${"=".repeat(50)}`);
         console.log(`📧 EMAIL FALLBACK (send failed)`);
         console.log(`To: ${to}`);
         console.log(`OTP Code: ${otp}`);
-        console.log(`${'='.repeat(50)}\n`);
+        console.log(`${"=".repeat(50)}\n`);
         return { success: true, fallback: true };
       }
 
-      throw new Error('Failed to send verification email. Please try again.');
+      throw new Error("Failed to send verification email. Please try again.");
     }
   }
 

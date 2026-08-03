@@ -1,55 +1,78 @@
 <template>
-  <div class="home">
+  <div class="page">
     <div class="hero">
-      <h1>University Blockchain Voting System</h1>
-      <p>A secure, transparent, and verifiable voting platform</p>
-      <div class="cta-buttons" v-if="!isAuthenticated">
-        <router-link to="/login" class="btn btn-primary">Login</router-link>
-        <router-link to="/register" class="btn btn-secondary">Register</router-link>
+      <div class="hero-badge glass">
+        <PhShieldCheck :size="14" weight="fill" color="var(--accent)" />
+        <span>Secure Blockchain Voting</span>
       </div>
-      <div v-else class="cta-buttons">
-        <router-link to="/elections" class="btn btn-primary">View Elections</router-link>
-        <router-link v-if="isAdmin" to="/admin/dashboard" class="btn btn-warning">Admin Dashboard</router-link>
+      <h1 class="hero-title">
+        <span class="gradient-text">CryptoPoll</span>
+      </h1>
+      <p class="hero-subtitle">
+        A secure, transparent, and verifiable blockchain voting platform for
+        your institution
+      </p>
+      <div class="hero-actions" v-if="!isAuthenticated">
+        <router-link to="/login" class="btn btn-primary">
+          <PhSignIn :size="18" /> Sign In
+        </router-link>
+        <router-link to="/register" class="btn btn-secondary">
+          <PhUserPlus :size="18" /> Get Started
+        </router-link>
+      </div>
+      <div v-else class="hero-actions">
+        <router-link to="/elections" class="btn btn-primary">
+          <PhArchive :size="18" /> View Elections
+        </router-link>
       </div>
     </div>
 
-    <div class="features">
-      <div class="feature">
-        <h3>Secure</h3>
-        <p>End-to-end encryption ensures your vote remains private while being verifiable.</p>
+    <div class="features-grid">
+      <div class="feature-card card glass">
+        <div class="feature-icon">
+          <PhLock :size="28" weight="fill" color="var(--accent)" />
+        </div>
+        <h3>End-to-End Encrypted</h3>
+        <p>
+          Your vote is encrypted on your device before transmission. Only you
+          control your cryptographic keys.
+        </p>
       </div>
-      <div class="feature">
-        <h3>Transparent</h3>
-        <p>Blockchain technology provides a transparent and immutable record of all votes.</p>
+      <div class="feature-card card glass">
+        <div class="feature-icon">
+          <PhLink :size="28" weight="fill" color="var(--accent)" />
+        </div>
+        <h3>Blockchain Verified</h3>
+        <p>
+          Every vote is recorded on an immutable blockchain. Verify your vote
+          was counted without revealing your choice.
+        </p>
       </div>
-      <div class="feature">
-        <h3>Accessible</h3>
-        <p>Vote from anywhere on campus using your university credentials.</p>
+      <div class="feature-card card glass">
+        <div class="feature-icon">
+          <PhGlobe :size="28" weight="fill" color="var(--accent)" />
+        </div>
+        <h3>Accessible Anywhere</h3>
+        <p>
+          Vote from anywhere using your institutional credentials. Secure,
+          private, and convenient.
+        </p>
       </div>
     </div>
 
-    <div class="how-it-works">
-      <h2>How It Works</h2>
-      <div class="steps">
-        <div class="step">
-          <div class="step-number">1</div>
-          <h4>Register</h4>
-          <p>Create an account using your university ID</p>
-        </div>
-        <div class="step">
-          <div class="step-number">2</div>
-          <h4>Verify</h4>
-          <p>Verify your identity to receive voting credentials</p>
-        </div>
-        <div class="step">
-          <div class="step-number">3</div>
-          <h4>Vote</h4>
-          <p>Cast your encrypted vote in active elections</p>
-        </div>
-        <div class="step">
-          <div class="step-number">4</div>
-          <h4>Verify</h4>
-          <p>Verify your vote was counted correctly</p>
+    <div class="steps-section">
+      <h2 class="section-title">How It Works</h2>
+      <div class="steps-grid">
+        <div v-for="(step, i) in steps" :key="i" class="step-card glass">
+          <div class="step-number">{{ i + 1 }}</div>
+          <component
+            :is="step.icon"
+            :size="24"
+            weight="fill"
+            color="var(--accent)"
+          />
+          <h4>{{ step.title }}</h4>
+          <p>{{ step.description }}</p>
         </div>
       </div>
     </div>
@@ -57,158 +80,200 @@
 </template>
 
 <script>
-import { mapGetters } from 'vuex'
+import { mapGetters } from "vuex";
+import {
+  PhShieldCheck,
+  PhSignIn,
+  PhUserPlus,
+  PhArchive,
+  PhLock,
+  PhLink,
+  PhGlobe,
+  PhIdentificationBadge,
+  PhEnvelope,
+  PhCheckSquare,
+  PhSealCheck,
+} from "@phosphor-icons/vue";
 
 export default {
-  name: 'HomeView',
+  name: "HomeView",
+  components: {
+    PhShieldCheck,
+    PhSignIn,
+    PhUserPlus,
+    PhArchive,
+    PhLock,
+    PhLink,
+    PhGlobe,
+    PhIdentificationBadge,
+    PhEnvelope,
+    PhCheckSquare,
+    PhSealCheck,
+  },
+  data() {
+    return {
+      steps: [
+        {
+          icon: PhIdentificationBadge,
+          title: "Register",
+          description: "Create an account using your university ID",
+        },
+        {
+          icon: PhEnvelope,
+          title: "Verify",
+          description: "Verify your identity via email confirmation",
+        },
+        {
+          icon: PhCheckSquare,
+          title: "Vote",
+          description: "Cast your encrypted vote in active elections",
+        },
+        {
+          icon: PhSealCheck,
+          title: "Verify",
+          description: "Verify your vote was counted on the blockchain",
+        },
+      ],
+    };
+  },
   computed: {
-    ...mapGetters(['isAuthenticated']),
-    isAdmin() {
-      const user = JSON.parse(localStorage.getItem('user') || '{}')
-      return user.role === 'admin'
-    }
-  }
-}
+    ...mapGetters(["isAuthenticated"]),
+  },
+};
 </script>
 
 <style scoped>
-.home {
-  width: 100%;
-  padding: 20px 40px;
-}
-
 .hero {
   text-align: center;
-  padding: 60px 20px;
-  background-color: #f8f9fa;
-  border-radius: 8px;
-  margin-bottom: 40px;
+  padding: var(--space-16) 0 var(--space-12);
 }
 
-.hero h1 {
-  font-size: 2.5rem;
-  margin-bottom: 20px;
-  color: #2c3e50;
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin-bottom: var(--space-6);
 }
 
-.hero p {
-  font-size: 1.2rem;
-  color: #6c757d;
-  margin-bottom: 30px;
+.hero-title {
+  font-size: 3rem;
+  font-weight: 800;
+  margin-bottom: var(--space-4);
+  line-height: 1.1;
 }
 
-.cta-buttons {
+.hero-subtitle {
+  font-size: 1.1rem;
+  color: var(--text-secondary);
+  max-width: 500px;
+  margin: 0 auto var(--space-8);
+  line-height: 1.6;
+}
+
+.hero-actions {
   display: flex;
+  gap: var(--space-3);
   justify-content: center;
-  gap: 20px;
+  flex-wrap: wrap;
 }
 
-.btn {
-  display: inline-block;
-  padding: 12px 24px;
-  border-radius: 4px;
-  text-decoration: none;
-  font-weight: bold;
-  transition: all 0.3s ease;
-}
-
-.btn-primary {
-  background-color: #3498db;
-  color: white;
-}
-
-.btn-primary:hover {
-  background-color: #2980b9;
-}
-
-.btn-secondary {
-  background-color: #ecf0f1;
-  color: #2c3e50;
-}
-
-.btn-secondary:hover {
-  background-color: #bdc3c7;
-}
-
-.btn-warning {
-  background-color: #f39c12;
-  color: white;
-}
-
-.btn-warning:hover {
-  background-color: #e67e22;
-}
-
-.features {
+.features-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 30px;
-  margin-bottom: 60px;
+  gap: var(--space-6);
+  margin-bottom: var(--space-12);
 }
 
-.feature {
-  padding: 30px;
-  background-color: #fff;
-  border-radius: 8px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+.feature-card {
+  padding: var(--space-8);
   text-align: center;
-  color: #000 !important;
 }
 
-.feature h3 {
+.feature-icon {
+  margin-bottom: var(--space-4);
+}
+
+.feature-card h3 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-bottom: var(--space-2);
+  color: var(--text-primary);
+}
+
+.feature-card p {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+.section-title {
+  text-align: center;
   font-size: 1.5rem;
-  margin-bottom: 15px;
-  color: #000 !important;
+  font-weight: 700;
+  margin-bottom: var(--space-8);
 }
 
-.feature p {
-  color: #000 !important;
-}
-
-.how-it-works {
-  text-align: center;
-  margin-bottom: 60px;
-}
-
-.how-it-works h2 {
-  font-size: 2rem;
-  margin-bottom: 40px;
-  color: #000 !important;
-}
-
-.steps {
+.steps-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 30px;
+  gap: var(--space-5);
 }
 
-.step {
-  padding: 20px;
-  background-color: #fff;
-  border-radius: 8px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  color: #000 !important;
-}
-
-.step h4 {
-  color: #000 !important;
-  margin-bottom: 10px;
-}
-
-.step p {
-  color: #000 !important;
+.step-card {
+  padding: var(--space-6);
+  text-align: center;
+  border-radius: var(--radius-lg);
+  position: relative;
 }
 
 .step-number {
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--accent-gradient);
+  color: white;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
-  background-color: #3498db;
-  color: white;
-  border-radius: 50%;
-  margin: 0 auto 15px;
-  font-weight: bold;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.step-card h4 {
+  font-size: 1rem;
+  font-weight: 700;
+  margin: var(--space-3) 0 var(--space-2);
+  color: var(--text-primary);
+}
+
+.step-card p {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+@media (max-width: 768px) {
+  .hero-title {
+    font-size: 2rem;
+  }
+  .features-grid {
+    grid-template-columns: 1fr;
+  }
+  .steps-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (max-width: 480px) {
+  .steps-grid {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

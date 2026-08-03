@@ -1,167 +1,264 @@
-# ==========================================
-# Monitoring Stack for Voting System
-# ==========================================
-# Includes: Prometheus, Grafana, cAdvisor, Node Exporter, MySQL Exporter
-#
-# Usage:
-#   Start monitoring: docker-compose -f docker-compose.yml -f docker-compose.monitoring.yml up -d
-#   Stop monitoring: docker-compose -f docker-compose.monitoring.yml down
-#
-# Access:
-#   Prometheus: http://localhost:9090
-#   Grafana: http://localhost:3030 (admin/admin)
-#   cAdvisor: http://localhost:8081
+# Usage: docker compose -f infra/docker/docker-compose.yml -f infra/docker/docker-compose.monitoring.yml up -d
+# Monitoring stack: Prometheus, Grafana, cAdvisor, Node Exporter, MySQL Exporter, Loki, Promtail.
+# Requires main stack running first (attaches to backend-net).
 
 services:
-  # Prometheus - Metrics collection and storage
+  # ── Observability ────────────────────────────────────────────────────────────
   prometheus:
-    image: prom/prometheus:latest
+    image: prom/prometheus:v2.51.0
     container_name: voting-prometheus
     restart: unless-stopped
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
     command:
       - "--config.file=/etc/prometheus/prometheus.yml"
       - "--storage.tsdb.path=/prometheus"
       - "--storage.tsdb.retention.time=30d"
+      - "--storage.tsdb.retention.size=2GB"
       - "--web.console.libraries=/etc/prometheus/console_libraries"
       - "--web.console.templates=/etc/prometheus/consoles"
       - "--web.enable-lifecycle"
+    depends_on:
+      cadvisor:
+        condition: service_healthy
+      node-exporter:
+        condition: service_healthy
+    networks:
+      - backend-net
+      - monitoring
+    ports:
+      - "127.0.0.1:${PROMETHEUS_PORT:?PROMETHEUS_PORT is required}:9090"
     volumes:
       - ../monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - ../alerts:/etc/prometheus/alerts:ro
       - prometheus_data:/prometheus
-    ports:
-      - "9090:9090"
-    networks:
-      - voting-network
-      - monitoring
-    depends_on:
-      - cadvisor
-      - node-exporter
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
-  # Grafana - Visualization and dashboards
   grafana:
-    image: grafana/grafana:latest
+    image: grafana/grafana:10.4.0
     container_name: voting-grafana
     restart: unless-stopped
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
+    depends_on:
+      prometheus:
+        condition: service_healthy
+    networks:
+      - monitoring
+    ports:
+      - "127.0.0.1:${GRAFANA_PORT:?GRAFANA_PORT is required}:3000"
     environment:
       - GF_SECURITY_ADMIN_USER=admin
-      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:?GRAFANA_ADMIN_PASSWORD is required}
       - GF_USERS_ALLOW_SIGN_UP=false
-      - GF_SERVER_ROOT_URL=http://localhost:3030
+      - GF_SERVER_ROOT_URL=${GRAFANA_ROOT_URL:?GRAFANA_ROOT_URL is required}
       - GF_INSTALL_PLUGINS=grafana-piechart-panel
     volumes:
       - grafana_data:/var/lib/grafana
       - ../monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
       - ../monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
-    ports:
-      - "3030:3000"
-    networks:
-      - monitoring
-    depends_on:
-      - prometheus
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
-  # cAdvisor - Container metrics
+  # ── Infrastructure Metrics ───────────────────────────────────────────────────
   cadvisor:
-    image: gcr.io/cadvisor/cadvisor:latest
+    image: gcr.io/cadvisor/cadvisor:v0.49.1
     container_name: voting-cadvisor
     restart: unless-stopped
-    privileged: true
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
+    security_opt:
+      - no-new-privileges:true
     devices:
       - /dev/kmsg:/dev/kmsg
+    networks:
+      - monitoring
+    ports:
+      - "127.0.0.1:${CADVISOR_PORT:?CADVISOR_PORT is required}:8080"
     volumes:
       - /:/rootfs:ro
       - /var/run:/var/run:ro
       - /sys:/sys:ro
       - /var/lib/docker:/var/lib/docker:ro
       - /dev/disk:/dev/disk:ro
-    ports:
-      - "8081:8080"
-    networks:
-      - monitoring
     command:
       - "--housekeeping_interval=10s"
       - "--docker_only=true"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--quiet",
+          "--tries=1",
+          "--spider",
+          "http://localhost:8080/healthz",
+        ]
+      timeout: 10s
+      retries: 3
+      interval: 30s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
-  # Node Exporter - Host system metrics
   node-exporter:
-    image: prom/node-exporter:latest
+    image: prom/node-exporter:v1.7.0
     container_name: voting-node-exporter
     restart: unless-stopped
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - monitoring
+    ports:
+      - "127.0.0.1:${NODE_EXPORTER_PORT:?NODE_EXPORTER_PORT is required}:9100"
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
     command:
       - "--path.procfs=/host/proc"
       - "--path.rootfs=/rootfs"
       - "--path.sysfs=/host/sys"
       - "--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)"
-    volumes:
-      - /proc:/host/proc:ro
-      - /sys:/host/sys:ro
-      - /:/rootfs:ro
-    ports:
-      - "9100:9100"
-    networks:
-      - monitoring
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--quiet",
+          "--tries=1",
+          "--spider",
+          "http://localhost:9100/metrics",
+        ]
+      timeout: 10s
+      retries: 3
+      interval: 30s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
-  # MySQL Exporter - MySQL database metrics
   mysql-exporter:
-    image: prom/mysqld-exporter:latest
+    image: prom/mysqld-exporter:v0.15.1
     container_name: voting-mysql-exporter
     restart: unless-stopped
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - backend-net
+      - monitoring
+    environment:
+      DATA_SOURCE_NAME: ${MYSQL_USER:?MYSQL_USER is required}:${MYSQL_PASSWORD:?MYSQL_PASSWORD is required}@(${DB_HOST:?DB_HOST is required}:${DB_PORT:?DB_PORT is required})/${MYSQL_DATABASE:?MYSQL_DATABASE is required}
     command:
       - "--collect.global_status"
       - "--collect.info_schema.innodb_stats"
       - "--collect.info_schema.innodb_trx"
       - "--collect.info_schema.innodb_cmp"
       - "--collect.info_schema.innodb_cmpmem"
-    environment:
-      - DATA_SOURCE_NAME=voting_user:voting_pass@(mysql:3306)/voting_db
-    ports:
-      - "9104:9104"
-    networks:
-      - voting-network
-      - monitoring
-    depends_on:
-      - mysql
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
-  # Loki - Log aggregation
+  # ── Log Aggregation ──────────────────────────────────────────────────────────
   loki:
-    image: grafana/loki:latest
+    image: grafana/loki:2.9.6
     container_name: voting-loki
     restart: unless-stopped
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - monitoring
     ports:
-      - "3100:3100"
+      - "127.0.0.1:${LOKI_PORT:?LOKI_PORT is required}:3100"
     volumes:
       - ../monitoring/loki/loki-config.yml:/etc/loki/local-config.yml:ro
       - loki_data:/loki
     command: -config.file=/etc/loki/local-config.yml
-    networks:
-      - monitoring
-    environment:
-      - JAEGER_AGENT_HOST=jaeger
-      - JAEGER_AGENT_PORT=6831
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--quiet",
+          "--tries=1",
+          "--spider",
+          "http://localhost:3100/ready",
+        ]
+      timeout: 10s
+      retries: 5
+      interval: 15s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
-  # Promtail - Log shipper to Loki
   promtail:
-    image: grafana/promtail:latest
+    image: grafana/promtail:2.9.6
     container_name: voting-promtail
     restart: unless-stopped
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    depends_on:
+      loki:
+        condition: service_healthy
+    networks:
+      - monitoring
     volumes:
       - ../monitoring/promtail/promtail-config.yml:/etc/promtail/config.yml:ro
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - /var/log:/var/log:ro
     command: -config.file=/etc/promtail/config.yml
-    networks:
-      - monitoring
-    depends_on:
-      - loki
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
 networks:
+  backend-net:
+    driver: bridge
+    external: true
   monitoring:
     driver: bridge
     name: voting-monitoring
-  voting-network:
-    driver: bridge
-    external: true
 
 volumes:
   prometheus_data:

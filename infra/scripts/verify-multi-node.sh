@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Multi-Node Network Verification Script
-# Tests node connectivity, block mining, and vote propagation
+# Reads ports from .env (BLOCKCHAIN_NODE1_PORT–BLOCKCHAIN_NODE5_PORT).
 
 set -e
 
@@ -9,22 +9,50 @@ echo "╔═══════════════════════�
 echo "║  Multi-Node Network Verification           ║"
 echo "╚════════════════════════════════════════════╝"
 
-NODES=(3001 3002 3003 3004 3005)
+get_env() {
+  local var="$1" fallback="$2"
+  local val
+  val=$(grep "^${var}=" .env 2>/dev/null | head -1 | cut -d= -f2-)
+  echo "${val:-$fallback}"
+}
+
+N1=$(get_env BLOCKCHAIN_NODE1_PORT 3001)
+N2=$(get_env BLOCKCHAIN_NODE2_PORT 3002)
+N3=$(get_env BLOCKCHAIN_NODE3_PORT 3003)
+N4=$(get_env BLOCKCHAIN_NODE4_PORT 3004)
+N5=$(get_env BLOCKCHAIN_NODE5_PORT 3005)
+NODES=("$N1" "$N2" "$N3" "$N4" "$N5")
+VALIDATOR_PORTS=("$N1" "$N2" "$N3")
+OBSERVER_PORTS=("$N4" "$N5")
+
 FAILED=0
 PASSED=0
 
-# Colors for output
+API_KEY=$(get_env BLOCKCHAIN_API_KEY "")
+API_HEADERS=()
+if [ -n "$API_KEY" ]; then
+  API_HEADERS=(-H "x-api-key: $API_KEY")
+fi
+
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
-NC='\033[0m' # No Color
+NC='\033[0m'
+
+_http_get() {
+  if command -v curl &>/dev/null; then
+    curl -s "${API_HEADERS[@]}" "$1"
+  elif command -v wget &>/dev/null; then
+    wget -q -O - "$1" 2>/dev/null
+  fi
+}
 
 echo ""
 echo "1. CHECKING NODE CONNECTIVITY"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
 for port in "${NODES[@]}"; do
-    if curl -s "http://localhost:$port/node/status" > /dev/null 2>&1; then
+    if _http_get "http://localhost:$port/node/status" > /dev/null 2>&1; then
         echo -e "${GREEN}✓${NC} Port $port is responding"
         ((PASSED++))
     else
@@ -37,9 +65,8 @@ echo ""
 echo "2. CHECKING NODE TYPES"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-# Check Validators (ports 3001-3003)
-for port in 3001 3002 3003; do
-    node_type=$(curl -s "http://localhost:$port/node/status" | grep -o '"nodeType":"[^"]*"' | cut -d'"' -f4)
+for port in "${VALIDATOR_PORTS[@]}"; do
+    node_type=$(_http_get "http://localhost:$port/node/status" | grep -o '"nodeType":"[^"]*"' | cut -d'"' -f4)
     if [ "$node_type" = "validator" ]; then
         echo -e "${GREEN}✓${NC} Node on port $port is a validator"
         ((PASSED++))
@@ -49,9 +76,8 @@ for port in 3001 3002 3003; do
     fi
 done
 
-# Check Observers (ports 3004-3005)
-for port in 3004 3005; do
-    node_type=$(curl -s "http://localhost:$port/node/status" | grep -o '"nodeType":"[^"]*"' | cut -d'"' -f4)
+for port in "${OBSERVER_PORTS[@]}"; do
+    node_type=$(_http_get "http://localhost:$port/node/status" | grep -o '"nodeType":"[^"]*"' | cut -d'"' -f4)
     if [ "$node_type" = "observer" ]; then
         echo -e "${GREEN}✓${NC} Node on port $port is an observer"
         ((PASSED++))
@@ -65,7 +91,7 @@ echo ""
 echo "3. CHECKING NETWORK STATUS"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-network_status=$(curl -s "http://localhost:3001/network/status")
+network_status=$(_http_get "http://localhost:$N1/network/status")
 total_nodes=$(echo "$network_status" | grep -o '"totalNodes":[0-9]*' | cut -d':' -f2)
 healthy_nodes=$(echo "$network_status" | grep -o '"healthyNodes":[0-9]*' | cut -d':' -f2)
 
@@ -84,7 +110,7 @@ echo "4. CHECKING BLOCKCHAIN SYNCHRONIZATION"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
 for port in "${NODES[@]}"; do
-    chain_length=$(curl -s "http://localhost:$port/chain" | grep -o '"length":[0-9]*' | cut -d':' -f2)
+    chain_length=$(_http_get "http://localhost:$port/chain" | grep -o '"length":[0-9]*' | cut -d':' -f2)
     echo "Node on port $port - Chain height: $chain_length"
 done
 

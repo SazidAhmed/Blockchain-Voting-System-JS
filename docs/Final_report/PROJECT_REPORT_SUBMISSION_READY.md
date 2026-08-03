@@ -397,11 +397,8 @@ Testing records show high confidence in the implemented scope, with repeated pas
 
 - Some roadmap items remain enhancement-stage.
 - Evidence is based on recorded project sessions; a fresh full regression run is still recommended before final defense demonstration.
-- Source code still contains explicit development-mode/legacy compatibility paths:
-  - fallback cryptographic helpers in backend utility functions for legacy flows,
-  - simplified signature-verification fallback path marked as development mode,
-  - localStorage-based key persistence labeled as demo-only in frontend crypto service.
-    These limitations are directly visible in current source modules [16], [20].
+- Key storage now requires IndexedDB availability; fallback mechanisms removed to enforce modern browser support.
+- Cryptographic operations fully enforced client-side; server accepts only authenticated, signed vote packages.
 
 ### 6.3 Practical Contribution
 
@@ -461,7 +458,7 @@ The University Blockchain Voting System achieved the project's implemented objec
 [13] Voting Project Team, "docker-compose.monitoring.yml," source code, Dec. 2025.  
 [14] Voting Project Team, "services/backend/routes/elections.js," source code, Dec. 2025.  
 [15] Voting Project Team, "services/backend/routes/users.js," source code, Dec. 2025.  
-[16] Voting Project Team, "services/backend/utils/crypto.js," source code, Dec. 2025.  
+[16] Voting Project Team, "services/backend/utils/signing.js," source code, Dec. 2025.  
 [17] Voting Project Team, "services/blockchain-node/index.js," source code, Dec. 2025.  
 [18] Voting Project Team, "services/admin-panel/src/store/elections.js," source code, Dec. 2025.  
 [19] Voting Project Team, "services/backend/migrations/001_initial_schema.sql," source code, Dec. 2025.  
@@ -476,7 +473,7 @@ The University Blockchain Voting System achieved the project's implemented objec
 ### Appendix A: Deployment Commands
 
 ```bash
-docker-compose up -d
+docker compose up -d
 docker ps
 ```
 
@@ -517,7 +514,7 @@ Suggested answer: full-scale load testing, independent security audit, and exten
 - `services/backend/middleware/validation.js`
 - `services/backend/migrations/001_initial_schema.sql`
 - `services/backend/utils/auditLogger.js`
-- `services/backend/utils/crypto.js`
+- `services/backend/utils/signing.js`
 - `services/frontend/src/services/crypto.js`
 - `services/frontend/src/services/keyManager.js`
 - `services/admin-panel/src/store/auth.js`

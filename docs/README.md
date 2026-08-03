@@ -6,7 +6,7 @@ University blockchain-based voting system. 5 Docker services, ECDSA P-256 signat
 
 ```bash
 cp .env.example .env
-docker-compose -f infra/docker/docker-compose.yml up --build -d
+docker compose -f infra/docker/docker-compose.yml up --build -d
 ```
 
 See [deployment/setup.md](deployment/setup.md) for full guide.
@@ -16,6 +16,7 @@ See [deployment/setup.md](deployment/setup.md) for full guide.
 | Domain                                                    | Description                                                 |
 | --------------------------------------------------------- | ----------------------------------------------------------- |
 | [Project](project/structure.md)                           | Repository layout, file map                                 |
+| [Frontend](frontend/README.md)                            | Vue 3 app: pages, components, crypto, theming               |
 | [Architecture](architecture/overview.md)                  | System design, blockchain mechanics, crypto                 |
 | [Database](database/schema.md)                            | Schema, setup, migrations, reference                        |
 | [API](api/backend.md)                                     | Backend, blockchain node, institution API                   |

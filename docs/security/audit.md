@@ -40,7 +40,7 @@
 | V-002 | CORS allowed all origins            | HIGH     | Restricted to known frontend origins                       |
 | V-003 | No security headers (CSP, HSTS)     | HIGH     | Helmet.js configured                                       |
 | V-004 | Stack traces in error responses     | MEDIUM   | Production-safe error handler                              |
-| V-005 | No request size limits              | MEDIUM   | 10MB body limit                                            |
+| V-005 | No request size limits              | MEDIUM   | 1MB body limit                                             |
 | V-006 | No request timeout                  | MEDIUM   | 30s timeout                                                |
 | V-007 | X-Powered-By header leaked stack    | LOW      | Header removed                                             |
 | V-008 | Elections mutable after activation  | HIGH     | Mutation locking with is_locked flag                       |
@@ -51,7 +51,7 @@
 
 - Helmet.js: CSP, HSTS (1 year, preload), X-Frame-Options, X-Content-Type-Options, X-XSS-Protection.
 - CORS: Credentials enabled, methods GET/POST/PUT/DELETE/OPTIONS, headers Content-Type/Authorization.
-- Body parsers: 10MB limit on JSON and URL-encoded.
+- Body parsers: 1MB limit on JSON and URL-encoded.
 - Timeouts: request and response 30s.
 - Error handler: production mode hides details, development shows stack.
 

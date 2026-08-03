@@ -10,6 +10,31 @@ http://localhost:3001
 
 Nodes run on ports 3001, 3002, 3003, 3004. Each is an independent instance with its own chain state.
 
+## Authentication
+
+**All sensitive endpoints require an API key via `x-api-key` header** (set via `BLOCKCHAIN_API_KEY` env var).
+
+**Protected endpoints (require auth):**
+
+- `/chain`, `/node`, `/node/status`, `/network/status` — chain/node data (C-07)
+- `/merkle/verify` — Merkle proof verification (C-06)
+- `/vote` — vote submission
+- `/transactions/new` — transaction submission
+- All Merkle endpoints except health
+
+**Public endpoints (no auth):**
+
+- `/` — service info
+- `/health` — healthcheck (used by Docker and monitoring)
+
+## CORS
+
+Restricted to `BACKEND_URL`, `FRONTEND_URL` env vars, and `localhost:5174` fallback. No browser origins permitted in production.
+
+## Rate Limiting
+
+General rate limiting applied to all endpoints.
+
 ## Node Identity
 
 Configured via environment:
@@ -31,6 +56,8 @@ Peer discovery reads `PEERS` env var. Each peer connection is staggered by 2 sec
 
 Full blockchain data.
 
+**Auth:** API key required (`x-api-key` header)
+
 **Response 200:**
 
 ```json
@@ -50,9 +77,11 @@ Full blockchain data.
 }
 ```
 
-### `GET /mine`
+### `POST /mine`
 
-Mine a new block from pending transactions. Signs the block with the node's private key and broadcasts to peers.
+Mine a new block from pending transactions. Signs the block with the node's persistent ECDSA key (stored in LevelDB) and broadcasts to peers.
+
+**Auth:** API key required (`x-api-key` header)
 
 **Response 200:**
 
@@ -73,7 +102,9 @@ Mine a new block from pending transactions. Signs the block with the node's priv
 
 ### `POST /transactions/new`
 
-Add a general transaction to the mempool. Broadcasts to connected peers.
+Add a general transaction to the mempool. Validates fromAddress, toAddress (strings), and amount (positive number). Broadcasts to connected peers.
+
+**Auth:** API key required (`x-api-key` header)
 
 **Body:**
 
@@ -88,7 +119,9 @@ Add a general transaction to the mempool. Broadcasts to connected peers.
 
 ### `POST /vote`
 
-Submit an encrypted vote. Generates a deterministic transaction hash (SHA-256 of `{electionId, nullifier, encryptedBallot, timestamp}`), checks for security anomalies, records vote via `addVoteTransaction`, and broadcasts to peers.
+Submit an encrypted vote. Validates all required fields (electionId, nullifier, encryptedBallot, signature, voterId as strings), generates a deterministic transaction hash (SHA-256 of `{electionId, nullifier, encryptedBallot, timestamp}`), checks for security anomalies, records vote via `addVoteTransaction`, and broadcasts to peers.
+
+**Auth:** API key required (`x-api-key` header)
 
 **Body:**
 

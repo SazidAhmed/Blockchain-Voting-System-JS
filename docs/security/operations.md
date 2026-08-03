@@ -14,7 +14,7 @@
 ### Response Procedure
 
 1. **Alert Receipt**: Console, log files, health check, or monitoring system.
-2. **Classification**: Check severity via `/security/recent-violations`, `docker-compose ps`.
+2. **Classification**: Check severity via `/security/recent-violations`, `docker compose ps`.
 3. **Investigation**: Gather logs, document details, escalate if needed.
 4. **Mitigation**: Apply fix, document actions, monitor resolution.
 5. **Root Cause Analysis**: Identify underlying cause, update procedures.
@@ -22,13 +22,13 @@
 ### Node Down
 
 ```bash
-docker-compose ps | grep -i down
-docker-compose restart blockchain-node-X
+docker compose ps | grep -i down
+docker compose restart blockchain-node-X
 sleep 5
 curl http://localhost:3000/status
 ```
 
-If restart fails: check logs (`docker-compose logs blockchain-node-X --tail=50`), check disk/memory, restore from backup.
+If restart fails: check logs (`docker compose logs blockchain-node-X --tail=50`), check disk/memory, restore from backup.
 
 ### Consensus Lost
 
@@ -59,9 +59,9 @@ curl -X POST http://localhost:3000/security/release-quarantine -d '{"nodeId":"X"
 ### Disaster Recovery
 
 ```bash
-docker-compose down
+docker compose down
 tar -xzf data/backups/latest.tar.gz
-docker-compose up -d
+docker compose up -d
 curl http://localhost:3000/status
 ```
 
@@ -77,7 +77,7 @@ Generate new secret and update `.env`:
 openssl rand -hex 64
 ```
 
-Update `JWT_SECRET` in `services/backend/.env`, restart backend. Existing tokens invalidated.
+Update `JWT_SECRET` in `.env` at project root, restart backend. Existing tokens invalidated.
 
 ### Voter Signing Keys
 
@@ -134,10 +134,10 @@ curl http://localhost:3000/status
 
 ```bash
 # Security events
-docker-compose logs --since 24h | grep -i "warning\|error\|critical"
+docker compose logs --since 24h | grep -i "warning\|error\|critical"
 
 # Quarantine events
-docker-compose logs security-monitor | grep -i quarantine
+docker compose logs security-monitor | grep -i quarantine
 
 # Audit integrity failures
 curl http://localhost:3000/api/admin/audit-logs?filter=failed
@@ -148,7 +148,7 @@ curl http://localhost:3000/api/admin/verify-audit-integrity/:logId
 
 ### Morning Checklist
 
-1. `docker-compose ps` — all containers up
+1. `docker compose ps` — all containers up
 2. `curl http://localhost:3000/status` — node healthy, consensus active
 3. `curl http://localhost:3000/security/status` — no active quarantines
 4. `ls -lah data/backups/` — daily backup present

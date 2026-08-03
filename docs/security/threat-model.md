@@ -35,7 +35,7 @@ Threat model for the Blockchain Voting System covering attack surfaces across fr
 | Auth             | JWT with ECDSA verification, middleware on all protected routes    | `services/backend/middleware/`              |
 | Input validation | express-validator on all endpoints (type, length, pattern, escape) | `services/backend/middleware/validation.js` |
 | Rate limiting    | Registration: 5/15min, Login: 10/15min, Voting: 10/hour            | Backend middleware                          |
-| Request limits   | 10MB body limit, 30s timeout                                       | `services/backend/index.js`                 |
+| Request limits   | 1MB body limit, 30s timeout                                        | `services/backend/index.js`                 |
 | Mutation locking | Elections locked after activation (403 on candidate add/delete)    | `services/backend/routes/elections.js`      |
 
 ### Audit Trail

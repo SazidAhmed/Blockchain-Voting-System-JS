@@ -131,7 +131,7 @@ node scripts/check/check-vote.js        # Vote records in database
 mysql -u root -p voting_db
 
 # Via Docker
-docker-compose -f infra/docker/docker-compose.yml exec mysql mysql -u root -p voting_db
+docker compose -f infra/docker/docker-compose.yml exec mysql mysql -u root -p voting_db
 
 # phpMyAdmin UI
 # Open http://localhost:8080 in browser

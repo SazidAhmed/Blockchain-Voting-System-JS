@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # .githooks/pre-commit
 # Runs automatically before every commit.
-# Checks: secrets, syntax, commit message format.
+# Checks: secrets, JS syntax, console.log warnings.
+# Commit message format is enforced by pre-push (run-all-checks.sh) and CI.
 set -euo pipefail
 
 RED='\033[0;31m'

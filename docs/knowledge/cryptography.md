@@ -192,30 +192,111 @@ Each block's hash is `SHA-256(index + timestamp + transactions + previousHash + 
 
 ---
 
+## AES-256-GCM: Tally Encryption
+
+### What It Is
+
+AES-256-GCM (Advanced Encryption Standard with Galois/Counter Mode) is a **symmetric authenticated encryption** scheme. It provides both confidentiality (encryption) and authenticity (authentication tag) in a single pass.
+
+| Property           | Value                                          |
+| ------------------ | ---------------------------------------------- |
+| **Key size**       | 256 bits (32 bytes)                            |
+| **IV/nonce size**  | 96 bits (12 bytes)                             |
+| **Auth tag size**  | 128 bits (16 bytes)                            |
+| **Mode**           | Galois/Counter Mode (authenticated encryption) |
+| **Security level** | ~128-bit                                       |
+
+### Why AES-256-GCM for Tally Encryption?
+
+The project uses AES-256-GCM to encrypt vote tallies before they're stored or returned via API. This is separate from ballot encryption (RSA-OAEP) — tally encryption hides real-time vote counts until results are officially released.
+
+| Use Case          | Algorithm   | Why                                                           |
+| ----------------- | ----------- | ------------------------------------------------------------- |
+| Ballot encryption | RSA-OAEP    | Asymmetric — voter encrypts, only election authority decrypts |
+| Vote tally hiding | AES-256-GCM | Symmetric — server encrypts/decrypts with per-election key    |
+| Vote signing      | ECDSA P-256 | Asymmetric — voter signs, anyone verifies                     |
+
+### How It Works
+
+1. **Election creation**: Server generates a random 256-bit `tally_key` per election, stored in the `elections` table
+2. **Tally computation**: After votes are cast, the server tallies votes per candidate from encrypted ballots
+3. **Encryption**: The tally `{ candidateId: count }` is encrypted with AES-256-GCM using the election's `tally_key`
+4. **API response**: Until results are released, the API returns `encryptedTally` (base64) instead of plaintext counts
+5. **Release**: Admin manually releases results, or auto-release fires after `end_date` passes — `results_released` flips to `TRUE`, and plaintext counts are returned
+
+### Ciphertext Packing
+
+The encrypted tally is packed as a single base64 string:
+
+```text
+┌─────────────┬──────────────┬───────────────┐
+│ IV (12 B)   │ AuthTag (16 B)│ Ciphertext    │
+└─────────────┴──────────────┴───────────────┘
+```
+
+- **IV**: Random 12-byte nonce (never reused with same key)
+- **AuthTag**: 16-byte GCM authentication tag (detects tampering)
+- **Ciphertext**: Encrypted JSON tally
+
+### Code Reference
+
+```text
+services/backend/utils/tallyEncryption.js
+  encryptTally(tally, keyHex)  → base64 string
+  decryptTally(ciphertext, keyHex) → tally object
+```
+
+### Security Properties
+
+| Property             | Meaning                                                             |
+| -------------------- | ------------------------------------------------------------------- |
+| **Confidentiality**  | Tally hidden until key holder releases results                      |
+| **Integrity**        | Any modification to ciphertext invalidates decryption (auth tag)    |
+| **Authenticity**     | Only someone with the `tally_key` can produce valid ciphertext      |
+| **Nonce uniqueness** | Random 12-byte IV ensures same tally encrypts differently each time |
+
+---
+
 ## Key Pairs: The Mental Model
 
 ```text
-┌─────────────────────────────────────────────────┐
-│              VOTER'S KEY PAIRS                  │
-│                                                 │
-│  ECDSA P-256          RSA-OAEP 2048-bit         │
-│  ┌──────────────┐     ┌──────────────┐          │
-│  │ Private key  │     │ Private key  │          │
-│  │ (stored in   │     │ (stored in   │          │
-│  │  localStorage│     │  localStorage│          │
-│  │  encrypted)  │     │  encrypted)  │          │
-│  └──────┬───────┘     └──────┬───────┘          │
-│         │ sign               │ decrypt           │
-│         ▼                    ▼                   │
-│  ┌──────────────┐     ┌──────────────┐          │
-│  │ Public key   │     │ Public key   │          │
-│  │ (on backend) │     │ (on backend) │          │
-│  └──────────────┘     └──────────────┘          │
-│  verify                  encrypt                │
-└─────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────┐
+│                   VOTER'S KEY PAIRS                     │
+│                                                         │
+│  ECDSA P-256          RSA-OAEP 2048-bit                 │
+│  ┌──────────────┐     ┌──────────────┐                  │
+│  │ Private key  │     │ Private key  │                  │
+│  │ (stored in   │     │ (stored in   │                  │
+│  │  IndexedDB)  │     │  IndexedDB)  │                  │
+│  │  encrypted)  │     │  encrypted)  │                  │
+│  └──────┬───────┘     └──────┬───────┘                  │
+│         │ sign               │ decrypt                   │
+│         ▼                    ▼                           │
+│  ┌──────────────┐     ┌──────────────┐                  │
+│  │ Public key   │     │ Public key   │                  │
+│  │ (on backend) │     │ (on backend) │                  │
+│  └──────────────┘     └──────────────┘                  │
+│  verify                  encrypt                        │
+└─────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────┐
+│                  SERVER-SIDE KEYS                        │
+│                                                         │
+│  AES-256-GCM (per election)                             │
+│  ┌──────────────┐                                       │
+│  │ tally_key    │  Random 256-bit key per election      │
+│  │ (in DB)      │  Encrypts vote tallies until release  │
+│  └──────┬───────┘                                       │
+│         │ encrypt/decrypt                               │
+│         ▼                                               │
+│  ┌──────────────┐                                       │
+│  │ encrypted    │  Base64-packed ciphertext returned     │
+│  │ tally        │  via API until admin releases results │
+│  └──────────────┘                                       │
+└─────────────────────────────────────────────────────────┘
 ```
 
-- **Private keys**: Secret, stored encrypted in the browser's `localStorage`, never sent to the server
+- **Private keys**: Secret, stored encrypted in the browser's **IndexedDB** (under `voting_keys_{userId}` store), never sent to the server. Previously localStorage — migrated for security (random salt per encryption).
 - **Public keys**: Shared with the backend during registration, used for verification and encryption
 
 ---

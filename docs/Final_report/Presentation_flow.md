@@ -70,7 +70,7 @@ ls -la
 cat docker-compose.yml | head -50
 
 # Start all services
-docker-compose up -d
+docker compose up -d
 
 # Wait 10-15 seconds
 ```
@@ -145,14 +145,15 @@ Confirm Password: DemoVote123!
 1. **ECDSA P-256 Keypair** - For digital signatures
 2. **RSA-OAEP 2048-bit Keypair** - For vote encryption
 
-These keys are generated in the browser using the Web Crypto API. The private keys NEVER leave the user's device—they're stored securely in localStorage."
+These keys are generated in the browser using the Web Crypto API. The private keys NEVER leave the user's device—they're stored securely in IndexedDB encrypted with AES-256-GCM."
 
-**Show in Console:**
+**Show in Browser DevTools:**
 
 ```javascript
-// Type in console to demonstrate:
-localStorage.getItem("votingPrivateKey");
-localStorage.getItem("encryptionPrivateKey");
+// Open IndexedDB inspector in DevTools (Application tab):
+// Database: voting_db
+// Store: voting_keys_{userId}
+// Encrypted keys stored with random salt per encryption
 ```
 
 ### Step 4: Show Database Storage
@@ -254,7 +255,7 @@ localStorage.getItem("encryptionPrivateKey");
 **In Terminal:**
 
 ```bash
-docker-compose logs backend | tail -50
+docker compose logs backend | tail -50
 ```
 
 **Look for:**
@@ -346,7 +347,7 @@ Error: Duplicate nullifier detected
 
 ```bash
 # In terminal
-docker-compose exec blockchain-node ls -la /app/data
+docker compose exec blockchain-node ls -la /app/data
 ```
 
 **What to Say:**
@@ -357,7 +358,7 @@ docker-compose exec blockchain-node ls -la /app/data
 **In Terminal:**
 
 ```bash
-docker-compose logs blockchain-node | grep "New block mined"
+docker compose logs blockchain-node | grep "New block mined"
 ```
 
 **What to Say:**
@@ -634,7 +635,7 @@ A: "Votes are encrypted until election closes. Then, election administrators use
 
 ### If Something Goes Wrong
 
-- **Service won't start:** Use `docker-compose restart`
+- **Service won't start:** Use `docker compose restart`
 - **Frontend not loading:** Show phpMyAdmin or backend instead
 - **Demo vote fails:** Show previous vote in database
 - **System slow:** Explain resource constraints, show monitoring
@@ -653,13 +654,13 @@ A: "Votes are encrypted until election closes. Then, election administrators use
 
 ```bash
 # Start everything
-docker-compose up -d
+docker compose up -d
 
 # Check health
 ./docker-health-check.sh
 
 # View logs
-docker-compose logs -f backend
+docker compose logs -f backend
 
 # Start monitoring
 ./docker-monitoring-start.sh
@@ -668,13 +669,13 @@ docker-compose logs -f backend
 ./docker-backup.sh
 
 # Stop everything
-docker-compose down
+docker compose down
 
 # Emergency restart
-docker-compose restart
+docker compose restart
 
-# Seed database if needed
-./docker-seed.sh
+# Seed database with Admin data
+./docker-bootstrap.sh
 ```
 
 ---
@@ -721,8 +722,8 @@ docker-compose restart
 
 ### 1 Hour Before
 
-- [ ] Start Docker services: `docker-compose up -d`
-- [ ] Seed database: `infra/scripts/docker-seed.sh`
+- [ ] Start Docker services: `docker compose up -d`
+- [ ] Seed database with Admin data: `infra/scripts/docker-bootstrap.sh`
 - [ ] Test user registration
 - [ ] Test vote casting
 - [ ] Open all browser tabs

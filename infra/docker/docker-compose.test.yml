@@ -1,20 +1,35 @@
+# Usage: docker compose -f infra/docker/docker-compose.test.yml up -d
+# Test stack (self-contained, no .env needed): MySQL, 4 blockchain nodes, backend,
+#   frontend, admin-panel, institution-api, phpMyAdmin. All ports default to 3xxx/4xxx range.
+
 services:
+  # ── Data Layer ───────────────────────────────────────────────────────────────
   mysql:
-    image: mysql:8.0
+    image: mysql:8.0.36
     container_name: voting-test-mysql
-    restart: always
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 1g
+          cpus: "2.0"
+    command: >
+      --innodb_buffer_pool_size=1G
+      --innodb_redo_log_capacity=512M
+      --innodb_flush_log_at_trx_commit=2
+      --innodb_flush_method=O_DIRECT
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_0900_ai_ci
     environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-voting_test_root_pass}
-      MYSQL_DATABASE: ${MYSQL_DATABASE:-voting_test_db}
-      MYSQL_USER: ${MYSQL_USER:-voting_test_user}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-voting_test_pass}
-    ports:
-      - "3307:3306"
+      MYSQL_ROOT_PASSWORD: ${TEST_MYSQL_ROOT_PASSWORD:-voting_test_root_pass}
+      MYSQL_DATABASE: ${TEST_MYSQL_DATABASE:-voting_test_db}
+      MYSQL_USER: ${TEST_MYSQL_USER:-voting_test_user}
+      MYSQL_PASSWORD: ${TEST_MYSQL_PASSWORD:-voting_test_pass}
     volumes:
       - mysql_test_data:/var/lib/mysql
       - ../../services/backend/migrations:/docker-entrypoint-initdb.d
     networks:
-      - voting-test-network
+      - backend-net
     healthcheck:
       test:
         [
@@ -25,49 +40,101 @@ services:
           "localhost",
           "-u",
           "root",
-          "-p${MYSQL_ROOT_PASSWORD:-voting_test_root_pass}",
+          "-p${TEST_MYSQL_ROOT_PASSWORD:-voting_test_root_pass}",
         ]
       timeout: 20s
       retries: 10
       interval: 10s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
-  phpmyadmin:
-    image: phpmyadmin:latest
-    container_name: voting-test-phpmyadmin
-    restart: always
+  # ── Backend Services ─────────────────────────────────────────────────────────
+  institution-api:
+    build:
+      context: ../../services/institution-api
+      dockerfile: Dockerfile
+    container_name: voting-test-institution-api
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+          cpus: "1.0"
     environment:
-      PMA_HOST: mysql
-      PMA_PORT: 3306
-      PMA_USER: ${MYSQL_USER:-voting_test_user}
-      PMA_PASSWORD: ${MYSQL_PASSWORD:-voting_test_pass}
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-voting_test_root_pass}
+      NODE_ENV: ${NODE_ENV:-development}
+      PORT: ${TEST_INSTITUTION_PORT:-4005}
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USER: ${TEST_MYSQL_USER:-voting_test_user}
+      DB_PASSWORD: ${TEST_MYSQL_PASSWORD:-voting_test_pass}
+      DB_NAME: institution_test_db
+      DB_ROOT_PASSWORD: ${TEST_MYSQL_ROOT_PASSWORD:-voting_test_root_pass}
+      INSTITUTION_API_KEY: ${TEST_INSTITUTION_API_KEY:-test-institution-key}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5175}
+      ADMIN_PANEL_URL: ${ADMIN_PANEL_URL:-http://localhost:5176}
+      CORS_ALLOWED_ORIGINS: ${TEST_CORS_ALLOWED_ORIGINS:-http://localhost:5175,http://localhost:5176}
     ports:
-      - "8081:80"
+      - "127.0.0.1:${TEST_INSTITUTION_PORT:-4005}:${TEST_INSTITUTION_PORT:-4005}"
     depends_on:
       mysql:
         condition: service_healthy
     networks:
-      - voting-test-network
+      - backend-net
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--quiet",
+          "--tries=1",
+          "--spider",
+          "http://localhost:${TEST_INSTITUTION_PORT:-4005}/api/health",
+        ]
+      timeout: 10s
+      retries: 5
+      start_period: 20s
+      interval: 15s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
+    read_only: true
+    tmpfs:
+      - /tmp
 
+  # Blockchain Node 1 (primary)
   blockchain-node:
     build:
       context: ../../services/blockchain-node
       dockerfile: Dockerfile
     container_name: voting-test-blockchain
-    restart: always
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+          cpus: "1.0"
     environment:
       NODE_ID: node1
-      PORT: 3010
-      NODE_ENV: ${NODE_ENV:-development}
-      PEERS: http://voting-test-blockchain-2:3011,http://voting-test-blockchain-3:3012,http://voting-test-blockchain-4:3013
+      PORT: ${TEST_BLOCKCHAIN_NODE1_PORT:-3010}
+      NODE_ENV: ${TEST_NODE_ENV:-development}
+      PEERS: http://voting-test-blockchain-2:${TEST_BLOCKCHAIN_NODE2_PORT:-3011},http://voting-test-blockchain-3:${TEST_BLOCKCHAIN_NODE3_PORT:-3012},http://voting-test-blockchain-4:${TEST_BLOCKCHAIN_NODE4_PORT:-3013}
+      BLOCKCHAIN_API_KEY: ${TEST_BLOCKCHAIN_API_KEY:-test-blockchain-key}
+      CORS_ALLOWED_ORIGINS: ${TEST_CORS_ALLOWED_ORIGINS:-http://localhost:5175,http://localhost:5176}
     ports:
-      - "3010:3010"
+      - "127.0.0.1:${TEST_BLOCKCHAIN_NODE1_PORT:-3010}:${TEST_BLOCKCHAIN_NODE1_PORT:-3010}"
     volumes:
       - blockchain_test_data:/app/data
-      - ../../services/blockchain-node:/app
-      - /app/node_modules
     networks:
-      - voting-test-network
+      - backend-net
     healthcheck:
       test:
         [
@@ -76,32 +143,53 @@ services:
           "--quiet",
           "--tries=1",
           "--spider",
-          "http://localhost:3010/node",
+          "http://localhost:${TEST_BLOCKCHAIN_NODE1_PORT:-3010}/health",
         ]
       timeout: 10s
       retries: 5
       interval: 15s
     command: npm start
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
+    read_only: true
+    tmpfs:
+      - /tmp
 
+  # Blockchain Node 2
   blockchain-node-2:
     build:
       context: ../../services/blockchain-node
       dockerfile: Dockerfile
     container_name: voting-test-blockchain-2
-    restart: always
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+          cpus: "1.0"
     environment:
       NODE_ID: blockchain-node-2
-      PORT: 3011
-      NODE_ENV: ${NODE_ENV:-development}
-      PEERS: http://voting-test-blockchain:3010,http://voting-test-blockchain-3:3012,http://voting-test-blockchain-4:3013
-    ports:
-      - "3011:3011"
+      PORT: ${TEST_BLOCKCHAIN_NODE2_PORT:-3011}
+      NODE_ENV: ${TEST_NODE_ENV:-development}
+      PEERS: http://voting-test-blockchain:${TEST_BLOCKCHAIN_NODE1_PORT:-3010},http://voting-test-blockchain-3:${TEST_BLOCKCHAIN_NODE3_PORT:-3012},http://voting-test-blockchain-4:${TEST_BLOCKCHAIN_NODE4_PORT:-3013}
+      BLOCKCHAIN_API_KEY: ${TEST_BLOCKCHAIN_API_KEY:-test-blockchain-key}
+      CORS_ALLOWED_ORIGINS: ${TEST_CORS_ALLOWED_ORIGINS:-http://localhost:5175,http://localhost:5176}
     volumes:
       - blockchain_test_data_2:/app/data
-      - ../../services/blockchain-node:/app
-      - /app/node_modules
+    ports:
+      - "127.0.0.1:${TEST_BLOCKCHAIN_NODE2_PORT:-3011}:${TEST_BLOCKCHAIN_NODE2_PORT:-3011}"
     networks:
-      - voting-test-network
+      - backend-net
+    depends_on:
+      blockchain-node:
+        condition: service_healthy
     healthcheck:
       test:
         [
@@ -110,32 +198,53 @@ services:
           "--quiet",
           "--tries=1",
           "--spider",
-          "http://localhost:3011/node",
+          "http://localhost:${TEST_BLOCKCHAIN_NODE2_PORT:-3011}/health",
         ]
       timeout: 10s
       retries: 5
       interval: 15s
     command: npm start
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
+    read_only: true
+    tmpfs:
+      - /tmp
 
+  # Blockchain Node 3
   blockchain-node-3:
     build:
       context: ../../services/blockchain-node
       dockerfile: Dockerfile
     container_name: voting-test-blockchain-3
-    restart: always
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+          cpus: "1.0"
     environment:
       NODE_ID: blockchain-node-3
-      PORT: 3012
-      NODE_ENV: ${NODE_ENV:-development}
-      PEERS: http://voting-test-blockchain:3010,http://voting-test-blockchain-2:3011,http://voting-test-blockchain-4:3013
-    ports:
-      - "3012:3012"
+      PORT: ${TEST_BLOCKCHAIN_NODE3_PORT:-3012}
+      NODE_ENV: ${TEST_NODE_ENV:-development}
+      PEERS: http://voting-test-blockchain:${TEST_BLOCKCHAIN_NODE1_PORT:-3010},http://voting-test-blockchain-2:${TEST_BLOCKCHAIN_NODE2_PORT:-3011},http://voting-test-blockchain-4:${TEST_BLOCKCHAIN_NODE4_PORT:-3013}
+      BLOCKCHAIN_API_KEY: ${TEST_BLOCKCHAIN_API_KEY:-test-blockchain-key}
+      CORS_ALLOWED_ORIGINS: ${TEST_CORS_ALLOWED_ORIGINS:-http://localhost:5175,http://localhost:5176}
     volumes:
       - blockchain_test_data_3:/app/data
-      - ../../services/blockchain-node:/app
-      - /app/node_modules
+    ports:
+      - "127.0.0.1:${TEST_BLOCKCHAIN_NODE3_PORT:-3012}:${TEST_BLOCKCHAIN_NODE3_PORT:-3012}"
     networks:
-      - voting-test-network
+      - backend-net
+    depends_on:
+      blockchain-node:
+        condition: service_healthy
     healthcheck:
       test:
         [
@@ -144,32 +253,53 @@ services:
           "--quiet",
           "--tries=1",
           "--spider",
-          "http://localhost:3012/node",
+          "http://localhost:${TEST_BLOCKCHAIN_NODE3_PORT:-3012}/health",
         ]
       timeout: 10s
       retries: 5
       interval: 15s
     command: npm start
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
+    read_only: true
+    tmpfs:
+      - /tmp
 
+  # Blockchain Node 4
   blockchain-node-4:
     build:
       context: ../../services/blockchain-node
       dockerfile: Dockerfile
     container_name: voting-test-blockchain-4
-    restart: always
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+          cpus: "1.0"
     environment:
       NODE_ID: blockchain-node-4
-      PORT: 3013
-      NODE_ENV: ${NODE_ENV:-development}
-      PEERS: http://voting-test-blockchain:3010,http://voting-test-blockchain-2:3011,http://voting-test-blockchain-3:3012
-    ports:
-      - "3013:3013"
+      PORT: ${TEST_BLOCKCHAIN_NODE4_PORT:-3013}
+      NODE_ENV: ${TEST_NODE_ENV:-development}
+      PEERS: http://voting-test-blockchain:${TEST_BLOCKCHAIN_NODE1_PORT:-3010},http://voting-test-blockchain-2:${TEST_BLOCKCHAIN_NODE2_PORT:-3011},http://voting-test-blockchain-3:${TEST_BLOCKCHAIN_NODE3_PORT:-3012}
+      BLOCKCHAIN_API_KEY: ${TEST_BLOCKCHAIN_API_KEY:-test-blockchain-key}
+      CORS_ALLOWED_ORIGINS: ${TEST_CORS_ALLOWED_ORIGINS:-http://localhost:5175,http://localhost:5176}
     volumes:
       - blockchain_test_data_4:/app/data
-      - ../../services/blockchain-node:/app
-      - /app/node_modules
+    ports:
+      - "127.0.0.1:${TEST_BLOCKCHAIN_NODE4_PORT:-3013}:${TEST_BLOCKCHAIN_NODE4_PORT:-3013}"
     networks:
-      - voting-test-network
+      - backend-net
+    depends_on:
+      blockchain-node:
+        condition: service_healthy
     healthcheck:
       test:
         [
@@ -178,36 +308,55 @@ services:
           "--quiet",
           "--tries=1",
           "--spider",
-          "http://localhost:3013/node",
+          "http://localhost:${TEST_BLOCKCHAIN_NODE4_PORT:-3013}/health",
         ]
       timeout: 10s
       retries: 5
       interval: 15s
     command: npm start
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
+    read_only: true
+    tmpfs:
+      - /tmp
 
+  # Backend API
   backend:
     build:
       context: ../../services/backend
       dockerfile: Dockerfile
     container_name: voting-test-backend
-    restart: always
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+          cpus: "1.0"
     environment:
-      NODE_ENV: ${NODE_ENV:-development}
-      PORT: 3005
+      NODE_ENV: ${TEST_NODE_ENV:-development}
+      PORT: ${TEST_BACKEND_PORT:-3005}
       DB_HOST: mysql
       DB_PORT: 3306
-      DB_USER: ${MYSQL_USER:-voting_test_user}
-      DB_PASSWORD: ${MYSQL_PASSWORD:-voting_test_pass}
-      DB_NAME: ${MYSQL_DATABASE:-voting_test_db}
-      JWT_SECRET: ${JWT_SECRET:-test-jwt-secret-for-integration-tests}
-      BLOCKCHAIN_NODE_URL: http://voting-test-blockchain:3010
-      FRONTEND_URL: http://localhost:5175
-      INSTITUTION_API_URL: http://voting-test-institution-api:4005
-    ports:
-      - "3005:3005"
+      DB_USER: ${TEST_MYSQL_USER:-voting_test_user}
+      DB_PASSWORD: ${TEST_MYSQL_PASSWORD:-voting_test_pass}
+      DB_NAME: ${TEST_MYSQL_DATABASE:-voting_test_db}
+      JWT_SECRET: ${TEST_JWT_SECRET:-test-jwt-secret-for-integration-tests}
+      NULLIFIER_SECRET: ${TEST_NULLIFIER_SECRET:-test-nullifier-secret-for-integration-tests}
+      BLOCKCHAIN_NODE_URL: http://voting-test-blockchain:${TEST_BLOCKCHAIN_NODE1_PORT:-3010}
+      BLOCKCHAIN_API_KEY: ${TEST_BLOCKCHAIN_API_KEY:-test-blockchain-key}
+      INSTITUTION_API_KEY: ${TEST_INSTITUTION_API_KEY:-test-institution-key}
+      FRONTEND_URL: http://localhost:${TEST_FRONTEND_PORT:-5175}
+      ADMIN_PANEL_URL: http://localhost:${TEST_ADMIN_PANEL_PORT:-5176}
+      INSTITUTION_API_URL: http://voting-test-institution-api:${TEST_INSTITUTION_PORT:-4005}
+      CORS_ALLOWED_ORIGINS: ${TEST_CORS_ALLOWED_ORIGINS:-http://localhost:5175,http://localhost:5176}
     volumes:
-      - ../../services/backend:/app
-      - /app/node_modules
       - ../../services/backend/keys:/app/keys
     depends_on:
       mysql:
@@ -217,7 +366,10 @@ services:
       institution-api:
         condition: service_healthy
     networks:
-      - voting-test-network
+      - backend-net
+      - frontend-net
+    ports:
+      - "127.0.0.1:${TEST_BACKEND_PORT:-3005}:${TEST_BACKEND_PORT:-3005}"
     healthcheck:
       test:
         [
@@ -226,74 +378,48 @@ services:
           "--quiet",
           "--tries=1",
           "--spider",
-          "http://localhost:3005/api/elections",
+          "http://localhost:${TEST_BACKEND_PORT:-3005}/health",
         ]
       timeout: 10s
       retries: 5
       interval: 15s
     command: sh -c "npm run migrate && npm start"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
+    read_only: true
+    tmpfs:
+      - /tmp
 
+  # ── Frontend Services ────────────────────────────────────────────────────────
   frontend:
     build:
       context: ../../services/frontend
       dockerfile: Dockerfile
     container_name: voting-test-frontend
-    restart: always
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+          cpus: "1.0"
     environment:
-      VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:3005/api}
-      VITE_BLOCKCHAIN_URL: ${VITE_BLOCKCHAIN_URL:-http://localhost:3010}
-      VITE_INSTITUTION_API_URL: ${VITE_INSTITUTION_API_URL:-http://localhost:4005}
-    ports:
-      - "5175:5175"
-    volumes:
-      - ../../services/frontend:/app
-      - /app/node_modules
+      PORT: ${TEST_FRONTEND_PORT:-5175}
+      VITE_API_BASE_URL: ${TEST_VITE_API_BASE_URL:-http://localhost:${TEST_BACKEND_PORT:-3005}/api}
+      VITE_BLOCKCHAIN_URL: ${TEST_VITE_BLOCKCHAIN_URL:-http://localhost:${TEST_BLOCKCHAIN_NODE1_PORT:-3010}}
+      VITE_BLOCKCHAIN_API_KEY: ${TEST_BLOCKCHAIN_API_KEY:-test-blockchain-key}
+      VITE_INSTITUTION_API_URL: ${TEST_VITE_INSTITUTION_API_URL:-http://localhost:${TEST_INSTITUTION_PORT:-4005}}
     depends_on:
-      - backend
-    networks:
-      - voting-test-network
-    command: npm run dev -- --host 0.0.0.0
-
-  admin-panel:
-    build:
-      context: ../../services/admin-panel
-      dockerfile: Dockerfile
-    container_name: voting-test-admin-panel
-    restart: always
-    environment:
-      VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:3005/api}
-    ports:
-      - "5176:5176"
-    volumes:
-      - ../../services/admin-panel:/app
-      - /app/node_modules
-    depends_on:
-      - backend
-    networks:
-      - voting-test-network
-    command: npm run dev -- --host 0.0.0.0 --port 5176
-
-  institution-api:
-    build:
-      context: ../../services/institution-api
-      dockerfile: Dockerfile
-    container_name: voting-test-institution-api
-    restart: always
-    environment:
-      PORT: 4005
-      DB_HOST: mysql
-      DB_PORT: 3306
-      DB_USER: ${MYSQL_USER:-voting_test_user}
-      DB_PASSWORD: ${MYSQL_PASSWORD:-voting_test_pass}
-      DB_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-voting_test_root_pass}
-      DB_NAME: institution_test_db
-    ports:
-      - "4005:4005"
-    depends_on:
-      mysql:
+      backend:
         condition: service_healthy
     networks:
-      - voting-test-network
+      - frontend-net
     healthcheck:
       test:
         [
@@ -302,25 +428,117 @@ services:
           "--quiet",
           "--tries=1",
           "--spider",
-          "http://127.0.0.1:4005/api/health",
+          "http://127.0.0.1:${TEST_FRONTEND_PORT:-5175}/",
         ]
       timeout: 10s
       retries: 5
-      start_period: 20s
       interval: 15s
+    ports:
+      - "127.0.0.1:${TEST_FRONTEND_PORT:-5175}:${TEST_FRONTEND_PORT:-5175}"
+    command: sh -c "npm run dev -- --host 0.0.0.0 --port ${TEST_FRONTEND_PORT:-5175}"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
+
+  # Admin Panel (Separate Vue App)
+  admin-panel:
+    build:
+      context: ../../services/admin-panel
+      dockerfile: Dockerfile
+    container_name: voting-test-admin-panel
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+          cpus: "1.0"
+    environment:
+      PORT: ${TEST_ADMIN_PANEL_PORT:-5176}
+      VITE_API_BASE_URL: ${TEST_VITE_API_BASE_URL:-http://localhost:${TEST_BACKEND_PORT:-3005}/api}
+      VITE_BLOCKCHAIN_URL: ${TEST_VITE_BLOCKCHAIN_URL:-http://localhost:${TEST_BLOCKCHAIN_NODE1_PORT:-3010}}
+      VITE_BLOCKCHAIN_API_KEY: ${TEST_BLOCKCHAIN_API_KEY:-test-blockchain-key}
+      VITE_INSTITUTION_API_URL: ${TEST_VITE_INSTITUTION_API_URL:-http://localhost:${TEST_INSTITUTION_PORT:-4005}}
+      VITE_INSTITUTION_API_KEY: ${TEST_INSTITUTION_API_KEY:-test-institution-key}
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - frontend-net
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--quiet",
+          "--tries=1",
+          "--spider",
+          "http://127.0.0.1:${TEST_ADMIN_PANEL_PORT:-5176}/",
+        ]
+      timeout: 10s
+      retries: 5
+      interval: 15s
+    ports:
+      - "127.0.0.1:${TEST_ADMIN_PANEL_PORT:-5176}:${TEST_ADMIN_PANEL_PORT:-5176}"
+    command: sh -c "npm run dev -- --host 0.0.0.0 --port ${TEST_ADMIN_PANEL_PORT:-5176}"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
+
+  # ── Auxiliary ────────────────────────────────────────────────────────────────
+  phpmyadmin:
+    image: phpmyadmin:5.2
+    container_name: voting-test-phpmyadmin
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+          cpus: "1.0"
+    environment:
+      PMA_HOST: mysql
+      PMA_PORT: 3306
+      PMA_USER: ${TEST_MYSQL_USER:-voting_test_user}
+      PMA_PASSWORD: ${TEST_MYSQL_PASSWORD:-voting_test_pass}
+      MYSQL_ROOT_PASSWORD: ${TEST_MYSQL_ROOT_PASSWORD:-voting_test_root_pass}
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - backend-net
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "http://localhost/"]
+      timeout: 10s
+      retries: 5
+      interval: 15s
+    ports:
+      - "127.0.0.1:${TEST_PMA_PORT:-8081}:80"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
 networks:
-  voting-test-network:
+  backend-net:
+    driver: bridge
+  frontend-net:
     driver: bridge
 
 volumes:
   mysql_test_data:
-    driver: local
   blockchain_test_data:
-    driver: local
   blockchain_test_data_2:
-    driver: local
   blockchain_test_data_3:
-    driver: local
   blockchain_test_data_4:
-    driver: local

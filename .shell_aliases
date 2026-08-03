@@ -2,6 +2,6 @@
 # Add to your .bashrc or .bash_profile:
 #   source /path/to/project/.shell_aliases
 
-alias dc='docker-compose -f infra/docker/docker-compose.yml'
-alias dcm='docker-compose -f infra/docker/docker-compose.yml -f infra/docker/docker-compose.monitoring.yml'
+alias dc='docker compose -f infra/docker/docker-compose.yml'
+alias dcm='docker compose -f infra/docker/docker-compose.yml -f infra/docker/docker-compose.monitoring.yml'
 alias health='bash infra/scripts/docker-health-check.sh'

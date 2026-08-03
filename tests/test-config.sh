@@ -7,17 +7,12 @@ PROJECT_DIR="$(cd "$TEST_CONFIG_DIR/.." && pwd)"
 ENV_FILE="$PROJECT_DIR/.env.test"
 
 # Ensure jq is available
-JQ_CMD="jq"
-if ! command -v jq >/dev/null 2>&1; then
-  JQ_BIN="/c/Users/LENOVO/AppData/Local/Microsoft/WinGet/Packages/jqlang.jq_Microsoft.Winget.Source_8wekyb3d8bbwe/jq.exe"
-  if [ ! -f "$JQ_BIN" ]; then
-    JQ_BIN="$PROJECT_DIR/.opencode/tools/jq.exe"
-  fi
-  if [ -f "$JQ_BIN" ]; then
-    JQ_CMD="$JQ_BIN"
-    jq() { "$JQ_BIN" "$@"; }
-  fi
+JQ_BIN="${JQ_BIN:-$(which jq 2>/dev/null || echo '')}"
+if [ -z "$JQ_BIN" ]; then
+    echo "ERROR: jq is required but not found. Install jq (brew install jq / apt install jq)"
+    exit 1
 fi
+JQ_CMD="$JQ_BIN"
 export JQ_CMD
 
 # Load .env.test if present
@@ -34,6 +29,10 @@ BACKEND_HOST="${TEST_BACKEND_HOST:-http://localhost:3005}"
 # Blockchain nodes
 BLOCKCHAIN_PORTS=(${TEST_BLOCKCHAIN_PORTS:-3010 3011 3012 3013})
 BLOCKCHAIN_URL="${TEST_BLOCKCHAIN_URL:-${VITE_BLOCKCHAIN_URL:-http://localhost:3010}}"
+BLOCKCHAIN_API_KEY="${TEST_BLOCKCHAIN_API_KEY:-test-blockchain-key}"
+
+# Vote package helper (builds a client-side encrypted vote payload)
+VOTE_PACKAGE_HELPER="$TEST_CONFIG_DIR/helpers/vote-package.js"
 
 # Institution API
 INSTITUTION_API_URL="${TEST_INSTITUTION_URL:-${VITE_INSTITUTION_API_URL:-http://localhost:4005}}"
@@ -67,6 +66,11 @@ NC='\033[0m'
 
 # Test counters (declare as globals, reset per script)
 PASS=0; FAIL=0
+
+# Read the CSRF token from a curl cookie jar (login sets csrf-token via backend)
+csrf_token() {
+  awk '$6 == "csrf-token" {print $7}' "$1" 2>/dev/null | tail -1
+}
 
 # Helper assert
 check() {

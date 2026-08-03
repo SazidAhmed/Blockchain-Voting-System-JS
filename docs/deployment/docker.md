@@ -18,22 +18,27 @@ All files in `infra/docker/`:
 
 ### Services
 
-| Service           | Container                | Build Context                             | Port |
-| ----------------- | ------------------------ | ----------------------------------------- | ---- |
-| mysql             | voting-mysql             | mysql:8.0 (image)                         | 3306 |
-| phpmyadmin        | voting-phpmyadmin        | phpmyadmin:latest (image)                 | 8080 |
-| blockchain-node   | voting-blockchain        | context: `../../services/blockchain-node` | 3001 |
-| blockchain-node-2 | voting-blockchain-node-2 | same                                      | 3002 |
-| blockchain-node-3 | voting-blockchain-node-3 | same                                      | 3003 |
-| blockchain-node-4 | voting-blockchain-node-4 | same                                      | 3004 |
-| backend           | voting-backend           | context: `../../services/backend`         | 3000 |
-| frontend          | voting-frontend          | context: `../../services/frontend`        | 5173 |
-| admin-panel       | voting-admin-panel       | context: `../../services/admin-panel`     | 5174 |
-| institution-api   | voting-institution-api   | context: `../../services/institution-api` | 4000 |
+| Service           | Container                | Build Context                             | Default Port |
+| ----------------- | ------------------------ | ----------------------------------------- | ------------ |
+| mysql             | voting-mysql             | mysql:8.0 (image)                         | 3306         |
+| phpmyadmin        | voting-phpmyadmin        | phpmyadmin:5.2 (image)                    | 8080 (host)  |
+| blockchain-node   | voting-blockchain        | context: `../../services/blockchain-node` | 3001         |
+| blockchain-node-2 | voting-blockchain-node-2 | same                                      | 3002         |
+| blockchain-node-3 | voting-blockchain-node-3 | same                                      | 3003         |
+| blockchain-node-4 | voting-blockchain-node-4 | same                                      | 3004         |
+| backend           | voting-backend           | context: `../../services/backend`         | 3000         |
+| frontend          | voting-frontend          | context: `../../services/frontend`        | 5173         |
+| admin-panel       | voting-admin-panel       | context: `../../services/admin-panel`     | 5174         |
+| institution-api   | voting-institution-api   | context: `../../services/institution-api` | 4000         |
+
+> All ports above are defaults — override via `BACKEND_PORT`, `FRONTEND_PORT`, `BLOCKCHAIN_NODE1_PORT`, etc. in `.env`. See [environment.md](environment.md) for the full list.
 
 ### Networks
 
-- `voting-network` — bridge, all services connected
+- `frontend-net` — Frontend, admin-panel, nginx only (isolated from backend services)
+- `backend-net` — Backend, blockchain-node, institution-api, MySQL (bridged to frontend-net via backend)
+
+Network segmentation: Frontend containers cannot directly reach MySQL or blockchain nodes.
 
 ### Volumes
 
@@ -42,12 +47,17 @@ All files in `infra/docker/`:
 
 ### Health Checks
 
-| Service         | Endpoint             | Interval | Retries |
-| --------------- | -------------------- | -------- | ------- |
-| mysql           | `mysqladmin ping`    | 10s      | 10      |
-| blockchain-node | `GET /node`          | 15s      | 5       |
-| backend         | `GET /api/elections` | 15s      | 5       |
-| institution-api | `GET /api/health`    | 15s      | 5       |
+| Service         | Endpoint            | Interval | Retries | Notes                                  |
+| --------------- | ------------------- | -------- | ------- | -------------------------------------- |
+| mysql           | `mysqladmin ping`   | 10s      | 10      |                                        |
+| blockchain-node | `GET /health`       | 15s      | 5       | Public endpoint, no auth required      |
+| backend         | `GET /health`       | 15s      | 5       | Public endpoint                        |
+| institution-api | `GET /api/health`   | 15s      | 5       | Public endpoint                        |
+| frontend        | `wget 127.0.0.1:80` | 15s      | 5       | Alpine images: use IP not localhost    |
+| admin-panel     | `wget 127.0.0.1:80` | 15s      | 5       | Alpine images: use IP not localhost    |
+| phpmyadmin      | `curl localhost:80` | 15s      | 5       | Uses curl (wget not in phpmyadmin img) |
+
+**Note:** Blockchain nodes 2-4 use the same `/health` endpoint. The `/node` endpoint requires `apiKeyAuth` and cannot be used for healthchecks.
 
 ### Startup Order
 
@@ -64,13 +74,13 @@ backend → frontend, admin-panel
 
 **blockchain-node**: `NODE_ID=node1`, `PORT=3001`, `PEERS` (URLs of other 3 nodes), `NODE_ENV`.
 
-**backend**: `DB_HOST=mysql`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `JWT_SECRET`, `BLOCKCHAIN_NODE_URL`, `FRONTEND_URL`, `INSTITUTION_API_URL`.
+**backend**: `DB_HOST=mysql`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `JWT_SECRET`, `NULLIFIER_SECRET`, `BLOCKCHAIN_NODE_URL`, `BLOCKCHAIN_API_KEY`, `INSTITUTION_API_KEY`, `FRONTEND_URL`, `ADMIN_PANEL_URL`, `INSTITUTION_API_URL`, `CORS_ALLOWED_ORIGINS`.
 
 **frontend**: `VITE_API_BASE_URL`, `VITE_BLOCKCHAIN_URL`, `VITE_INSTITUTION_API_URL`.
 
 **admin-panel**: `VITE_API_BASE_URL`.
 
-**institution-api**: `DB_HOST=mysql`, `DB_USER`, `DB_PASSWORD`, `DB_NAME=institution_db`.
+**institution-api**: `DB_HOST=mysql`, `DB_USER`, `DB_PASSWORD`, `DB_NAME=institution_db`, `FRONTEND_URL`, `ADMIN_PANEL_URL`, `INSTITUTION_API_KEY`.
 
 ---
 
@@ -107,10 +117,10 @@ Extends main stack. Includes:
 | promtail       | —    | Log shipper              |
 
 ```bash
-docker-compose -f docker-compose.yml -f docker-compose.monitoring.yml up -d
+docker compose -f infra/docker/docker-compose.yml -f infra/docker/docker-compose.monitoring.yml --env-file .env up -d
 ```
 
-Networks: `monitoring` (new bridge) + `voting-network` (external). Volumes: `prometheus_data`, `grafana_data`, `loki_data`.
+Networks: `monitoring` (new bridge) + `backend-net` (external). Volumes: `prometheus_data`, `grafana_data`, `loki_data`.
 
 ---
 
@@ -118,13 +128,15 @@ Networks: `monitoring` (new bridge) + `voting-network` (external). Volumes: `pro
 
 5 blockchain nodes with shared MySQL:
 
-| Node              | Port | Type      |
-| ----------------- | ---- | --------- |
-| blockchain-node-1 | 3001 | validator |
-| blockchain-node-2 | 3002 | validator |
-| blockchain-node-3 | 3003 | validator |
-| blockchain-node-4 | 3004 | observer  |
-| blockchain-node-5 | 3005 | observer  |
+All ports below are defaults — override via `BLOCKCHAIN_NODE1_PORT`–`BLOCKCHAIN_NODE5_PORT` in `.env`.
+
+| Node              | Default Port | Type      |
+| ----------------- | ------------ | --------- |
+| blockchain-node-1 | 3001         | validator |
+| blockchain-node-2 | 3002         | validator |
+| blockchain-node-3 | 3003         | validator |
+| blockchain-node-4 | 3004         | observer  |
+| blockchain-node-5 | 3005         | observer  |
 
 Includes MySQL (`voting-mysql-multinode`, port 3306) with its own volume. Network: `voting-blockchain-network`. No frontend/backend — blockchain only.
 
@@ -158,31 +170,33 @@ Nginx expects SSL certs in `./nginx/ssl/` and logs in `./nginx/logs/`.
 
 ## Commands
 
+All commands below require `--env-file` (compose interpolates `.env` vars from the compose file's directory otherwise):
+
 ```bash
 # Start (first time builds images)
-docker-compose -f infra/docker/docker-compose.yml up --build -d
+docker compose -f infra/docker/docker-compose.yml --env-file .env up --build -d
 
 # Stop and remove containers
-docker-compose -f infra/docker/docker-compose.yml down
+docker compose -f infra/docker/docker-compose.yml --env-file .env down
 
 # Stop and destroy volumes (DELETES DATA)
-docker-compose -f infra/docker/docker-compose.yml down -v
+docker compose -f infra/docker/docker-compose.yml --env-file .env down -v
 
 # View logs (all)
-docker-compose -f infra/docker/docker-compose.yml logs -f
+docker compose -f infra/docker/docker-compose.yml --env-file .env logs -f
 
 # View logs (single service)
-docker-compose -f infra/docker/docker-compose.yml logs -f backend
+docker compose -f infra/docker/docker-compose.yml --env-file .env logs -f backend
 
 # Rebuild single service
-docker-compose -f infra/docker/docker-compose.yml up --build backend
+docker compose -f infra/docker/docker-compose.yml --env-file .env up --build backend
 
 # Rebuild without cache
-docker-compose -f infra/docker/docker-compose.yml build --no-cache backend
+docker compose -f infra/docker/docker-compose.yml --env-file .env build --no-cache backend
 
-# Execute command in container
-docker-compose -f infra/docker/docker-compose.yml exec backend sh
+# Execute command in container (uses container env, --env-file optional)
+docker compose -f infra/docker/docker-compose.yml exec backend sh
 
 # Run migrations manually
-docker-compose -f infra/docker/docker-compose.yml exec backend npm run migrate
+docker compose -f infra/docker/docker-compose.yml exec backend npm run migrate
 ```
