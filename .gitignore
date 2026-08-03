@@ -60,9 +60,12 @@ temp/
 *.bak
 *.backup
 
-tests/security/results/
+# Other
 .opencode/
-tests/results/
 .agents/
 skills-lock.json
 TODO.md
+
+# Test results
+tests/security/results/
+tests/results/
